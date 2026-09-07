@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import Viewer from "./components/Viewer";
+import BenchStatus from "./components/BenchStatus";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/market_stall.report.json";
@@ -74,8 +75,8 @@ export default async function Home() {
     <div className="min-h-screen">
       <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
         <p className="label !text-amber">
-          Prototype · the crafter and this viewer are live · wallet, payments and
-          publishing are not wired yet
+          Prototype · the crafter runs on a real machine, not here · wallet,
+          payments and publishing are not wired yet
         </p>
       </div>
 
@@ -199,9 +200,12 @@ export default async function Home() {
                 . Drag to orbit.
               </p>
             </div>
-            <p className="label max-w-xs text-right">
-              the grey figure is 5 studs — one Roblox character
-            </p>
+            <div className="flex flex-col items-end gap-2">
+              <BenchStatus />
+              <p className="label max-w-xs text-right">
+                the grey figure is 5 studs — one Roblox character
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-2">

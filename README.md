@@ -53,6 +53,23 @@ orchestrating agent pays per craft from its own wallet under a cap it cannot
 raise itself, and no secrets are shared between stages. **Not built yet** — see
 the status below and `docs/ONCHAIN.md` for the design.
 
+## Where it runs
+
+Blender cannot run on Vercel — serverless has no room for a 500 MB binary and no
+persistent machine to run it on. So the site and the crafter live apart:
+
+| Piece | Runs on |
+|---|---|
+| The site | Vercel |
+| The crafter (Blender) | a real machine — a laptop behind a tunnel, or a VPS |
+
+That split is the same one x402 asks for anyway: the crafter is a service that
+charges per call.
+
+It also means **the crafter is offline most of the time**, because laptops
+close. The site checks `/api/bench/status` and says so plainly, falling back to
+the checked-in sample rather than showing a broken page.
+
 ## Layout
 
 ```
