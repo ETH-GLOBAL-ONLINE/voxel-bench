@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import Viewer from "./components/Viewer";
+import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
@@ -189,63 +189,24 @@ export default async function Home() {
       {/* ── the bench ─────────────────────────────────────────────────── */}
       <section id="bench" className="border-t border-bench-700">
         <div className="mx-auto max-w-6xl px-5 py-20">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold tracking-tight">The bench</h2>
               <p className="mt-2 text-dim">
-                Crafted from{" "}
-                <code className="font-mono text-sm text-amber">
-                  {SAMPLE}.json
-                </code>
-                . Drag to orbit.
+                Describe an object. Drag the result to orbit it.
               </p>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <BenchStatus />
-              <p className="label max-w-xs text-right">
-                the grey figure is 5 studs — one Roblox character
-              </p>
-            </div>
+            <BenchStatus />
           </div>
 
-          <div className="mt-8 grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-2">
-            <figure className="slot !border-0 p-4">
-              <figcaption className="label mb-3">Preview render</figcaption>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/out/${SAMPLE}_preview.png`}
-                alt="Blender preview of the crafted object"
-                className="w-full border border-bench-700"
-              />
-            </figure>
-            <div className="slot !border-0 p-4">
-              <p className="label mb-3">GLB in your browser</p>
-              <div className="h-[340px] border border-bench-700 sm:h-[420px]">
-                <Viewer name={SAMPLE} />
-              </div>
-            </div>
-          </div>
-
-          {report ? (
-            <dl className="mt-px grid grid-cols-2 gap-px border border-bench-700 bg-bench-700 sm:grid-cols-5">
-              {[
-                ["ingredients", String(report.ingredients)],
-                ["triangles", String(report.tris)],
-                ["studs", dims ? `${dims[0]} × ${dims[1]} × ${dims[2]}` : "—"],
-                ["vs player", dims ? `${(dims[2] / 5).toFixed(1)}×` : "—"],
-                ["glb", `${Math.round(report.bytes_glb / 1024)} KB`],
-              ].map(([k, v]) => (
-                <div key={k} className="bg-bench-900 px-4 py-3">
-                  <dt className="label">{k}</dt>
-                  <dd className="mt-1 font-mono text-sm">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : (
-            <p className="mt-4 text-sm text-faint">
-              Nothing crafted yet. Run the crafter and refresh.
-            </p>
-          )}
+          <Bench
+            sample={{
+              name: report.name,
+              ingredients: report.ingredients,
+              tris: report.tris,
+              studs: dims,
+            }}
+          />
         </div>
       </section>
 

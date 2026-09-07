@@ -93,7 +93,10 @@ def part_size(shape, scale):
     """scale is the ingredient's size along Blender's axes."""
     sx, sy, sz = scale
     if shape == "plane":
-        return to_roblox_vec([sx, sy, PLANE_THICKNESS])
+        # abs matters: the axis change flips a sign, and a negative size is not
+        # rejected — Roblox silently clamps it to its 0.001 minimum, so the part
+        # is there, is the right colour, and is invisibly thin.
+        return [abs(v) for v in to_roblox_vec([sx, sy, PLANE_THICKNESS])]
     if shape in ("cylinder", "cone"):
         # length along local X, diameter on the other two
         diameter = (abs(sx) + abs(sy)) / 2

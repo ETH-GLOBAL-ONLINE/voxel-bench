@@ -37,6 +37,7 @@ Three stages:
 
 | | |
 |---|---|
+| [docs/STATUS.md](docs/STATUS.md) | **what works today and what is left, with where to start on each** |
 | [PLAN.md](PLAN.md) | the plan: schedule, decisions and why, risks, the demo structure |
 | [docs/ONCHAIN.md](docs/ONCHAIN.md) | every use of the chain, the non-blockchain alternative we rejected, and the sponsor tracks |
 | [docs/LOG.md](docs/LOG.md) | what has actually been built and measured, and what has not |
@@ -123,10 +124,11 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Publisher** — verified against the live API, moderation approved
 - [x] **Native Roblox parts** — `.rbxmx` with exact studs and colours
 - [x] **A sentence becomes a recipe** — validated; 3-48s on the free tier, median 17s
+- [x] **The bench** — prompt, progress, preview, orbit, publish, in the browser
+- [x] **Publish to Roblox** — `.rbxmx` accepted; the account key stays in the browser
 - [ ] **Luau scripts** on objects
 - [ ] **`RecipeBook`** contract and splits
 - [ ] **x402 gating** and the onchain spending cap
-- [ ] **The bench UI** — prompt in, preview out, approve, publish
 - [ ] **Recipe marketplace**
 - [ ] **An obby**
 
@@ -143,11 +145,18 @@ Requires Blender 5.x. Outputs land in `out/`, which is gitignored, with a
 falls back to it, so a fresh clone — and any deployment, where `out/` does not
 exist at all — shows a populated bench without installing Blender.
 
-## Running the site
+## Running it
+
+Two processes: the crafter needs Blender and a real machine, the site does not.
 
 ```bash
-cd web && npm install && npm run dev
+python services/crafter.py            # the bench, :8000
+cd web && npm install && npm run dev  # the site, :3002
 ```
+
+The site finds the crafter through `CRAFTER_URL` (see `web/.env.local`). Without
+it the bench reports offline and shows the checked-in sample, which is what a
+deployment does when the crafter's machine is asleep.
 
 ## Deploying
 
