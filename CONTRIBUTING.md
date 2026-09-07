@@ -50,15 +50,26 @@ We handle other people's Roblox API keys. That raises the stakes past the usual.
 
 ## Before you push
 
-Run the crafter and confirm it still produces a model:
+Run the check for what you actually touched. A check nobody can run is worse
+than no check, because it gets ignored.
+
+**Touched the site?**
 
 ```bash
-blender --background --python bench/craft.py -- bench/recipes/market_stall.json out
 cd web && npm run build
 ```
 
-Seven seconds and a build. It is the only thing standing between us and a broken
-demo on Saturday.
+Then `npm run dev` and actually look at it. A passing build only means it
+compiles.
 
-If you touched the site, run `npm run dev` and actually look at it. The build
-passing only means it compiles.
+**Touched the crafter or a recipe?**
+
+```bash
+blender --background --python bench/craft.py -- bench/recipes/market_stall.json out
+```
+
+Seven seconds, and it prints a report you can read.
+
+**You do not need Blender to work on the site.** `web/public/samples/` holds a
+crafted object, so `npm run dev` shows a populated bench on a fresh clone. Only
+install Blender if you are changing what gets crafted.

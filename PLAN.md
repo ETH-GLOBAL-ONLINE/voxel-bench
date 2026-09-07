@@ -91,6 +91,28 @@ Roblox Studio appears in exactly one place and it is optional: opening the
 Toolbox to drag the finished asset into a game. That step is Roblox's normal
 workflow, not something we invented.
 
+### Where each piece runs
+
+**Blender cannot run on Vercel**, and this shapes the architecture rather than
+being an inconvenience. Serverless has no room for a 500 MB binary and no
+persistent machine to run it on.
+
+| Piece | Runs on |
+|---|---|
+| The site | Vercel |
+| The crafter (Blender) | a real machine — a laptop behind a tunnel this week, a VPS later |
+| Roblox Open Cloud | Roblox |
+
+This is not a workaround. It is the same separation x402 already asks for: the
+crafter is a service that charges per call, and services live somewhere of their
+own. What forces the split also justifies it.
+
+The consequence to design for: **the crafter is offline most of the time.** A
+laptop closes. The deployed site must read as "the bench is offline, here is the
+last thing it crafted" rather than as a broken page — `/api/bench/status` exists
+for exactly this, and the checked-in sample means there is always something to
+show.
+
 ### The preview gate
 
 The user sees the render **before** anything is uploaded. If they don't like it,
@@ -313,6 +335,17 @@ terrible.
   a UV template, not a mesh, reusing the same pipeline.
 - **"Connect with Roblox" via OAuth**, replacing pasted API keys.
 - **Other engines.** The GLB path already exists.
+- **A VPS for the crafter.** Roughly 2 vCPU and 4 GB is plenty for scenes this
+  small; €4 to $12 a month. Deliberately *not* this week: HTTPS, systemd and the
+  EEVEE problem below would cost half a day, and a tunnel to a laptop gets us to
+  Sunday.
+
+  The trap waiting there: **EEVEE needs a GPU**, and cheap VPSs do not have one.
+  Either render with Cycles on CPU — fine for a 400-triangle scene, and the
+  robust choice — or emulate OpenGL with Mesa/llvmpipe, which works and is
+  fragile. `bench/craft.py` has the Cycles fallback written but it has never
+  been exercised, because EEVEE has always been available here. Test it before
+  trusting it.
 
 ---
 
