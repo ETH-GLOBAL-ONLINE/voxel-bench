@@ -27,6 +27,8 @@ attach.
 | `services/roblox_upload.py` | Open Cloud Assets multipart upload and operation polling, standard library only | Verified the endpoint, accepted formats and size limit against Roblox Open Cloud documentation |
 | `bench/recipes/market_stall.json` | Wrote the first example recipe | Chose the object and the level of detail to target |
 | `web/` (Next.js 16, TypeScript, Tailwind 4) | Scaffolded the app and wrote the landing page, the three.js viewer with its 5-stud reference figure, and the API route that serves crafted output with a fallback to the checked-in sample | Directed the design: rejected two palettes before the current one, called out that the hero had fallen out of step with the rest of the page, and asked for the onchain explanation the site was missing |
+| `bench/describe.py`, `bench/llm.py`, `bench/recipe.py` | Wrote the prompt, the provider-agnostic LLM interface, and the schema validator that repairs recoverable model output and rejects the rest | Decided that the model writes recipes and never drives Blender, chose the model on measured latency and token cost rather than capability, and set where the line falls between repairing and rejecting |
+| `bench/to_rbxmx.py` | Wrote the native Roblox parts writer: primitive mapping, the axis and rotation conversion, linear-to-sRGB colour | Diagnosed with us that FBX arrives 100x too large and colourless, and made the call to emit native parts for Roblox rather than bake a texture |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Generated assets

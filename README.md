@@ -50,6 +50,14 @@ prompt -> recipe (JSON) -> headless Blender -> GLB + preview render
                         -> native parts     -> .rbxmx -> Roblox
 ```
 
+```bash
+python bench/describe.py "a stone well with a bucket" out
+```
+
+The model writes the recipe and never touches Blender. Same recipe, same object,
+every time — and when something looks wrong the recipe is a small readable file
+you fix by hand rather than a dice roll you re-roll.
+
 Roblox gets native parts rather than a mesh. FBX arrives exactly 100x too large
 (it stores centimetres) and grey (Roblox imports textures, not material
 colours); parts are written in studs and carry their own colour, so neither
@@ -110,6 +118,7 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Site** — Next.js scaffold, the crafted GLB orbitable in the browser
 - [x] **Publisher** — verified against the live API, moderation approved
 - [x] **Native Roblox parts** — `.rbxmx` with exact studs and colours
+- [x] **A sentence becomes a recipe** — validated, ~3s on a free model
 - [ ] **Luau scripts** on objects
 - [ ] **`RecipeBook`** contract and splits
 - [ ] **x402 gating** and the onchain spending cap
