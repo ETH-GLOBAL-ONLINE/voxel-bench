@@ -51,8 +51,12 @@ prompt -> recipe (JSON) -> headless Blender -> GLB + preview render
 ```
 
 ```bash
-python bench/describe.py "a stone well with a bucket" out
+python bench/make.py "a stone well with a bucket"
 ```
+
+One command runs all three stages — the model writes a recipe, Blender crafts
+it, the Roblox writer turns it into native parts — and prints where each piece
+landed.
 
 The model writes the recipe and never touches Blender. Same recipe, same object,
 every time — and when something looks wrong the recipe is a small readable file
@@ -118,7 +122,7 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Site** — Next.js scaffold, the crafted GLB orbitable in the browser
 - [x] **Publisher** — verified against the live API, moderation approved
 - [x] **Native Roblox parts** — `.rbxmx` with exact studs and colours
-- [x] **A sentence becomes a recipe** — validated, ~3s on a free model
+- [x] **A sentence becomes a recipe** — validated; 3-48s on the free tier, median 17s
 - [ ] **Luau scripts** on objects
 - [ ] **`RecipeBook`** contract and splits
 - [ ] **x402 gating** and the onchain spending cap
