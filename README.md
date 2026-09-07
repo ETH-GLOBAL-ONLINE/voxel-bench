@@ -9,6 +9,8 @@ installs nothing — no Blender, no Studio.
 Every object is crafted from a reusable **recipe**. Whoever wrote the recipe
 earns a slice every time someone crafts with it, split onchain.
 
+**Live: https://voxel-bench-psi.vercel.app**
+
 Built from scratch for **ETHOnline 2026**.
 
 ## The claim, and its bounds
@@ -126,6 +128,21 @@ exist at all — shows a populated bench without installing Blender.
 ```bash
 cd web && npm install && npm run dev
 ```
+
+## Deploying
+
+The site deploys from `web/`, not the repo root. `web/vercel.json` declares the
+framework explicitly, which is not optional here: a project created without a
+detected framework serves `public/` as a static site and never builds Next, so
+the page 404s while the sample assets return 200 — a confusing failure worth
+avoiding twice.
+
+```bash
+cd web && npx vercel deploy --prod
+```
+
+Set `CRAFTER_URL` in the Vercel project once a crafter is reachable. Without it
+`/api/bench/status` reports offline, and the site says so rather than breaking.
 
 ## Publishing to Roblox
 
