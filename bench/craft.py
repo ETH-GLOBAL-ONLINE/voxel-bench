@@ -129,7 +129,11 @@ def render_preview(path, samples=32):
     # AgX (Blender's default) desaturates flat game colors; Standard keeps them
     scene.view_settings.view_transform = "Standard"
     scene.view_settings.look = "None"
-    scene.render.filepath = path
+    # Blender resolves a relative render path against its own base, not the
+    # working directory, so a relative path here silently writes the preview
+    # somewhere else entirely — C:\out\ in one case. The exporters use
+    # Python and are unaffected, which is why only the render went missing.
+    scene.render.filepath = os.path.abspath(path)
     bpy.ops.render.render(write_still=True)
 
 

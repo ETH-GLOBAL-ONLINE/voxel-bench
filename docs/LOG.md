@@ -186,3 +186,59 @@ Ladder if it goes wrong, in order:
 
 Nothing about the economics depends on Roblox specifically, which is why the
 GLB path was built on day one rather than added as a rescue.
+
+---
+
+## Mon 7 Sep, later — a sentence becomes an object
+
+`bench/describe.py` turns a prompt into a validated recipe. Three asked for
+cold, all three recognisable: a stone well with a roof, rope and hanging
+bucket; a treasure chest with metal bands and a gold lock; a sci-fi crate with
+hazard corners and a lit panel.
+
+The model writes the recipe and never touches Blender. Same recipe, same object,
+every time — and when something looks wrong the recipe is a small readable file
+you fix by hand rather than a dice roll you re-roll.
+
+### The model choice, measured rather than assumed
+
+One crate, same prompt and schema:
+
+| model | time | tokens | thinking |
+|---|---|---|---|
+| **gemini-flash-lite-latest** | **2.9s** | **901** | 0 |
+| gemini-3.1-flash-lite | 12.1s | 542 | 0 |
+| gemini-3.6-flash | 17.3s | 3587 | 2802 |
+
+The frontier model spends 2802 tokens reasoning its way to the same crate: six
+times slower, four times the tokens, equivalent result. Since we charge per
+craft, this is the unit-economics argument from `docs/ONCHAIN.md` with numbers
+attached.
+
+Note `gemini-2.5-flash` is gone for new keys — the API says to use the 3.x line.
+
+The free tier answers **503 under load**, which is a demo risk rather than a bug.
+`llm.py` backs off and retries.
+
+### The validator is what makes the output trustworthy
+
+A model returns JSON that parses cleanly and describes a chair 400 studs tall.
+`bench/recipe.py` draws the line between mistakes worth repairing and mistakes
+worth rejecting:
+
+- **Repaired, with a note:** missing colour, colour out of 0-1, a part below the
+  minimum size, duplicate ingredient names, a messy recipe name.
+- **Rejected:** an invented shape, a missing scale, a non-numeric size, a part
+  positioned off in space, and — the important one — a dimension so large the
+  model clearly thought it was working in centimetres. Clamping 200 studs to 60
+  hands back a wrong object; an error can be retried, and it is, with the
+  validator's own message fed back to the model as the correction.
+
+Guessing what the model meant is how you ship a crate that is secretly a sphere.
+
+### Blender writes the preview somewhere else if you let it
+
+The render landed in `C:\out\` while the FBX and GLB landed correctly in
+`out/`. Blender resolves a relative render path against its own base rather than
+the working directory; the exporters go through Python and are unaffected, which
+is why only the preview went missing. `os.path.abspath` on the render path.
