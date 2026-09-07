@@ -206,14 +206,34 @@ One crate, same prompt and schema:
 
 | model | time | tokens | thinking |
 |---|---|---|---|
-| **gemini-flash-lite-latest** | **2.9s** | **901** | 0 |
+| **gemini-flash-lite-latest** | 2.9s | **901** | 0 |
 | gemini-3.1-flash-lite | 12.1s | 542 | 0 |
 | gemini-3.6-flash | 17.3s | 3587 | 2802 |
 
-The frontier model spends 2802 tokens reasoning its way to the same crate: six
-times slower, four times the tokens, equivalent result. Since we charge per
-craft, this is the unit-economics argument from `docs/ONCHAIN.md` with numbers
-attached.
+The frontier model spends 2802 tokens reasoning its way to the same crate: four
+times the tokens for an equivalent result. Since we charge per craft, this is
+the unit-economics argument from `docs/ONCHAIN.md` with numbers attached.
+
+**Read those times with care.** They came from a minimal prompt producing a
+6-ingredient crate. The real prompt carries the rules and a worked example and
+produces around 9 ingredients, and across five prompts the same model measured
+**3.5s to 48.5s, median 17.5s** — for near-identical token counts. The variance
+is queueing on the free tier, not our output size: tightening the prompt cut
+ingredients from 13 to 9 and barely moved the clock.
+
+The token comparison between models still holds, because both ran the same
+prompt. The absolute latency does not, and 48 seconds of dead air in front of a
+judge is a real problem rather than a rounding error.
+
+Two ways out, and the second is the interesting one:
+
+- **Groq.** Dedicated inference hardware, free tier, far more consistent than a
+  shared queue. `llm.py` already speaks it.
+- **The recipe library.** A recipe that already exists needs no model call at
+  all — it crafts instantly, and its author gets paid. The latency problem and
+  the marketplace turn out to be the same feature seen from two sides: only
+  genuinely new objects pay the model cost, and the platform gets faster as it
+  gets more recipes.
 
 Note `gemini-2.5-flash` is gone for new keys — the API says to use the 3.x line.
 

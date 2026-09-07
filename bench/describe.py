@@ -73,8 +73,11 @@ saturated than you think: wood is around [0.45, 0.29, 0.15], not [1, 0.5, 0].
 SHAPES. Only cube, cylinder, sphere, cone and plane. Compose them. A table is a
 slab and four legs; a barrel is a cylinder with a thinner cylinder band.
 
-HOW MANY. Between 6 and 20 ingredients. Fewer reads as unfinished; more rarely
-adds anything you can see at game distance.
+HOW MANY. Between 6 and 12 ingredients. Fewer reads as unfinished; more rarely
+adds anything you can see at game distance, and every extra one costs the person
+waiting for it.
+
+NUMBERS. Two decimal places at most. 1.25 is a position; 1.2473819 is noise.
 
 CRAFT IT WELL. Give ingredients descriptive names. Vary the colour slightly
 between parts that are the same material — flat identical colour is the main
