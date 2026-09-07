@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  /* Warm, but the warmth lives in the accent and the whites — not in the
+     ground. A saturated brown floor reads as a tavern; a warm grey floor
+     under an amber lamp reads as a workshop. */
+  --color-bench-950: #131110;
+  --color-bench-900: #1b1816;
+  --color-bench-850: #211e1b;
+  --color-bench-800: #2a2622;
+  --color-bench-700: #38332d;
+  --color-bench-600: #4e4840;
+
+  --color-ink: #f6efe4;
+  --color-dim: #a89e92;
+  --color-faint: #7a7167;
+
+  --color-amber: #ffae3b;
+  --color-ember: #ff6b35;
+  --color-sap: #9bc53d;
+
+  --font-display: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bench-950);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-amber);
+    color: var(--color-bench-950);
+  }
+}
+
+@layer components {
+  /* The recurring motif: an inset slot, like a socket on a workbench. */
+  .slot {
+    background-color: var(--color-bench-850);
+    border: 1px solid var(--color-bench-700);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.03),
+      inset 0 -1px 0 rgb(0 0 0 / 0.4);
+  }
+
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+}

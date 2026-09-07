@@ -1,4 +1,7 @@
-out/
-.env
+# Crafted output, at the repo root only. An unanchored "out/" also matches
+# web/app/api/out/, which silently un-tracks the route that serves these files.
+/out/
+
+.env*
 __pycache__/
 node_modules/

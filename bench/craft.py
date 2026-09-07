@@ -1,10 +1,10 @@
 """Headless Blender asset generator.
 
-Reads a JSON spec describing a prop as composed primitives, builds it,
+Reads a JSON recipe describing a prop as composed primitives, builds it,
 and exports FBX (Roblox Open Cloud), GLB (web fallback viewer) and a
 preview PNG.
 
-Run:  blender --background --python forge/gen_asset.py -- spec.json outdir
+Run:  blender --background --python forge/craft.py -- recipe.json outdir
 """
 import bpy
 import bmesh
@@ -43,27 +43,27 @@ def material_for(name, color):
     return mat
 
 
-def build_part(idx, part):
-    shape = part.get("shape", "cube")
+def build_ingredient(idx, ingredient):
+    shape = ingredient.get("shape", "cube")
     if shape not in PRIMITIVES:
         raise ValueError("unknown shape %r (allowed: %s)" % (shape, ", ".join(PRIMITIVES)))
     PRIMITIVES[shape]()
     ob = bpy.context.active_object
-    ob.name = part.get("name", "part_%02d" % idx)
-    ob.location = part.get("loc", [0, 0, 0])
-    ob.scale = part.get("scale", [1, 1, 1])
-    ob.rotation_euler = [math.radians(a) for a in part.get("rot", [0, 0, 0])]
+    ob.name = ingredient.get("name", "part_%02d" % idx)
+    ob.location = ingredient.get("loc", [0, 0, 0])
+    ob.scale = ingredient.get("scale", [1, 1, 1])
+    ob.rotation_euler = [math.radians(a) for a in ingredient.get("rot", [0, 0, 0])]
 
-    bevel = part.get("bevel", 0.0)
+    bevel = ingredient.get("bevel", 0.0)
     if bevel > 0:
         mod = ob.modifiers.new(name="bevel", type="BEVEL")
         mod.width = bevel
-        mod.segments = part.get("bevel_segments", 2)
+        mod.segments = ingredient.get("bevel_segments", 2)
         mod.limit_method = "ANGLE"
 
-    ob.data.materials.append(material_for(ob.name + "_mat", part.get("color", [0.6, 0.6, 0.6])))
+    ob.data.materials.append(material_for(ob.name + "_mat", ingredient.get("color", [0.6, 0.6, 0.6])))
     for poly in ob.data.polygons:
-        poly.use_smooth = part.get("smooth", False)
+        poly.use_smooth = ingredient.get("smooth", False)
     return ob
 
 
@@ -124,7 +124,7 @@ def render_preview(path, samples=32):
     scene.world = bpy.data.worlds.new("w")
     scene.world.use_nodes = True
     bg = scene.world.node_tree.nodes["Background"]
-    bg.inputs[0].default_value = (0.14, 0.15, 0.19, 1)
+    bg.inputs[0].default_value = (0.11, 0.10, 0.09, 1)
     bg.inputs[1].default_value = 1.0
     # AgX (Blender's default) desaturates flat game colors; Standard keeps them
     scene.view_settings.view_transform = "Standard"
@@ -136,20 +136,20 @@ def render_preview(path, samples=32):
 def main():
     args = argv_after_ddash()
     if len(args) < 2:
-        sys.exit("usage: blender -b -P gen_asset.py -- <spec.json> <outdir>")
-    spec_path, outdir = args[0], args[1]
+        sys.exit("usage: blender -b -P craft.py -- <recipe.json> <outdir>")
+    recipe_path, outdir = args[0], args[1]
 
-    with open(spec_path, "r", encoding="utf-8") as fh:
-        spec = json.load(fh)
+    with open(recipe_path, "r", encoding="utf-8") as fh:
+        recipe = json.load(fh)
 
-    name = spec.get("name", "asset")
+    name = recipe.get("name", "asset")
     os.makedirs(outdir, exist_ok=True)
 
     reset_scene()
-    parts = [build_part(i, p) for i, p in enumerate(spec.get("parts", []))]
-    if not parts:
-        sys.exit("spec has no parts")
-    merged = join(parts, name)
+    ingredients = [build_ingredient(i, p) for i, p in enumerate(recipe.get("ingredients", []))]
+    if not ingredients:
+        sys.exit("recipe has no ingredients")
+    merged = join(ingredients, name)
     frame_and_light(merged)
 
     fbx = os.path.join(outdir, name + ".fbx")
@@ -170,13 +170,16 @@ def main():
         "preview": png,
         "tris": len(merged.data.loop_triangles) or sum(len(p.vertices) - 2 for p in merged.data.polygons),
         "verts": len(merged.data.vertices),
-        "parts": len(spec.get("parts", [])),
+        "ingredients": len(recipe.get("ingredients", [])),
+        # Roblox units. A character is ~5 studs tall, so a prop a player
+        # can stand next to wants roughly 3-10 studs of height.
+        "dims_studs": [round(d, 2) for d in merged.dimensions],
         "bytes_fbx": os.path.getsize(fbx),
         "bytes_glb": os.path.getsize(glb),
     }
     with open(os.path.join(outdir, name + ".report.json"), "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
-    print("VOXEL_REPORT " + json.dumps(report))
+    print("CRAFT_REPORT " + json.dumps(report))
 
 
 if __name__ == "__main__":
