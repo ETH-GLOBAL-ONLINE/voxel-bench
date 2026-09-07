@@ -99,13 +99,77 @@ every asset with no visible error. Anchored to `/out/`.
 Unanchored directory patterns are a footgun whenever a framework happens to use
 the same word.
 
-### Blocking
+### The upload works — verified against the live API
 
-An API key from create.roblox.com/dashboard/credentials, `assets` scope with
-read and write, plus the creator user id.
+```
+assetId          122072897544996
+moderationState  Approved
+state            Active
+```
 
-The key carries an **IP allowlist**. Leave it empty and every request returns
-403 with a message that never mentions the IP.
+First try. The key wants the `assets` API system with **both** read and write,
+the creator restricted to the account, and an IP allowlist — `0.0.0.0/0` for
+now. Leaving the allowlist empty returns 403 on everything with a message that
+never mentions the IP.
+
+Moderation came back **Approved immediately**, with no queue. That answers one
+of the open worries about whether uploads could be demoed live.
+
+Note the system is called `assets`, not `asset-permissions` — the latter manages
+who may use someone else's asset and is the wrong one.
+
+### FBX arrives 100x too large, and grey
+
+Measured in Studio: `1426.687 / 14.27 = 100.0` exactly.
+
+FBX stores centimetres. Blender exports assuming one unit is a metre, so it
+writes our numbers multiplied by 100, and Roblox reads them as studs.
+
+The axes were fine — our 8.94 height came back as Y=893.9 and our 6.23 depth as
+Z=622.6, so the Z-up to Y-up conversion works.
+
+It also arrived **grey**. Our models carry flat material colours and no image
+map, and Roblox imports textures rather than material base colours.
+
+### Native Roblox parts, which fixes both
+
+`bench/to_rbxmx.py` writes a `.rbxmx` of native parts instead: `cube` to Block,
+`cylinder` to Cylinder, `sphere` to Ball. Sizes are written in studs with
+nothing in between to convert, and each part carries a `Color3` so no texture is
+needed.
+
+Verified in Studio through the MCP — 14 parts, correct sizes, correct colours,
+`canopy` tilted the 8 degrees the recipe asks for, cylinders turned upright.
+
+Details worth keeping:
+
+- **Colours are converted linear to sRGB.** Recipe colours are linear the way
+  Blender reads them; sending them raw lands every colour darker than the
+  preview the user just approved.
+- **A Roblox cylinder's length runs along local X**, Blender's along Z, so
+  cylinders get a quarter turn.
+- **Roblox has no cone.** `sack` is approximated as a cylinder, and the report
+  says so rather than hiding it.
+- **The model needs a `PrimaryPart`.** Without one, its pivot borrows an
+  orientation from the bounding box, and moving it tilts the whole thing — the
+  first move put every part 8 degrees off. The generator now anchors to the
+  first axis-aligned ingredient.
+
+Blender still crafts the preview render and the GLB. This is the Roblox-shaped
+output, not a replacement for it.
+
+### Studio MCP, as a development tool
+
+Roblox's standalone MCP server is discontinued; Studio now ships one built in
+(Assistant, then Manage MCP Servers, then enable). Registered with
+`claude mcp add roblox-studio -- %LOCALAPPDATA%\Roblox\mcp.bat`.
+
+It has to be enabled on the Studio side before the tools appear, and Claude Code
+needs a restart afterwards — the tool list is fetched once at startup, so
+enabling it later leaves the session with nothing.
+
+**Not part of the product.** It needs Studio open and cannot be hosted. It
+exists so verification is a query instead of a walkthrough of menus.
 
 ---
 

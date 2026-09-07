@@ -23,7 +23,7 @@ Three stages:
 
 | Stage | What | State |
 |---|---|---|
-| 1 | **Objects.** A prompt becomes a crate, a lamp post, a market stall | crafting works; upload untested |
+| 1 | **Objects.** A prompt becomes a crate, a lamp post, a market stall | crafting and publishing work |
 | 2 | **Objects that do something, and a marketplace.** Luau ships with the object; recipes get published so others can craft with yours | planned |
 | 3 | **A whole game, one genre at a time.** An obby is a sequence of platforms, hazards and checkpoints — spatial arrangement of objects. An obby is a recipe of recipes | planned |
 
@@ -46,9 +46,15 @@ Three stages:
 ## Pipeline
 
 ```
-prompt -> recipe (JSON) -> headless Blender -> FBX + GLB + preview
-                                            -> Roblox Open Cloud -> assetId
+prompt -> recipe (JSON) -> headless Blender -> GLB + preview render
+                        -> native parts     -> .rbxmx -> Roblox
 ```
+
+Roblox gets native parts rather than a mesh. FBX arrives exactly 100x too large
+(it stores centimetres) and grey (Roblox imports textures, not material
+colours); parts are written in studs and carry their own colour, so neither
+problem exists. Blender still crafts the preview and the GLB for the web viewer
+and other engines.
 
 The intent is for each stage to be a separate x402-gated service, so the
 orchestrating agent pays per craft from its own wallet under a cap it cannot
@@ -102,7 +108,8 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Crafter** — recipe JSON to FBX/GLB/PNG, headless, ~7s for a 400-triangle prop
 - [x] **Studs** — recipes authored in Roblox units, not metres
 - [x] **Site** — Next.js scaffold, the crafted GLB orbitable in the browser
-- [ ] **Publisher** — written, never talked to Roblox; needs an API key
+- [x] **Publisher** — verified against the live API, moderation approved
+- [x] **Native Roblox parts** — `.rbxmx` with exact studs and colours
 - [ ] **Luau scripts** on objects
 - [ ] **`RecipeBook`** contract and splits
 - [ ] **x402 gating** and the onchain spending cap
