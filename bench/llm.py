@@ -21,21 +21,33 @@ import urllib.error
 import urllib.request
 
 DEFAULT_MODEL = "gemini-flash-lite-latest"
-TIMEOUT = 90
+TIMEOUT = 45
 
 # The free tier answers 503 when it is busy, which is a demo risk rather than a
-# bug. Back off and try again before giving up.
+# bug. Back off and try again — but against a wall-clock deadline, not a retry
+# count. Counting retries alone allows minutes of silence: two validator retries
+# times four HTTP attempts times a 45s timeout is not a wait, it is a hang.
 RETRY_STATUSES = (429, 500, 503)
 RETRIES = 3
+DEADLINE = float(os.environ.get("VOXEL_LLM_DEADLINE", "75"))
+
+# urllib identifies itself as Python-urllib by default, which Cloudflare in
+# front of Groq rejects outright with a 1010 before the request reaches the API.
+# Every real SDK sends its own; ours had none.
+USER_AGENT = "voxel-bench/0.1 (+https://github.com/ETH-GLOBAL-ONLINE/voxel-bench)"
 
 
 class LLMError(RuntimeError):
     pass
 
 
-def _post(url, payload, headers):
+def _post(url, payload, headers, deadline=None):
+    deadline = deadline or (time.time() + DEADLINE)
     last = None
     for attempt in range(RETRIES + 1):
+        if time.time() > deadline:
+            raise LLMError("gave up after %.0fs. Last problem: %s"
+                           % (DEADLINE, last or "too slow"))
         req = urllib.request.Request(url, data=json.dumps(payload).encode(),
                                      headers=headers)
         try:
@@ -45,6 +57,8 @@ def _post(url, payload, headers):
             body = exc.read().decode("utf-8", "replace")[:300]
             last = "HTTP %s: %s" % (exc.code, body)
             if exc.code in RETRY_STATUSES and attempt < RETRIES:
+                if time.time() + 1.5 * (attempt + 1) > deadline:
+                    raise LLMError(last) from None
                 time.sleep(1.5 * (attempt + 1))
                 continue
             raise LLMError(last) from None
@@ -70,7 +84,8 @@ def _gemini(prompt, schema, model, temperature):
     data = _post(
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
         {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": config},
-        {"Content-Type": "application/json", "x-goog-api-key": key},
+        {"Content-Type": "application/json", "x-goog-api-key": key,
+         "User-Agent": USER_AGENT},
     )
     try:
         text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -90,6 +105,13 @@ def _groq(prompt, schema, model, temperature):
     if not key:
         raise LLMError("GROQ_API_KEY is not set")
 
+    # Groq does not enforce a schema server-side the way Gemini does — it only
+    # promises valid JSON. So the schema goes in the prompt, and the validator
+    # downstream is what actually holds the line.
+    if schema:
+        schema_note = "Return JSON matching exactly this schema, with no commentary:\n"
+        prompt = "%s\n\n%s%s" % (prompt, schema_note, json.dumps(schema))
+
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -100,7 +122,8 @@ def _groq(prompt, schema, model, temperature):
 
     data = _post("https://api.groq.com/openai/v1/chat/completions", payload,
                  {"Content-Type": "application/json",
-                  "Authorization": "Bearer " + key})
+                  "Authorization": "Bearer " + key,
+                  "User-Agent": USER_AGENT})
     usage = data.get("usage", {})
     return data["choices"][0]["message"]["content"], {
         "model": model,
@@ -124,5 +147,5 @@ def complete(prompt, schema=None, model=None, temperature=0.4, provider=None):
         raise LLMError("unknown provider %r (have: %s)"
                        % (provider, ", ".join(PROVIDERS)))
     model = model or os.environ.get("VOXEL_LLM_MODEL") or (
-        DEFAULT_MODEL if provider == "gemini" else "llama-3.3-70b-versatile")
+        DEFAULT_MODEL if provider == "gemini" else "openai/gpt-oss-20b")
     return PROVIDERS[provider](prompt, schema, model, temperature)
