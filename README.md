@@ -60,7 +60,7 @@ bench/       the crafter: headless Blender, and the recipes it builds from
 services/    the Roblox Open Cloud publisher
 contracts/   RecipeBook, SplitVault, Allowance  (empty)
 web/         the site: Next.js 16, TypeScript, Tailwind 4
-samples/     one crafted object, checked in so the site has something to show
+             public/samples/ holds one crafted object so the site always shows something
 docs/        onchain design, build log
 out/         crafter output, gitignored
 ```
@@ -100,8 +100,9 @@ blender --background --python bench/craft.py -- bench/recipes/market_stall.json 
 Requires Blender 5.x. Outputs land in `out/`, which is gitignored, with a
 `.report.json` beside them.
 
-`samples/` holds one crafted object checked into the repo. The site falls back
-to it, so a fresh clone shows a populated bench without installing Blender.
+`web/public/samples/` holds one crafted object checked into the repo. The site
+falls back to it, so a fresh clone — and any deployment, where `out/` does not
+exist at all — shows a populated bench without installing Blender.
 
 ## Running the site
 

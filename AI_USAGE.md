@@ -26,16 +26,17 @@ attach.
 | `bench/craft.py` | First draft of the headless Blender crafter: recipe parsing, ingredient builder, bounding-sphere camera framing, FBX/GLB exporters, preview render | Chose parametric primitives over text-to-mesh, decided the recipe/ingredient vocabulary, validated the output in Blender 5.2 |
 | `services/roblox_upload.py` | Open Cloud Assets multipart upload and operation polling, standard library only | Verified the endpoint, accepted formats and size limit against Roblox Open Cloud documentation |
 | `bench/recipes/market_stall.json` | Wrote the first example recipe | Chose the object and the level of detail to target |
-| `web/` (Next.js 16, TypeScript, Tailwind 4) | Scaffolded the app and wrote the landing page, the three.js viewer with its 5-stud reference figure, and the API route that serves crafted output with a fallback to `samples/` | Directed the design: rejected two palettes before the current one, called out that the hero had fallen out of step with the rest of the page, and asked for the onchain explanation the site was missing |
+| `web/` (Next.js 16, TypeScript, Tailwind 4) | Scaffolded the app and wrote the landing page, the three.js viewer with its 5-stud reference figure, and the API route that serves crafted output with a fallback to the checked-in sample | Directed the design: rejected two palettes before the current one, called out that the hero had fallen out of step with the rest of the page, and asked for the onchain explanation the site was missing |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Generated assets
 
-The `.fbx`, `.glb` and preview `.png` files under `out/` and `samples/` are
+The `.fbx`, `.glb` and preview `.png` files under `out/` and
+`web/public/samples/` are
 produced by `bench/craft.py`, which was itself drafted with AI assistance. They
 are output of the pipeline, not hand-modelled, and that is the point of the
-project rather than a shortcut around it. `samples/` is the same output, checked
-in so the site has something to display on a fresh clone.
+project rather than a shortcut around it. `web/public/samples/` is the same output, checked
+in so the site has something to display on a fresh clone or a deployment.
 
 ## Notes
 

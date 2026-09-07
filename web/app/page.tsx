@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import Viewer from "./components/Viewer";
+// Statically imported so it is bundled: out/ is outside the app and never
+// reaches a deployment, so this is the report a deployed site actually shows.
+import sampleReport from "../public/samples/market_stall.report.json";
 
 const SAMPLE = "market_stall";
 
@@ -8,23 +11,19 @@ type Report = {
   name: string;
   tris: number;
   ingredients: number;
-  dims_studs: [number, number, number];
+  // number[] rather than a 3-tuple: the imported JSON widens it, and a cast
+  // through unknown to win that argument would only hide a real mismatch.
+  dims_studs: number[];
   bytes_fbx: number;
   bytes_glb: number;
 };
 
-const reportPath = (dir: string) =>
-  resolve(process.cwd(), "..", dir, `${SAMPLE}.report.json`);
-
-async function loadReport(): Promise<Report | null> {
+async function loadReport(): Promise<Report> {
   try {
-    return JSON.parse(await readFile(reportPath("out"), "utf-8"));
+    const local = resolve(process.cwd(), "..", "out", `${SAMPLE}.report.json`);
+    return JSON.parse(await readFile(local, "utf-8"));
   } catch {
-    try {
-      return JSON.parse(await readFile(reportPath("samples"), "utf-8"));
-    } catch {
-      return null;
-    }
+    return sampleReport;
   }
 }
 
@@ -69,7 +68,7 @@ const STAGES = [
 
 export default async function Home() {
   const report = await loadReport();
-  const dims = report?.dims_studs;
+  const dims = report.dims_studs;
 
   return (
     <div className="min-h-screen">
