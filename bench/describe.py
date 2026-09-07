@@ -11,6 +11,7 @@ hand rather than a dice roll you re-roll.
 import json
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -103,7 +104,7 @@ def _example():
         return ""
 
 
-def describe(prompt, temperature=0.4, retries=2):
+def describe(prompt, temperature=0.4, retries=2, deadline=None):
     """Turn a sentence into a validated recipe.
 
     On a validation failure the error is handed back to the model, because it

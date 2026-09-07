@@ -262,3 +262,44 @@ The render landed in `C:\out\` while the FBX and GLB landed correctly in
 `out/`. Blender resolves a relative render path against its own base rather than
 the working directory; the exporters go through Python and are unaffected, which
 is why only the preview went missing. `os.path.abspath` on the render path.
+
+### Groq is not the answer, measured
+
+The obvious fix for the latency tail was Groq: dedicated hardware, free tier.
+Same five prompts, same schema, every result through the validator:
+
+| provider | model | median | range | valid |
+|---|---|---|---|---|
+| groq | gpt-oss-20b | 5.1s | 1.7-12.1s | 4/5 |
+| groq | gpt-oss-120b | 4.1s | **3.8-4.5s** | **2/5** |
+| groq | qwen3.8-27b | 5.2s | 2.3-8.1s | **2/5** |
+| **gemini** | **flash-lite** | **3.1s** | 2.5-**62.5s** | **5/5** |
+
+Groq is dramatically more consistent — gpt-oss-120b lands between 3.8 and 4.5
+seconds every time — and **fails validation about half the time**. It does not
+enforce a schema server-side, only valid JSON, so the model returns objects
+missing our required fields. An invalid recipe costs a full retry, which is more
+time than the latency it saved, and the free tier answers 429 quickly.
+
+**Gemini stays the default.** Schema enforcement is worth more than consistent
+latency here. Groq stays configured as the fallback for when Gemini is slow.
+
+Note the Gemini median moved from 17.5s to 3.1s between two runs an hour apart.
+Its latency depends on load, not on us. The 62.5s outlier is the real risk, and
+the deadline below is what contains it.
+
+### Retries need a clock, not a counter
+
+A run hung for minutes with nothing on screen. `describe()` retried twice, each
+attempt retried three times at the HTTP layer, each with a 90s timeout: up to
+eight calls and no bound on the wall clock. That is not a wait, it is a hang.
+
+Both layers now run against a deadline — 75s for a call, 120s for the whole
+recipe step — and give up with a reason rather than going quiet.
+
+### Groq was unreachable from our own code
+
+Every Groq request came back `403 error code 1010`, which is Cloudflare, not
+Groq: it rejects clients by signature and urllib announces itself as
+`Python-urllib/3.12`. Every real SDK sends its own User-Agent and ours sent
+none. One header, and the same call reached the API.
