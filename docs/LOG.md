@@ -68,8 +68,10 @@ Two things worth knowing:
 
 - **An API route serves the crafter's output**, because Next only serves from
   `public/` and copying on every craft would be silly. It falls back to
-  `samples/`, so a fresh clone shows a populated bench without installing
-  Blender.
+  `web/public/samples/`, so a fresh clone shows a populated bench without
+  installing Blender. The sample lives under `public/` rather than at the repo
+  root because a deployment only bundles what is inside `web/` — anything above
+  it simply is not there.
 - **The GLB needs no rotation.** Blender is Z-up and three.js is Y-up, but the
   glTF exporter already converts on the way out. Rotating the loaded scene lays
   the model flat on its side, which is exactly what happened first.
