@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-export default function Viewer({ name }: { name: string }) {
+export default function Viewer({ src }: { src: string }) {
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function Viewer({ name }: { name: string }) {
     // No rotation on the loaded scene. Blender is Z-up and three.js is Y-up,
     // but the glTF exporter already converts on the way out — rotating here
     // lays the model flat on its side.
-    new GLTFLoader().load(`/api/out/${name}.glb`, (gltf) => {
+    new GLTFLoader().load(src, (gltf) => {
       scene.add(gltf.scene);
     });
 
@@ -85,7 +85,7 @@ export default function Viewer({ name }: { name: string }) {
       renderer.dispose();
       el.removeChild(renderer.domElement);
     };
-  }, [name]);
+  }, [src]);
 
   return <div ref={host} className="h-full w-full" />;
 }

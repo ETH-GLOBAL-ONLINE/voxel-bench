@@ -12,6 +12,10 @@ const OUT_DIR = resolve(process.cwd(), "..", "out");
 // checked-in sample lives under public/ rather than at the repo root.
 const SAMPLE_URL = "/samples";
 
+// In a deployment out/ is not there at all, so anything freshly crafted has
+// to come from the crafter itself before we fall back to the sample.
+const CRAFTER_URL = process.env.CRAFTER_URL;
+
 const TYPES: Record<string, string> = {
   ".glb": "model/gltf-binary",
   ".gltf": "model/gltf+json",
@@ -42,6 +46,24 @@ export async function GET(
       },
     });
   } catch {
+    if (CRAFTER_URL) {
+      try {
+        const res = await fetch(new URL(`/file/${rel}`, CRAFTER_URL), {
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        });
+        if (res.ok) {
+          return new Response(res.body, {
+            headers: {
+              "content-type": TYPES[ext] ?? "application/octet-stream",
+              "cache-control": "no-store",
+            },
+          });
+        }
+      } catch {
+        // the bench is offline; the sample below is the honest answer
+      }
+    }
     return new Response(null, {
       status: 302,
       headers: { location: `${SAMPLE_URL}/${rel}` },
