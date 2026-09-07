@@ -1,4 +1,4 @@
-# ANVIL (working name)
+# Voxel
 
 An agent-run game studio with an onchain economy.
 

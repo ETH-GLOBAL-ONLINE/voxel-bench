@@ -176,7 +176,7 @@ def main():
     }
     with open(os.path.join(outdir, name + ".report.json"), "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
-    print("ANVIL_REPORT " + json.dumps(report))
+    print("VOXEL_REPORT " + json.dumps(report))
 
 
 if __name__ == "__main__":

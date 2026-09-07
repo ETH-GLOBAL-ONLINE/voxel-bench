@@ -32,7 +32,7 @@ class UploadError(RuntimeError):
 
 
 def _multipart(fields, file_field, filename, file_bytes, content_type):
-    boundary = "----anvil%s" % int(time.time() * 1000)
+    boundary = "----voxel%s" % int(time.time() * 1000)
     crlf = b"\r\n"
     body = []
     for name, value in fields.items():
