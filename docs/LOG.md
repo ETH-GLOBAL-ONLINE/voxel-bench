@@ -50,18 +50,32 @@ walk up to.
 - Camera framing is computed from the object's bounding sphere. A hardcoded
   camera worked for one prop and broke on the next size up.
 
-### Dev preview on :3000
+### The site, scaffolded early
+
+Next.js 16.3 + TypeScript + Tailwind 4 in `web/`. Production build passes with
+no type errors.
 
 ```bash
-python -m http.server 3000 --bind 127.0.0.1
-# http://localhost:3000/web/preview.html
+cd web && npm install && npm run dev
 ```
 
-Blender render on the left, the GLB orbitable on the right, next to a grey
-5-stud figure standing in for a Roblox character so scale is judged by eye.
+The Blender render sits beside the GLB orbiting in the browser, next to a grey
+5-stud figure standing in for a Roblox character so scale is judged by eye
+rather than by reading a number. Landing copy covers how it works, the three
+stages, and why any of it is onchain.
 
-**This is not the bench UI.** It is a development view, and it doubles as the
-GLB fallback viewer named in the plan's risk table.
+Two things worth knowing:
+
+- **An API route serves the crafter's output**, because Next only serves from
+  `public/` and copying on every craft would be silly. It falls back to
+  `samples/`, so a fresh clone shows a populated bench without installing
+  Blender.
+- **The GLB needs no rotation.** Blender is Z-up and three.js is Y-up, but the
+  glTF exporter already converts on the way out. Rotating the loaded scene lays
+  the model flat on its side, which is exactly what happened first.
+
+Started Monday rather than Thursday: with two people, Track B does not have to
+wait on Track A. The constraint on polish still stands.
 
 ### Not tested yet
 
@@ -69,8 +83,19 @@ GLB fallback viewer named in the plan's risk table.
   the Open Cloud docs — endpoint, the four accepted model formats, 20 MB cap,
   operation polling — and its local guards are tested, but no real upload has
   happened. It needs an API key.
-- Nothing onchain exists yet. No contract, no wallet, no x402.
-- No frontend beyond the dev preview.
+- Nothing onchain exists. No contract, no wallet, no x402. The site describes
+  the design; none of it runs.
+- No Luau, no place assembly, no marketplace.
+
+### A gitignore bug worth remembering
+
+`.gitignore` had an unanchored `out/`, which matches *any* directory called
+`out` at any depth — including `web/app/api/out/`, the route that serves crafted
+files to the browser. Git silently untracked it. A clone would have 404'd on
+every asset with no visible error. Anchored to `/out/`.
+
+Unanchored directory patterns are a footgun whenever a framework happens to use
+the same word.
 
 ### Blocking
 

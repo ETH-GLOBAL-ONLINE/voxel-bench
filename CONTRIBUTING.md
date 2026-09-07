@@ -54,9 +54,11 @@ Run the crafter and confirm it still produces a model:
 
 ```bash
 blender --background --python bench/craft.py -- bench/recipes/market_stall.json out
-python -m http.server 3000 --bind 127.0.0.1
-# http://localhost:3000/web/preview.html
+cd web && npm run build
 ```
 
-It takes seven seconds and it is the only thing standing between us and a broken
+Seven seconds and a build. It is the only thing standing between us and a broken
 demo on Saturday.
+
+If you touched the site, run `npm run dev` and actually look at it. The build
+passing only means it compiles.

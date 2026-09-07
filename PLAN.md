@@ -199,7 +199,7 @@ bench, not to scaffolding it.
 
 | Day | Track A | Track B |
 |---|---|---|
-| **Mon 7** (done) | Crafter working: recipe to FBX/GLB/preview, headless, ~7s. Studs conversion. Uploader written, untested. Dev preview on :3000. | — |
+| **Mon 7** (done) | Crafter working: recipe to FBX/GLB/preview, headless, ~7s. Studs conversion. Uploader written, untested. | Site scaffolded early: Next.js 16 + TS + Tailwind 4, crafted GLB orbitable in the browser, landing copy done |
 | **Tue 8** | **First real upload, real assetId.** Verify in Studio against a character. | Scaffold Next.js + TS + Tailwind (done Mon), wallet connect working |
 | **Wed 9** | `RecipeBook` + splits contract on Hedera testnet. Orchestrator wallet. Luau scripts on objects via `.rbxmx`. | Bench layout: slots, recipe panel, output slot. Static data is fine. |
 | **Thu 10** | x402 gating. Agent pays per craft. Spending cap onchain. | Wire the bench to the real API: prompt in, preview out |
