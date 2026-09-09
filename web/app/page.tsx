@@ -255,9 +255,10 @@ export default async function Home() {
             <div className="bg-bench-850 p-6">
               <h3 className="font-semibold">Two cents is a real price</h3>
               <p className="mt-2 text-sm leading-relaxed text-dim">
-                Roblox creators are worldwide, and many are young and unbanked.
-                Charging two cents to someone in Manila works onchain. On card
-                rails the fee exceeds the charge.
+                The unit of sale is one craft, which should cost cents. Card
+                rails cannot process two cents for less than two cents — and a
+                large share of Roblox creators are young enough that a card is
+                not theirs to use.
               </p>
             </div>
             <div className="bg-bench-850 p-6">
