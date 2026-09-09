@@ -43,6 +43,7 @@ Three stages:
 | [docs/ONCHAIN.md](docs/ONCHAIN.md) | every use of the chain, the non-blockchain alternative we rejected, and the sponsor tracks |
 | [docs/LOG.md](docs/LOG.md) | what has actually been built and measured, and what has not |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, PRs, commits, secrets |
+| [FEEDBACK.md](FEEDBACK.md) | what cost us time in each sponsor's technology, with evidence |
 | [AI_USAGE.md](AI_USAGE.md) | the AI disclosure required by the rules |
 
 ## Pipeline
@@ -97,7 +98,7 @@ the checked-in sample rather than showing a broken page.
 ```
 bench/       the crafter: headless Blender, and the recipes it builds from
 services/    the Roblox Open Cloud publisher
-contracts/   RecipeBook, SplitVault, Allowance  (empty)
+contracts/   RecipeBook and SplitVault, deployed; Allowance still to come
 web/         the site: Next.js 16, TypeScript, Tailwind 4
              public/samples/ holds one crafted object so the site always shows something
 docs/        onchain design, build log
@@ -128,7 +129,7 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **The bench** — prompt, progress, preview, orbit, publish, in the browser
 - [x] **Publish to Roblox** — `.rbxmx` accepted; the account key stays in the browser
 - [ ] **Luau scripts** on objects
-- [ ] **`RecipeBook`** contract and splits
+- [x] **`RecipeBook` + `SplitVault`** — live on Hedera testnet, verified against the chain
 - [ ] **x402 gating** and the onchain spending cap
 - [ ] **Recipe marketplace**
 - [ ] **An obby**

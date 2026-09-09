@@ -42,7 +42,23 @@ Ordered by what unblocks the most. The first three are what the prizes actually
 score, and **none of them exist yet** — the site describes the design and none
 of it runs.
 
-### 1. The contracts — `RecipeBook`, `SplitVault`, `Allowance` · Track A
+### 1. `Allowance` — the agent's spending cap · Track A
+
+`RecipeBook` and `SplitVault` are **deployed on Hedera testnet and verified
+against the chain**: a recipe published, three crafts settled, the 90/10 split
+exact, and the book holding nothing. Nine tests pass including a fuzz over the
+split.
+
+| | |
+|---|---|
+| `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
+| `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
+
+What is left of the contracts is `Allowance`: the cap the crafting agent cannot
+raise itself, which is the Ledger track's argument and the one place a human
+signature has to be required.
+
+### 1b. The original three-contract plan, for reference
 
 Three small contracts on Hedera testnet. Deliberately small: three that each do
 one thing beat one that does everything, especially when a judge has four
