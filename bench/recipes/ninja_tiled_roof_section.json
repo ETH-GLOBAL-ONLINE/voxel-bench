@@ -1,0 +1,13 @@
+{
+  "name": "ninja_tiled_roof_section",
+  "units": "studs",
+  "ingredients": [
+    {"name": "roof_left", "shape": "cube", "loc": [-1.45, 0, 1.15], "scale": [3.2, 6.0, 0.45], "color": [0.18, 0.20, 0.22], "rot": [0, 0, -22], "bevel": 0.06},
+    {"name": "roof_right", "shape": "cube", "loc": [1.45, 0, 1.15], "scale": [3.2, 6.0, 0.45], "color": [0.22, 0.23, 0.24], "rot": [0, 0, 22], "bevel": 0.06},
+    {"name": "ridge", "shape": "cylinder", "loc": [0, 0, 2.35], "scale": [0.42, 6.3, 0.42], "color": [0.12, 0.13, 0.14], "rot": [90, 0, 0], "smooth": true},
+    {"name": "tile_left_a", "shape": "cube", "loc": [-2.3, 0, 1.85], "scale": [0.16, 6.1, 0.65], "color": [0.34, 0.35, 0.34], "rot": [0, 0, -22], "bevel": 0.03},
+    {"name": "tile_left_b", "shape": "cube", "loc": [-0.9, 0, 2.05], "scale": [0.16, 6.1, 0.65], "color": [0.29, 0.30, 0.30], "rot": [0, 0, -22], "bevel": 0.03},
+    {"name": "tile_right_a", "shape": "cube", "loc": [2.3, 0, 1.85], "scale": [0.16, 6.1, 0.65], "color": [0.32, 0.33, 0.33], "rot": [0, 0, 22], "bevel": 0.03},
+    {"name": "tile_right_b", "shape": "cube", "loc": [0.9, 0, 2.05], "scale": [0.16, 6.1, 0.65], "color": [0.26, 0.27, 0.28], "rot": [0, 0, 22], "bevel": 0.03}
+  ]
+}

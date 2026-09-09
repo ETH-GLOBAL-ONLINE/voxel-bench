@@ -1,0 +1,12 @@
+{
+  "name": "obby_platform_small",
+  "units": "studs",
+  "ingredients": [
+    {"name": "platform", "shape": "cube", "loc": [0, 0, 0.5], "scale": [6, 6, 1], "color": [0.22, 0.25, 0.28], "bevel": 0.08},
+    {"name": "edge_front", "shape": "cube", "loc": [0, -2.94, 0.9], "scale": [5.8, 0.12, 0.18], "color": [0.35, 0.39, 0.42], "bevel": 0.03},
+    {"name": "edge_back", "shape": "cube", "loc": [0, 2.94, 0.9], "scale": [5.8, 0.12, 0.18], "color": [0.30, 0.34, 0.37], "bevel": 0.03},
+    {"name": "edge_left", "shape": "cube", "loc": [-2.94, 0, 0.9], "scale": [0.12, 5.8, 0.18], "color": [0.32, 0.36, 0.39], "bevel": 0.03},
+    {"name": "edge_right", "shape": "cube", "loc": [2.94, 0, 0.9], "scale": [0.12, 5.8, 0.18], "color": [0.28, 0.32, 0.35], "bevel": 0.03},
+    {"name": "center_mark", "shape": "plane", "loc": [0, 0, 1.02], "scale": [1.8, 0.12, 0.05], "color": [0.92, 0.58, 0.12]}
+  ]
+}

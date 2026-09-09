@@ -1,0 +1,13 @@
+{
+  "name": "ninja_stone_lantern",
+  "units": "studs",
+  "ingredients": [
+    {"name": "foot", "shape": "cube", "loc": [0, 0, 0.3], "scale": [1.5, 1.5, 0.6], "color": [0.22, 0.24, 0.23], "bevel": 0.08},
+    {"name": "base", "shape": "cylinder", "loc": [0, 0, 0.8], "scale": [1.15, 1.15, 0.4], "color": [0.30, 0.31, 0.28], "smooth": true},
+    {"name": "shaft", "shape": "cube", "loc": [0, 0, 1.65], "scale": [0.65, 0.65, 1.4], "color": [0.25, 0.27, 0.25], "bevel": 0.06},
+    {"name": "light_box", "shape": "cube", "loc": [0, 0, 2.7], "scale": [1.25, 1.25, 1.0], "color": [0.82, 0.55, 0.16], "bevel": 0.06},
+    {"name": "light_front", "shape": "plane", "loc": [0, -0.64, 2.7], "scale": [0.62, 0.05, 0.58], "color": [1.0, 0.78, 0.28]},
+    {"name": "roof", "shape": "cone", "loc": [0, 0, 3.45], "scale": [1.8, 1.8, 0.7], "color": [0.18, 0.19, 0.18], "rot": [0, 0, 45]},
+    {"name": "roof_cap", "shape": "sphere", "loc": [0, 0, 3.85], "scale": [0.35, 0.35, 0.25], "color": [0.35, 0.36, 0.32], "smooth": true}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "obby_checkpoint",
+  "units": "studs",
+  "ingredients": [
+    {"name": "checkpoint_pad", "shape": "cylinder", "loc": [0, 0, 0.25], "scale": [3.2, 3.2, 0.5], "color": [0.12, 0.36, 0.42], "bevel": 0.05, "smooth": true},
+    {"name": "pad_core", "shape": "cylinder", "loc": [0, 0, 0.54], "scale": [2.3, 2.3, 0.10], "color": [0.22, 0.78, 0.80], "smooth": true},
+    {"name": "pole", "shape": "cylinder", "loc": [0, 0.80, 3.5], "scale": [0.18, 0.18, 6.0], "color": [0.18, 0.20, 0.22], "bevel": 0.03},
+    {"name": "flag", "shape": "plane", "loc": [0.62, 0.80, 5.45], "scale": [1.25, 0.05, 0.78], "rot": [0, 0, -4], "color": [0.20, 0.72, 0.68]},
+    {"name": "flag_emblem", "shape": "plane", "loc": [0.62, 0.73, 5.45], "scale": [0.32, 0.05, 0.22], "color": [0.92, 0.86, 0.40]},
+    {"name": "base_ring", "shape": "cylinder", "loc": [0, 0.80, 0.92], "scale": [0.65, 0.65, 0.12], "color": [0.28, 0.34, 0.35], "smooth": true}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "obby_barrier_wall",
+  "units": "studs",
+  "ingredients": [
+    {"name": "wall_panel", "shape": "cube", "loc": [0, 0, 3.2], "scale": [7.0, 0.5, 6.4], "color": [0.20, 0.24, 0.27], "bevel": 0.08},
+    {"name": "post_left", "shape": "cylinder", "loc": [-3.3, 0, 3.45], "scale": [0.32, 0.32, 6.9], "color": [0.45, 0.48, 0.48], "smooth": true},
+    {"name": "post_right", "shape": "cylinder", "loc": [3.3, 0, 3.45], "scale": [0.32, 0.32, 6.9], "color": [0.40, 0.44, 0.44], "smooth": true},
+    {"name": "top_bar", "shape": "cube", "loc": [0, -0.32, 6.25], "scale": [7.4, 0.18, 0.32], "color": [0.64, 0.66, 0.62], "bevel": 0.04},
+    {"name": "warning_panel", "shape": "plane", "loc": [0, -0.28, 3.5], "scale": [2.3, 0.05, 0.75], "color": [0.88, 0.28, 0.10]},
+    {"name": "warning_mark", "shape": "plane", "loc": [0, -0.31, 3.5], "scale": [1.0, 0.05, 0.10], "rot": [0, 0, -18], "color": [0.96, 0.78, 0.16]}
+  ]
+}

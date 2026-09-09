@@ -1,0 +1,15 @@
+{
+  "name": "ninja_pagoda_small",
+  "units": "studs",
+  "ingredients": [
+    {"name": "foundation", "shape": "cube", "loc": [0, 0, 0.35], "scale": [5.4, 5.4, 0.7], "color": [0.25, 0.25, 0.22], "bevel": 0.08},
+    {"name": "lower_body", "shape": "cube", "loc": [0, 0, 1.7], "scale": [4.3, 4.3, 2.0], "color": [0.46, 0.22, 0.10], "bevel": 0.06},
+    {"name": "lower_roof", "shape": "cone", "loc": [0, 0, 2.9], "scale": [6.0, 6.0, 0.8], "color": [0.16, 0.18, 0.20], "rot": [0, 0, 45]},
+    {"name": "middle_body", "shape": "cube", "loc": [0, 0, 4.0], "scale": [3.2, 3.2, 1.5], "color": [0.42, 0.18, 0.08], "bevel": 0.05},
+    {"name": "middle_roof", "shape": "cone", "loc": [0, 0, 5.0], "scale": [4.7, 4.7, 0.65], "color": [0.18, 0.20, 0.22], "rot": [0, 0, 45]},
+    {"name": "upper_body", "shape": "cube", "loc": [0, 0, 5.85], "scale": [2.2, 2.2, 1.0], "color": [0.48, 0.21, 0.09], "bevel": 0.04},
+    {"name": "upper_roof", "shape": "cone", "loc": [0, 0, 6.6], "scale": [3.5, 3.5, 0.55], "color": [0.20, 0.22, 0.24], "rot": [0, 0, 45]},
+    {"name": "finial", "shape": "cylinder", "loc": [0, 0, 7.5], "scale": [0.24, 0.24, 1.5], "color": [0.70, 0.46, 0.14], "smooth": true},
+    {"name": "door", "shape": "plane", "loc": [0, -2.17, 1.65], "scale": [1.1, 0.05, 1.45], "color": [0.12, 0.07, 0.04]}
+  ]
+}

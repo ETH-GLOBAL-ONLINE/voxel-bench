@@ -1,0 +1,13 @@
+{
+  "name": "obby_moving_platform_base",
+  "units": "studs",
+  "ingredients": [
+    {"name": "moving_deck", "shape": "cube", "loc": [0, 0, 0.55], "scale": [5.5, 5.5, 1.1], "color": [0.23, 0.30, 0.34], "bevel": 0.10},
+    {"name": "deck_panel", "shape": "cube", "loc": [0, 0, 1.14], "scale": [4.8, 4.8, 0.10], "color": [0.38, 0.48, 0.50], "bevel": 0.03},
+    {"name": "rail_left", "shape": "cylinder", "loc": [-2.2, 0, 1.55], "scale": [0.13, 0.13, 0.55], "color": [0.72, 0.76, 0.74], "smooth": true},
+    {"name": "rail_right", "shape": "cylinder", "loc": [2.2, 0, 1.55], "scale": [0.13, 0.13, 0.55], "color": [0.66, 0.70, 0.69], "smooth": true},
+    {"name": "signal_a", "shape": "sphere", "loc": [-1.15, -2.05, 1.30], "scale": [0.20, 0.20, 0.20], "color": [0.96, 0.60, 0.12], "smooth": true},
+    {"name": "signal_b", "shape": "sphere", "loc": [0, -2.05, 1.30], "scale": [0.20, 0.20, 0.20], "color": [0.18, 0.72, 0.78], "smooth": true},
+    {"name": "signal_c", "shape": "sphere", "loc": [1.15, -2.05, 1.30], "scale": [0.20, 0.20, 0.20], "color": [0.96, 0.30, 0.10], "smooth": true}
+  ]
+}
