@@ -33,6 +33,7 @@ attach.
 | `bench/describe.py`, `bench/llm.py`, `bench/recipe.py` | Wrote the prompt, the provider-agnostic LLM interface, and the schema validator that repairs recoverable model output and rejects the rest | Decided that the model writes recipes and never drives Blender, chose the model on measured latency and token cost rather than capability, and set where the line falls between repairing and rejecting |
 | `bench/to_rbxmx.py` | Wrote the native Roblox parts writer: primitive mapping, the axis and rotation conversion, linear-to-sRGB colour | Diagnosed with us that FBX arrives 100x too large and colourless, and made the call to emit native parts for Roblox rather than bake a texture |
 | `contracts/` — `RecipeBook`, `SplitVault` | Wrote both contracts, nine Solidity tests including a fuzz over the split, the Hardhat and Ignition setup, and the live verification script | Created the Hedera testnet accounts, supplied the sponsor documentation to work from, and decided the split arrangement the contract encodes |
+| `services/paywall`, `services/agent` | Read the reference implementation, wrote the x402 gateway and the paying agent, and configured the spend control | Supplied the sponsor documentation and the reference repos to work from, and made the call to wire both HBAR and USDC so one implementation serves two tracks |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Generated assets

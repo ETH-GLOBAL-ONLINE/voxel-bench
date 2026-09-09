@@ -26,6 +26,27 @@ to build is worth several pages of explanation.
 **Deploying with Hardhat and the hashio relay was uneventful**, which is the
 compliment it sounds like. Standard tooling, standard config, one network entry.
 
+### x402's spend controls are on by default, and that is the right default
+
+Worth naming because it is unusual. The first payment our agent tried was
+refused by its own client library, not by the server: HBAR is not one of the
+assets `findDefaultAsset` recognises, so it had to be listed explicitly before
+the agent could spend it.
+
+We had been planning to build a spending cap. It was already there, in the
+right place — before the payment is constructed rather than after it is sent —
+and it fails closed on assets nobody authorised.
+
+The error was also unusually good:
+
+> All payment requirements were rejected by spendControls: only default assets
+> or entries in spendControls.allowedAssets are allowed. Add an allowedAssets
+> entry for non-default tokens, set allowedAssets: true, or set
+> spendControls: false.
+
+It names the control that refused, and the three ways out in descending order
+of safety. Most libraries would have said "payment failed".
+
 ### `msg.value` arrives in tinybars, and the documentation does not say so
 
 This cost us the most time of anything on the chain side, and it presents as a
