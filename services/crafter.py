@@ -34,7 +34,7 @@ sys.path.insert(0, BENCH)
 from describe import describe  # noqa: E402
 from llm import LLMError  # noqa: E402
 from make import find_blender, load_env  # noqa: E402
-from recipe import RecipeError, extents  # noqa: E402
+from recipe import RecipeError, extents, validate  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "services"))
 from roblox_upload import UploadError, upload_model, wait_for_asset  # noqa: E402
@@ -210,6 +210,119 @@ def publish(req: PublishRequest):
     threading.Thread(target=_publish, args=(job_id, req.name, key, user),
                      daemon=True).start()
     return {"job": job_id, "stages": PUBLISH_STAGES}
+
+
+# ── the three stages, separately ──────────────────────────────────────────
+#
+# The bundled /craft job above is what the site uses: one call, one progress
+# bar. These are the same work split into three, because a paywall in front of
+# one endpoint can only charge one price, and the stages do not cost the same.
+# Writing a recipe is a model call; crafting is seven seconds of CPU;
+# publishing consumes someone else's quota.
+#
+# Split this way, no stage can do another's job. The service that crafts holds
+# no Roblox key and the service that publishes never sees a prompt, so taking
+# one of them does not hand over the others. That is the argument for paying
+# per service rather than sharing a key between them.
+
+
+class RecipeStage(BaseModel):
+    prompt: str = Field(min_length=3, max_length=280)
+
+
+class CraftStage(BaseModel):
+    recipe: dict
+
+
+class PublishStage(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    api_key: Optional[str] = Field(default=None, max_length=2048)
+    user_id: Optional[str] = Field(default=None, max_length=32)
+
+
+@app.post("/stage/recipe")
+def stage_recipe(req: RecipeStage):
+    """A sentence in, a validated recipe out. No files touched."""
+    try:
+        recipe, notes, usage = describe(req.prompt)
+    except (LLMError, RecipeError) as exc:
+        raise HTTPException(422, str(exc)) from None
+    return {"recipe": recipe, "notes": notes, "usage": usage}
+
+
+@app.post("/stage/craft")
+def stage_craft(req: CraftStage):
+    """A recipe in, the rendered files out. Never calls a model."""
+    try:
+        recipe, notes = validate(req.recipe)
+    except RecipeError as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    os.makedirs(OUT, exist_ok=True)
+    recipe_path = os.path.join(OUT, recipe["name"] + ".json")
+    with open(recipe_path, "w", encoding="utf-8") as fh:
+        json.dump(recipe, fh, indent=2)
+
+    blender = subprocess.run(
+        [find_blender(), "--background", "--python",
+         os.path.join(BENCH, "craft.py"), "--", recipe_path, OUT],
+        capture_output=True, text=True, timeout=180)
+    if blender.returncode != 0:
+        raise HTTPException(500, "Blender failed: %s" % blender.stderr[-300:])
+
+    report = {}
+    for line in blender.stdout.splitlines():
+        if line.startswith("CRAFT_REPORT "):
+            report = json.loads(line[len("CRAFT_REPORT "):])
+
+    parts = subprocess.run(
+        [sys.executable, os.path.join(BENCH, "to_rbxmx.py"), recipe_path, OUT],
+        capture_output=True, text=True, timeout=60)
+    rbx = {}
+    for line in parts.stdout.splitlines():
+        if line.startswith("RBXMX_REPORT "):
+            rbx = json.loads(line[len("RBXMX_REPORT "):])
+
+    size, _ = extents(recipe["ingredients"])
+    return {
+        "name": recipe["name"],
+        "notes": notes,
+        "tris": report.get("tris"),
+        "studs": [round(v, 2) for v in size],
+        "parts": rbx.get("parts"),
+        "files": {
+            "preview": "/file/%s_preview.png" % recipe["name"],
+            "glb": "/file/%s.glb" % recipe["name"],
+            "rbxmx": "/file/%s.rbxmx" % recipe["name"],
+        },
+    }
+
+
+@app.post("/stage/publish")
+def stage_publish(req: PublishStage):
+    """The finished parts in, a Roblox assetId out."""
+    allow_server_key = os.environ.get("VOXEL_ALLOW_SERVER_KEY") == "1"
+    key = req.api_key or (os.environ.get("ROBLOX_API_KEY") if allow_server_key else None)
+    user = req.user_id or (os.environ.get("ROBLOX_USER_ID") if allow_server_key else None)
+    if not key or not user:
+        raise HTTPException(503, "No Roblox account connected.")
+
+    path = os.path.join(OUT, req.name + ".rbxmx")
+    if not os.path.isfile(path):
+        raise HTTPException(404, "nothing crafted by that name")
+
+    try:
+        operation = upload_model(path, req.name.replace("_", " ").title(),
+                                 "Crafted with Voxel Bench",
+                                 api_key=key, creator={"userId": user})
+        asset = wait_for_asset(operation, api_key=key)
+    except UploadError as exc:
+        raise HTTPException(502, str(exc)) from None
+
+    return {
+        "assetId": asset.get("assetId"),
+        "moderation": (asset.get("moderationResult") or {}).get("moderationState"),
+    }
 
 
 @app.get("/health")
