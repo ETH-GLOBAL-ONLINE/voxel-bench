@@ -153,8 +153,8 @@ partner prizes, ENS wins on the numbers even if the hardware had been solved.
 
 The counter-argument, for honesty: that same friction thins the field, and a
 smaller pool among fewer entrants can be better odds. We chose against it on
-time — it is Wednesday, and "make Speculos talk to a CLI that does not support
-it" is research of unknown length, while ENS subnames is a task of known size.
+time: "make Speculos talk to a CLI that does not support it" is research of
+unknown length, while ENS subnames is a task of known size.
 
 ### 3.3 Circle / Arc — Agentic Economy, and Launch on Arc (priority 3)
 

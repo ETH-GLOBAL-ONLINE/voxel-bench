@@ -1,231 +1,201 @@
 # Where we are, and what is left
 
-Monday 7 September, end of day. Submission is **Sunday 13 at 12:00 EDT**.
-
-If you are picking this up cold: read the top section to know what already
-works, then take anything from "What is left". Each item says where to start and
-what finished looks like, so you should not need to ask.
+If you are picking this up cold: the first section is what already runs, the
+second is what is left, in the order we intend to do it. Each item says where to
+start and what finished looks like.
 
 ---
 
 ## What works, verified
 
-**A sentence becomes an object in your Roblox account.** That whole line is
-done, end to end, in the browser.
+**A sentence becomes an object in a Roblox account, and an agent pays for every
+step of it.** Both halves run.
 
 ```bash
-python services/crafter.py          # the crafter, :8000
+python services/crafter.py          # the crafter,  :8000
+node services/paywall/server.mjs    # the paywall,  :4402
 cd web && npm run dev               # the site; Next prints the port
 ```
 
-| Piece | State | Measured |
-|---|---|---|
-| Sentence to recipe | works | 3–48s on Gemini's free tier, median ~17s, ~2400 tokens |
-| Validator | works | rejects invented shapes, missing sizes, wrong units; repairs the rest with a note |
-| Blender crafts it | works | ~7s, 250–750 triangles |
-| Native Roblox parts | works | exact studs, exact colours, no upload of a mesh |
-| Publish to Roblox | works | `.rbxmx` accepted by Open Cloud, moderation approved in ~3s |
-| The site | works | prompt, progress, preview, orbit, publish |
-| Connect a Roblox account | works | key stays in the browser, never on our disk |
-| Deployed | works | https://voxel-bench-psi.vercel.app |
+### The pipeline
 
-**Where it runs.** Blender cannot run on Vercel, so the site and the crafter are
-separate: the site on Vercel, the crafter on a real machine. That is the same
-split x402 asks for anyway. The crafter is offline most of the time and the site
-says so rather than breaking.
+| Piece | Measured |
+|---|---|
+| Sentence to recipe | 3–48s on Gemini's free tier, median ~17s, ~2400 tokens |
+| Validator | rejects invented shapes, missing sizes and wrong units; repairs the rest with a note |
+| Blender crafts it | ~7s, 250–750 triangles |
+| Native Roblox parts | exact studs, exact colours, no mesh upload |
+| Publish to Roblox | `.rbxmx` accepted by Open Cloud, moderation approved in ~3s |
+| The site | prompt, progress, preview, orbit, publish |
+| Connect a Roblox account | the key stays in the browser, never on our disk |
+| Deployed | https://voxel-bench-psi.vercel.app |
+
+### The economy
+
+Three contracts on Hedera testnet, 29 tests including three fuzz, each verified
+against the live chain rather than only locally.
+
+| Contract | Address |
+|---|---|
+| `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
+| `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
+| `Allowance` | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` |
+
+Three crafts settled with the 90/10 split exact and `RecipeBook` holding
+nothing. The agent drew 0.05 HBAR from `Allowance` and was refused 10.
+
+### The payments
+
+Three x402-gated stages at three prices, paid on Hedera testnet and confirmed on
+the ledger: `+100000`, `+500000` and `+1000000` tinybars landed in the service
+account in the order the agent consumed them. The transfers show the facilitator
+as sender — the agent signs partially, the facilitator co-signs and covers gas,
+so the agent needs an account but never needs gas.
+
+`/services` advertises what is on offer and what it costs, unpriced, since an
+agent has to read the menu before it can decide to buy.
+
+### Where it runs
+
+Blender cannot run on Vercel, so the site and the crafter are separate: the site
+on Vercel, the crafter on a real machine. That is the same split x402 asks for
+anyway. The crafter is offline most of the time and the site says so rather than
+breaking.
 
 ---
 
 ## What is left
 
-Ordered by what unblocks the most. The first three are what the prizes actually
-score, and **none of them exist yet** — the site describes the design and none
-of it runs.
+### 1. The site pays · Track B · next
 
-### 1. `Allowance` — the agent's spending cap · Track A
+Two paths exist and do not meet: the site crafts for free by calling the crafter
+directly, and the agent pays for the same work from a terminal. One story, not
+two — the browser should show the three payments happening while the object is
+built.
 
-`RecipeBook` and `SplitVault` are **deployed on Hedera testnet and verified
-against the chain**: a recipe published, three crafts settled, the 90/10 split
-exact, and the book holding nothing. Nine tests pass including a fuzz over the
-split.
+This is also what makes the Hedera work legible. The payments currently run
+where nobody watching a demo would see them.
 
-| | |
-|---|---|
-| `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
-| `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
+**Start at** `web/app/components/Bench.tsx` and `services/agent/orchestrate.mjs`.
+The agent becomes something the site calls rather than a command someone runs.
 
-`Allowance` is deployed too — `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` —
-and verified against the chain: the agent drew 0.05 HBAR and was refused 10.
-The cap is a wall rather than a policy, because the money it cannot draw is
-money it does not have.
+**Done looks like** typing a sentence in the browser and watching *paying for
+the recipe, paying for the craft, paying to publish* go by, then the object.
 
-Nothing is left of the contracts.
+### 2. ENS — a name per service · Track A
 
-### 1b. The original three-contract plan, for reference
+Each stage becomes an addressable agent: `recipe.voxelbench.eth`,
+`craft.voxelbench.eth`, `publish.voxelbench.eth`, each resolving to its service
+and carrying what it may be paid.
 
-Three small contracts on Hedera testnet. Deliberately small: three that each do
-one thing beat one that does everything, especially when a judge has four
-minutes to read them.
+This is prize two on its own, and it also finishes something Hedera asks for.
+"Agents discover and pay for services" — the paying is solid; the discovering is
+currently a URL in a configuration file. Resolving a name is discovery; reading
+an environment variable is not.
 
-| Contract | Holds |
-|---|---|
-| `RecipeBook` | recipe id, author, split terms, craft count |
-| `SplitVault` | what each author has earned and can withdraw |
-| `Allowance` | the agent's spending cap, and the human signature to raise it |
+**Start at** `docs/ONCHAIN.md` 3.2. ENSv2 on Sepolia, Enhanced Access Control.
 
-**Start at** `docs/ONCHAIN.md` section 4, and the vocabulary table in `PLAN.md`
-section 1 — the contract should use the same words the UI does, so a judge reads
-the contract and recognises what they just saw on screen.
+### 3. USDC instead of HBAR · Circle / Arc
 
-**Done looks like** a recipe registered onchain with its author, a craft
-settling against it, and an author withdrawing.
+The cheapest of the three, because the wiring already exists: the paywall offers
+both assets and the agent can pay either. What is missing is testnet USDC from
+`faucet.circle.com` and the token association Hedera requires before an account
+can receive a non-native token.
 
-### 2. ~~x402 on the three services~~ — done
-
-Three stages, three prices, paid on Hedera testnet and confirmed on the ledger:
-`+100000`, `+500000` and `+1000000` tinybars landed in the service account in
-the order the agent consumed them. The transfers show the facilitator as sender
-— the agent signs partially, the facilitator co-signs and covers the gas, so the
-agent never needs gas of its own.
-
-`/services` advertises what is on offer and what it costs, unpriced, because an
-agent has to be able to see the menu before it can decide to pay.
-
-What is left of this is the contract half of the cap — see item 1.
-
-### 2b. The original plan, for reference
-
-Each stage is already a separate service call inside `services/crafter.py`.
-Putting a paywall in front of each is the change.
-
-Prices should differ by what the stage costs us: the recipe is one model call,
-crafting is seven seconds of CPU, publishing consumes an external quota. That
-maps onto the product — **previewing costs cents, publishing costs more** — so
-nobody pays to publish something they have not seen.
-
-**Start at** `docs/ONCHAIN.md` section 3.1. This is the Hedera track, our first
-priority, and it asks for exactly this.
-
-**Done looks like** the orchestrator paying per call from its own wallet, no
-shared secrets between stages, and a spending cap the agent cannot raise itself.
-
-### 3. The recipe library · anyone with a 3D eye, no code needed
-
-A curated set of good recipes does three things at once: it gives the model
-better examples to imitate, it makes anything already in the library craft
-instantly with no model call, and it means the marketplace has stock rather
-than being an empty shelf on Sunday.
-
-The fourth thing is worth more than the recipes: whoever builds it will find
-out what the model gets wrong *systematically*, and each of those is one line
-in the prompt that fixes every future craft.
-
-**Start at** [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) — the loop, the
-format, what makes a recipe good, what our five primitives do badly, and a
-catalogue organised as themed kits that can build whole games.
+**Done looks like** the same demo settling in USDC, which makes one
+implementation serve two tracks.
 
 ### 4. The recipe marketplace · Track B
 
-Not a new system — it is the interface to `RecipeBook`. Publish a recipe, others
-craft with it, you earn per craft.
+The interface to `RecipeBook`: real recipes, their authors, how often each was
+crafted and what it earned, read from the chain rather than mocked. The card in
+the "Why onchain" section of `page.tsx` is the shape it should take.
 
-It also fixes the latency problem, which is the interesting part: **a recipe
-that already exists needs no model call at all.** It crafts instantly and its
-author gets paid. Only genuinely new objects pay the model cost, so the platform
-gets faster as it gets more recipes.
+It also fixes latency, which is the interesting part: a recipe that already
+exists needs no model call, so it crafts instantly and its author is paid. The
+platform gets faster as it gets more recipes.
 
-**Start at** `web/app/components/Bench.tsx`. The card in the "Why onchain"
-section of `page.tsx` is the shape it should take, currently illustrative.
+### 5. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
 
-### 5. Roblox materials · Track A, cheap and high value
+Stefan's. Good recipes give the model better work to imitate, make anything in
+the library instant, and give the marketplace something to show.
 
-Every Roblox part has a `Material` property — `Wood`, `Metal`, `Slate`,
-`CorrodedMetal`, `Grass`. Setting it gives real surface texture with no image,
-no upload, no UV mapping. It is one more field in the recipe and it is the
-biggest visible quality gain available for the effort.
+### 6. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
 
-**The catch:** the Blender preview will not show it, and the preview promising
-something the result does not deliver breaks the design. So approximate it in
-Blender too — map each material to a roughness and a little relief.
+Also Stefan's, and independent of everything else — the contracts are finished,
+so this can happen any time.
 
-**Start at** `bench/to_rbxmx.py` (`part_xml`) and the schema in
-`bench/describe.py`. Verify the enum values by asking Studio through the MCP
-rather than trusting a list.
+### 7. Roblox materials
 
-### 6. Luau scripts on objects · Track A
+Every part has a `Material` property — `Wood`, `Metal`, `Slate`. Real surface
+texture with no image, no upload, no UV mapping: one more field in the recipe,
+and the largest visible gain available for the effort.
+
+The catch: the Blender preview will not show it, and a preview that promises
+what the result does not deliver undoes the point of having one. So approximate
+it in Blender too — map each material to a roughness and a little relief.
+
+**Start at** `bench/to_rbxmx.py` and the schema in `bench/describe.py`. Check the
+enum values by asking Studio through the MCP rather than trusting a list.
+
+### 8. Luau scripts on objects
 
 A crate that sits there is decoration; a crate that gives you coins when touched
-is a mechanic. Generating Luau is the *easy* part of this project — it is
-well-documented and, unlike geometry, it either runs or throws.
+is a mechanic. Generating Luau is the easy part of this project — well
+documented, and unlike geometry it either runs or throws.
 
-Delivery is a `.rbxmx` holding the part plus a `Script` child, which is the file
-we already write.
+**Worth checking first:** Roblox moderates models containing scripts. If that
+takes hours rather than seconds, scripts stay out of a live demo.
 
-**Untested and worth checking first:** Roblox moderates models containing
-scripts. If that takes hours rather than seconds, scripts cannot be in a live
-demo.
+### 9. The obby — the wow, and the first thing to cut
 
-### 7. The obby · Track A — the wow, and the first thing to cut
+A sequence of platforms, hazards, checkpoints and a finish is spatial
+arrangement of objects. An obby is a recipe of recipes: nothing new to invent,
+just scale. The model chooses the parameters and the palette; code does the
+placing.
 
-An obby is a sequence of platforms, hazards, checkpoints and a finish, which is
-spatial arrangement of objects. **An obby is a recipe of recipes.** Nothing new
-to invent, just scale.
+Needs `universe-places` on the API key, which is editable on the existing one.
 
-Needs `universe-places` added to the API key — editable on the existing key, no
-need to regenerate.
+**Cut this first if anything slips.** `PLAN.md` section 10 has the demo built so
+losing it shortens the video rather than breaking it.
 
-**Cut this first if anything slips.** See `PLAN.md` section 10: the demo video is
-built so that losing this shortens it rather than breaking it.
+### 10. The video
 
-### 8. The video · Saturday, both of us
-
-Two to four minutes, **narrated by one of us** — the rules reject AI voiceover,
-text-to-speech and phone recordings. Structure and fallbacks are in `PLAN.md`
-section 10.
+Two to four minutes, narrated by one of us — the rules reject AI voiceover,
+text-to-speech and phone recordings. Structure and fallbacks in `PLAN.md`
+section 10. Recording takes longer than anyone plans for.
 
 ---
 
-## Schedule to Sunday
+## Prizes
 
-We are roughly a day and a half ahead of the original plan: Tuesday's job was
-proving Roblox would accept anything, and that is done, along with the site that
-was scheduled for Friday.
+Three at submission, chosen: **Hedera**, **ENS**, **Circle / Arc**.
 
-| Day | Track A | Track B |
-|---|---|---|
-| **Tue 8** | Contracts on Hedera testnet | Wallet connect; marketplace view |
-| **Wed 9** | x402 on the three services, spending cap | Wire the marketplace to the contract |
-| **Thu 10** | Materials, then Luau scripts | Polish; the recipe library view |
-| **Fri 11** | The obby, if the week held | Polish |
-| **Sat 12** | Freeze at midday. Record. | Same |
-| **Sun 13** | Submit in the morning | — |
+Ledger was second until its tooling turned out to need a physical device;
+`docs/ONCHAIN.md` 3.2b has the reasoning and the counter-argument.
+
+Not chasing 1inch, Uniswap or Chainlink — no honest fit, and reaching for one to
+collect a logo is visible.
 
 ---
-
-## Decisions still open
-
-- **Which three partner prizes** to select at submission. Current order is
-  Hedera, ENS, Circle/Arc — `PLAN.md` section 6. Ledger was second until its
-  tooling turned out to need a physical device; `docs/ONCHAIN.md` 3.2b.
-- **Whether materials are worth a day** before scripts. They probably are: more
-  visible improvement per hour than anything else on the list.
-- **What to do about latency.** Gemini's free tier ranges 3 to 48 seconds for
-  the same work. The marketplace is the real answer; Groq was measured and is
-  worse (see `docs/LOG.md`).
 
 ## Things that will bite you
 
-All of these already cost us time once. They are in `docs/LOG.md` in full.
+All of these cost time once already. `docs/LOG.md` has them in full.
 
 - **A 403 from Roblox is the API key's IP allowlist**, and the message never
   says so.
-- **FBX arrives 100x too large and grey.** Use the native-parts path; it exists
+- **FBX arrives 100x too large and colourless.** The native-parts path exists
   for this reason.
-- **A negative part size is not rejected** — Roblox clamps it to 0.001 and the
-  part is there, correct colour, invisible.
+- **A negative part size is not rejected** — Roblox clamps it to 0.001, so the
+  part is there, the right colour, and invisible.
 - **A Roblox model without a `PrimaryPart`** borrows a pivot orientation from
   its bounding box, so moving it tilts everything.
 - **Blender resolves a relative render path against its own base**, not the
-  working directory, and writes your preview somewhere else entirely.
+  working directory, and writes the preview somewhere else entirely.
+- **On Hedera, `msg.value` is in tinybars** while `getBalance` answers in wei.
+  Ten orders of magnitude apart in the same session.
+- **An unanchored `out/` or `artifacts/` in a gitignore** matches that directory
+  at any depth. This has caught us three times.
 - **Never enable `VOXEL_ALLOW_SERVER_KEY` on a public bench.** It lets anyone
-  who can reach the endpoint publish into the operator's Roblox account.
+  reaching the endpoint publish into the operator's Roblox account.
