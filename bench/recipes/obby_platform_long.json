@@ -1,0 +1,13 @@
+{
+  "name": "obby_platform_long",
+  "units": "studs",
+  "ingredients": [
+    {"name": "walkway", "shape": "cube", "loc": [0, 0, 0.5], "scale": [16, 6, 1], "color": [0.20, 0.23, 0.26], "bevel": 0.08},
+    {"name": "front_trim", "shape": "cube", "loc": [0, -2.9, 0.95], "scale": [15.6, 0.14, 0.2], "color": [0.34, 0.38, 0.42], "bevel": 0.03},
+    {"name": "back_trim", "shape": "cube", "loc": [0, 2.9, 0.95], "scale": [15.6, 0.14, 0.2], "color": [0.28, 0.32, 0.36], "bevel": 0.03},
+    {"name": "left_support", "shape": "cube", "loc": [-6.1, 0, 0.25], "scale": [0.7, 1.1, 0.5], "color": [0.14, 0.16, 0.18], "bevel": 0.05},
+    {"name": "right_support", "shape": "cube", "loc": [6.2, 0, 0.25], "scale": [0.7, 1.1, 0.5], "color": [0.12, 0.14, 0.16], "bevel": 0.05},
+    {"name": "guide_strip", "shape": "plane", "loc": [0, 0, 1.02], "scale": [12, 0.10, 0.05], "color": [0.42, 0.72, 0.88]},
+    {"name": "guide_strip_2", "shape": "plane", "loc": [0, 1.2, 1.02], "scale": [4, 0.08, 0.05], "rot": [0, 0, 3], "color": [0.30, 0.55, 0.70]}
+  ]
+}

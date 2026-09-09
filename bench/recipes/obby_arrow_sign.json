@@ -1,0 +1,12 @@
+{
+  "name": "obby_arrow_sign",
+  "units": "studs",
+  "ingredients": [
+    {"name": "sign_post", "shape": "cylinder", "loc": [0, 0, 2.0], "scale": [0.20, 0.20, 4.0], "color": [0.22, 0.25, 0.26], "smooth": true},
+    {"name": "sign_board", "shape": "cube", "loc": [0, 0, 4.05], "scale": [4.8, 0.28, 1.6], "color": [0.20, 0.44, 0.50], "bevel": 0.08},
+    {"name": "arrow_shaft", "shape": "cube", "loc": [0.0, -0.18, 4.05], "scale": [2.4, 0.08, 0.22], "color": [0.94, 0.78, 0.26], "bevel": 0.03},
+    {"name": "arrow_head_top", "shape": "cube", "loc": [1.18, -0.18, 4.42], "scale": [0.85, 0.08, 0.22], "rot": [0, 0, -35], "color": [0.94, 0.78, 0.26], "bevel": 0.02},
+    {"name": "arrow_head_bottom", "shape": "cube", "loc": [1.18, -0.18, 3.68], "scale": [0.85, 0.08, 0.22], "rot": [0, 0, 35], "color": [0.94, 0.78, 0.26], "bevel": 0.02},
+    {"name": "base_foot", "shape": "cylinder", "loc": [0, 0, 0.18], "scale": [0.75, 0.75, 0.36], "color": [0.14, 0.17, 0.19], "bevel": 0.04, "smooth": true}
+  ]
+}

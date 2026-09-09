@@ -1,0 +1,14 @@
+{
+  "name": "ninja_weapon_rack",
+  "units": "studs",
+  "ingredients": [
+    {"name": "left_leg", "shape": "cube", "loc": [-1.6, 0, 1.2], "scale": [0.35, 0.5, 2.4], "color": [0.28, 0.14, 0.06], "rot": [0, 0, -8], "bevel": 0.03},
+    {"name": "right_leg", "shape": "cube", "loc": [1.6, 0, 1.2], "scale": [0.35, 0.5, 2.4], "color": [0.32, 0.15, 0.06], "rot": [0, 0, 8], "bevel": 0.03},
+    {"name": "top_bar", "shape": "cube", "loc": [0, 0, 2.25], "scale": [3.7, 0.55, 0.35], "color": [0.24, 0.11, 0.05], "bevel": 0.04},
+    {"name": "lower_bar", "shape": "cube", "loc": [0, 0, 0.65], "scale": [3.7, 0.55, 0.3], "color": [0.20, 0.10, 0.05], "bevel": 0.04},
+    {"name": "sword_a", "shape": "cube", "loc": [-0.85, -0.35, 2.9], "scale": [0.14, 0.16, 3.2], "color": [0.62, 0.66, 0.68], "rot": [0, -12, 0], "bevel": 0.02},
+    {"name": "sword_b", "shape": "cube", "loc": [0.0, -0.35, 2.9], "scale": [0.14, 0.16, 3.0], "color": [0.72, 0.74, 0.74], "rot": [0, 4, 0], "bevel": 0.02},
+    {"name": "sword_c", "shape": "cube", "loc": [0.85, -0.35, 2.9], "scale": [0.14, 0.16, 3.3], "color": [0.56, 0.60, 0.62], "rot": [0, 15, 0], "bevel": 0.02},
+    {"name": "grip", "shape": "cylinder", "loc": [0, -0.35, 1.1], "scale": [0.25, 0.25, 0.7], "color": [0.08, 0.07, 0.06], "rot": [90, 0, 0], "smooth": true}
+  ]
+}

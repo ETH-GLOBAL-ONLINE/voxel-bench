@@ -1,0 +1,12 @@
+{
+  "name": "obby_ramp",
+  "units": "studs",
+  "ingredients": [
+    {"name": "ramp_body", "shape": "cube", "loc": [0, 0, 1.5], "scale": [8, 5, 3], "rot": [0, -20, 0], "color": [0.25, 0.29, 0.32], "bevel": 0.08},
+    {"name": "left_side", "shape": "cube", "loc": [-3.5, 0, 1.9], "scale": [0.25, 4.7, 2.6], "rot": [0, -20, 0], "color": [0.15, 0.18, 0.20], "bevel": 0.04},
+    {"name": "right_side", "shape": "cube", "loc": [3.5, 0, 1.9], "scale": [0.25, 4.7, 2.6], "rot": [0, -20, 0], "color": [0.18, 0.21, 0.23], "bevel": 0.04},
+    {"name": "grip_strip", "shape": "plane", "loc": [0, -2.15, 2.05], "scale": [2.8, 0.12, 0.05], "rot": [0, -20, 0], "color": [0.94, 0.62, 0.16]},
+    {"name": "top_plate", "shape": "cube", "loc": [0, 0, 3.25], "scale": [1.2, 5, 0.25], "color": [0.35, 0.40, 0.42], "bevel": 0.04},
+    {"name": "support", "shape": "cube", "loc": [0, 0, -0.20], "scale": [3.5, 3.8, 0.4], "color": [0.13, 0.15, 0.17], "bevel": 0.05}
+  ]
+}

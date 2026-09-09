@@ -1,0 +1,12 @@
+{
+  "name": "obby_stepping_stone",
+  "units": "studs",
+  "ingredients": [
+    {"name": "stone_body", "shape": "cylinder", "loc": [0, 0, 1.0], "scale": [2.0, 2.0, 0.65], "color": [0.30, 0.32, 0.32], "bevel": 0.06, "smooth": true},
+    {"name": "stone_top", "shape": "sphere", "loc": [0, 0, 1.32], "scale": [0.84, 0.84, 0.20], "color": [0.42, 0.44, 0.42], "smooth": true},
+    {"name": "lower_shadow", "shape": "cylinder", "loc": [0, 0, 0.64], "scale": [1.50, 1.50, 0.16], "color": [0.16, 0.18, 0.18], "smooth": true},
+    {"name": "accent_chip", "shape": "sphere", "loc": [-0.48, -0.42, 1.38], "scale": [0.14, 0.10, 0.06], "color": [0.56, 0.58, 0.54], "smooth": true},
+    {"name": "side_chip", "shape": "sphere", "loc": [0.56, 0.26, 1.06], "scale": [0.12, 0.10, 0.08], "color": [0.22, 0.24, 0.23], "smooth": true},
+    {"name": "glow_mark", "shape": "plane", "loc": [0, 0, 1.53], "scale": [0.28, 0.08, 0.05], "color": [0.12, 0.52, 0.62]}
+  ]
+}

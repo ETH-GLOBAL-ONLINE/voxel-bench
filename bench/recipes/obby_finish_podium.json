@@ -1,0 +1,14 @@
+{
+  "name": "obby_finish_podium",
+  "units": "studs",
+  "ingredients": [
+    {"name": "lower_tier", "shape": "cube", "loc": [0, 0, 0.45], "scale": [7.0, 5.5, 0.9], "color": [0.20, 0.23, 0.26], "bevel": 0.12},
+    {"name": "upper_tier", "shape": "cube", "loc": [0, 0, 1.15], "scale": [5.2, 3.8, 0.5], "color": [0.35, 0.38, 0.40], "bevel": 0.08},
+    {"name": "reward_column", "shape": "cylinder", "loc": [0, 0, 2.45], "scale": [0.60, 0.60, 2.1], "color": [0.22, 0.26, 0.28], "bevel": 0.04},
+    {"name": "reward_core", "shape": "sphere", "loc": [0, 0, 3.75], "scale": [0.82, 0.82, 0.82], "color": [0.95, 0.62, 0.12], "smooth": true},
+    {"name": "left_bollard", "shape": "cylinder", "loc": [-2.4, -1.55, 1.95], "scale": [0.28, 0.28, 1.5], "color": [0.30, 0.34, 0.36], "smooth": true},
+    {"name": "right_bollard", "shape": "cylinder", "loc": [2.4, -1.55, 1.95], "scale": [0.28, 0.28, 1.5], "color": [0.28, 0.32, 0.34], "smooth": true},
+    {"name": "left_glow", "shape": "sphere", "loc": [-2.4, -1.55, 2.85], "scale": [0.34, 0.34, 0.34], "color": [0.20, 0.76, 0.78], "smooth": true},
+    {"name": "right_glow", "shape": "sphere", "loc": [2.4, -1.55, 2.85], "scale": [0.34, 0.34, 0.34], "color": [0.20, 0.76, 0.78], "smooth": true}
+  ]
+}
