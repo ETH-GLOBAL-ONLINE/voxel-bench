@@ -77,7 +77,20 @@ the contract and recognises what they just saw on screen.
 **Done looks like** a recipe registered onchain with its author, a craft
 settling against it, and an author withdrawing.
 
-### 2. x402 on the three services · Track A
+### 2. ~~x402 on the three services~~ — done
+
+Three stages, three prices, paid on Hedera testnet and confirmed on the ledger:
+`+100000`, `+500000` and `+1000000` tinybars landed in the service account in
+the order the agent consumed them. The transfers show the facilitator as sender
+— the agent signs partially, the facilitator co-signs and covers the gas, so the
+agent never needs gas of its own.
+
+`/services` advertises what is on offer and what it costs, unpriced, because an
+agent has to be able to see the menu before it can decide to pay.
+
+What is left of this is the contract half of the cap — see item 1.
+
+### 2b. The original plan, for reference
 
 Each stage is already a separate service call inside `services/crafter.py`.
 Putting a paywall in front of each is the change.

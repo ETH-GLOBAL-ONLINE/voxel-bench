@@ -71,10 +71,25 @@ colours); parts are written in studs and carry their own colour, so neither
 problem exists. Blender still crafts the preview and the GLB for the web viewer
 and other engines.
 
-The intent is for each stage to be a separate x402-gated service, so the
-orchestrating agent pays per craft from its own wallet under a cap it cannot
-raise itself, and no secrets are shared between stages. **Not built yet** — see
-the status below and `docs/ONCHAIN.md` for the design.
+Each stage is a separate x402-gated service. The agent holds a wallet, is
+quoted a price, pays it and is let through — no key is shared with any of them,
+and no stage can do another's job. Its per-payment cap is enforced by the client
+before a payment is even constructed.
+
+```
+agent  ──402──►  paywall  ──►  crafter  ──►  Roblox
+  │                 │
+wallet          3 prices
+  cap           1 account paid
+```
+
+Run it:
+
+```bash
+python services/crafter.py                        # the work,     :8000
+node services/paywall/server.mjs                  # the prices,   :4402
+node services/agent/orchestrate.mjs "an oil drum" # the wallet
+```
 
 ## Where it runs
 
@@ -130,7 +145,8 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Publish to Roblox** — `.rbxmx` accepted; the account key stays in the browser
 - [ ] **Luau scripts** on objects
 - [x] **`RecipeBook` + `SplitVault`** — live on Hedera testnet, verified against the chain
-- [ ] **x402 gating** and the onchain spending cap
+- [x] **x402** — three stages, three prices, paid on Hedera testnet and verified on the ledger
+- [ ] **`Allowance`** — the cap as a contract, beside the one the client already enforces
 - [ ] **Recipe marketplace**
 - [ ] **An obby**
 
