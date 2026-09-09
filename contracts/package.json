@@ -1,0 +1,14 @@
+{
+  "name": "voxel-bench-contracts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
+    "forge-std": "github:foundry-rs/forge-std",
+    "hardhat": "^3.16.0"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-0eb015a931e9ad2a6214bfabf354e2eba06a2356",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "src/RecipeBook.sol": "project/src/RecipeBook.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/RecipeBook.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\ninterface ISplitVault {\n    function credit(address account) external payable;\n}\n\n/// @title RecipeBook\n/// @notice Who wrote which recipe, how often it has been crafted, and where\n/// the fee goes when it is.\n///\n/// The words here are the words on the site and in the docs — recipe, author,\n/// craft, crafter — so that reading the contract and using the product feel\n/// like the same thing.\n///\n/// The contract does not set prices. What a craft costs is quoted by the\n/// service that performs it, over x402, and the caller sends that amount here\n/// to settle. This contract's job is only to divide it and record that it\n/// happened, which is what an author needs in order to stop taking our word\n/// for the count.\ncontract RecipeBook {\n    struct Recipe {\n        address author;\n        uint64 crafts;\n        uint128 earned; // lifetime, for the author's share only\n    }\n\n    /// @dev A recipe id is the hash of its content, so the same recipe is the\n    /// same id no matter who publishes it, and republishing an existing one\n    /// cannot steal its authorship.\n    mapping(bytes32 => Recipe) public recipes;\n\n    ISplitVault public immutable vault;\n    address public owner;\n\n    /// @notice The platform's share of a craft, in basis points. The author\n    /// takes the remainder — most of it, which is the arrangement the whole\n    /// pitch rests on, so it is capped rather than left to trust.\n    uint16 public platformBps;\n    uint16 public constant MAX_PLATFORM_BPS = 3000; // 30%\n\n    event RecipePublished(bytes32 indexed recipeId, address indexed author);\n    event Crafted(\n        bytes32 indexed recipeId,\n        address indexed crafter,\n        address indexed author,\n        uint256 paid,\n        uint256 toAuthor\n    );\n    event PlatformBpsChanged(uint16 bps);\n    event OwnerChanged(address indexed owner);\n\n    error AlreadyPublished();\n    error UnknownRecipe();\n    error NothingSent();\n    error ShareTooHigh();\n    error NotOwner();\n    error ZeroAddress();\n\n    modifier onlyOwner() {\n        if (msg.sender != owner) revert NotOwner();\n        _;\n    }\n\n    constructor(address vault_, uint16 platformBps_) {\n        if (vault_ == address(0)) revert ZeroAddress();\n        if (platformBps_ > MAX_PLATFORM_BPS) revert ShareTooHigh();\n        vault = ISplitVault(vault_);\n        owner = msg.sender;\n        platformBps = platformBps_;\n    }\n\n    /// @notice Claim authorship of a recipe. First publisher wins, and since\n    /// the id is the hash of the content, that is the person who wrote it.\n    function publish(bytes32 recipeId) external {\n        if (recipes[recipeId].author != address(0)) revert AlreadyPublished();\n        recipes[recipeId].author = msg.sender;\n        emit RecipePublished(recipeId, msg.sender);\n    }\n\n    /// @notice Settle a craft: split the fee, credit both sides, count it.\n    /// @dev Value is forwarded to the vault rather than held here, so this\n    /// contract never has a balance worth attacking.\n    function craft(bytes32 recipeId) external payable {\n        if (msg.value == 0) revert NothingSent();\n\n        Recipe storage recipe = recipes[recipeId];\n        address author = recipe.author;\n        if (author == address(0)) revert UnknownRecipe();\n\n        uint256 toPlatform = (msg.value * platformBps) / 10_000;\n        uint256 toAuthor = msg.value - toPlatform;\n\n        recipe.crafts += 1;\n        recipe.earned += uint128(toAuthor);\n\n        vault.credit{value: toAuthor}(author);\n        if (toPlatform > 0) {\n            vault.credit{value: toPlatform}(owner);\n        }\n\n        emit Crafted(recipeId, msg.sender, author, msg.value, toAuthor);\n    }\n\n    /// @notice What a craft of this recipe would pay out, before it happens.\n    /// Lets the site show the author's cut next to the price rather than\n    /// asking anyone to take it on faith.\n    function quote(uint256 amount)\n        external\n        view\n        returns (uint256 toAuthor, uint256 toPlatform)\n    {\n        toPlatform = (amount * platformBps) / 10_000;\n        toAuthor = amount - toPlatform;\n    }\n\n    function authorOf(bytes32 recipeId) external view returns (address) {\n        return recipes[recipeId].author;\n    }\n\n    function setPlatformBps(uint16 bps) external onlyOwner {\n        if (bps > MAX_PLATFORM_BPS) revert ShareTooHigh();\n        platformBps = bps;\n        emit PlatformBpsChanged(bps);\n    }\n\n    function setOwner(address newOwner) external onlyOwner {\n        if (newOwner == address(0)) revert ZeroAddress();\n        owner = newOwner;\n        emit OwnerChanged(newOwner);\n    }\n}\n"
+      }
+    }
+  }
+}

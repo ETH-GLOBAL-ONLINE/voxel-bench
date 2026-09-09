@@ -18,6 +18,9 @@ attach.
 | `CONTRIBUTING.md`, `docs/LOG.md` | Drafted both from decisions we made in conversation | Set the rules themselves: branch per track, PRs, no AI attribution in commits, secrets handling |
 | Naming | Screened candidate names for collisions — `forge`/`anvil`/`cast`/`chisel` are Foundry's tools, `Blockbench` is an existing 3D editor for this audience — and generated shortlists | Picked Voxel Bench, and chose the crafting-bench direction for the interface |
 | Scope decisions | Laid out trade-offs: one chain versus three, one orchestrator versus a swarm, which Roblox ownership model to use | Decided all three: one chain, one agent, users bring their own API key |
+| Product direction | Argued each idea back and flagged what it would cost | Brought the ideas: selling model choice through a router with a margin rather than absorbing the model cost; editing an object instead of re-rolling it; seeding a curated library so the model has good work to imitate; and the question about Roblox's visual ceiling that turned into the shape-versus-look distinction |
+| `docs/RECIPE_LIBRARY.md` | Drafted the brief and the catalogue | Rewrote the framing repeatedly: it told an expert which tools not to use, spoke as "we" about a two-person team, assumed the reader had seen our one example, and baked in a port number that was an accident of one machine. All four were caught in review, not by the AI |
+| `FEEDBACK.md` | Measured the behaviour, checked it against the primary documentation, drafted the entries | Asked for it to be verified before being written up, and sharpened the Hedera point to the asymmetry — that `getBalance` and `msg.value` disagree by ten orders of magnitude in the same session |
 
 ## Code
 
@@ -29,6 +32,7 @@ attach.
 | `web/` (Next.js 16, TypeScript, Tailwind 4) | Scaffolded the app and wrote the landing page, the three.js viewer with its 5-stud reference figure, and the API route that serves crafted output with a fallback to the checked-in sample | Directed the design: rejected two palettes before the current one, called out that the hero had fallen out of step with the rest of the page, and asked for the onchain explanation the site was missing |
 | `bench/describe.py`, `bench/llm.py`, `bench/recipe.py` | Wrote the prompt, the provider-agnostic LLM interface, and the schema validator that repairs recoverable model output and rejects the rest | Decided that the model writes recipes and never drives Blender, chose the model on measured latency and token cost rather than capability, and set where the line falls between repairing and rejecting |
 | `bench/to_rbxmx.py` | Wrote the native Roblox parts writer: primitive mapping, the axis and rotation conversion, linear-to-sRGB colour | Diagnosed with us that FBX arrives 100x too large and colourless, and made the call to emit native parts for Roblox rather than bake a texture |
+| `contracts/` — `RecipeBook`, `SplitVault` | Wrote both contracts, nine Solidity tests including a fuzz over the split, the Hardhat and Ignition setup, and the live verification script | Created the Hedera testnet accounts, supplied the sponsor documentation to work from, and decided the split arrangement the contract encodes |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Generated assets
@@ -51,6 +55,11 @@ in so the site has something to display on a fresh clone or a deployment.
 - We corrected Claude in turn — the "shopping mall" framing for Roblox was wrong
   and patronising in a document judges read, the first GLB was rotated so it lay
   on its side, and the first two colour palettes missed what we were after.
+- Two findings on the chain came out of testing rather than reading, and are
+  written up in `FEEDBACK.md` with the evidence: `msg.value` arrives in tinybars
+  on Hedera despite the documentation saying otherwise, and a verification script
+  that reported a broken split when the contract was correct — the same account
+  was playing both roles.
 - Where the AI stated something it was not sure of — whether Open Cloud accepts
   classic 2D clothing, whether Roblox OAuth needs app approval, current DevEx
   rates — those are recorded as open questions in `PLAN.md` section 11 rather
