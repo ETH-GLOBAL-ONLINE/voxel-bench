@@ -187,13 +187,14 @@ Maximum 3 partner prizes per submission.
 | Priority | Track | Why we fit |
 |---|---|---|
 | **1** | **Hedera — AI & Agentic Payments** ($6k, up to 3 teams @ $2k) | Asks literally for x402-gated services that agents discover and pay for without API keys. That is our architecture verbatim. |
-| **2** | **Ledger — AI Agents x Ledger** ($3.5k, pays 3) | Scoped secrets, spending caps, human-in-the-loop. Holding user keys hands us this problem; solving it well is the track. |
+| **2** | **ENS — Best Use of ENSv2** ($4.5k, pays 4) | The track encourages agent identity outright, and each stage of our pipeline is an addressable agent with a different authority. Replaced Ledger, whose tooling needs hardware we do not have — reasoning in `docs/ONCHAIN.md` 3.2b. |
 | **3** | **Circle / Arc — Agentic Economy** ($1.7k) + Launch on Arc ($3.5k) | USDC subscription and agent-held wallets. Only if Friday has room. |
 
-Backup if one falls through: **ENS — Best Use of ENSv2** ($4.5k, pays 4), agent
-identity via subnames. Cheap to add, large pool, first thing to cut.
-
-Not chasing: 1inch, Uniswap, Chainlink. No honest fit and forcing it shows.
+Not chasing: 1inch, Uniswap, Chainlink. No honest fit, and forcing one to
+collect a logo is visible to judges. Ledger was priority 2 until its tooling
+turned out to require a physical device; `docs/ONCHAIN.md` 3.2b has the
+reasoning, which is worth keeping since the question came up repeatedly for
+other teams too.
 
 ### The pitch angle worth keeping
 

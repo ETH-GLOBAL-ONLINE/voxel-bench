@@ -54,9 +54,12 @@ split.
 | `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
 | `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
 
-What is left of the contracts is `Allowance`: the cap the crafting agent cannot
-raise itself, which is the Ledger track's argument and the one place a human
-signature has to be required.
+`Allowance` is deployed too — `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` —
+and verified against the chain: the agent drew 0.05 HBAR and was refused 10.
+The cap is a wall rather than a policy, because the money it cannot draw is
+money it does not have.
+
+Nothing is left of the contracts.
 
 ### 1b. The original three-contract plan, for reference
 
@@ -202,7 +205,8 @@ was scheduled for Friday.
 ## Decisions still open
 
 - **Which three partner prizes** to select at submission. Current order is
-  Hedera, Ledger, Circle/Arc, with ENS in reserve — `PLAN.md` section 6.
+  Hedera, ENS, Circle/Arc — `PLAN.md` section 6. Ledger was second until its
+  tooling turned out to need a physical device; `docs/ONCHAIN.md` 3.2b.
 - **Whether materials are worth a day** before scripts. They probably are: more
   visible improvement per hour than anything else on the list.
 - **What to do about latency.** Gemini's free tier ranges 3 to 48 seconds for

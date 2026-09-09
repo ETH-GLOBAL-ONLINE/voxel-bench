@@ -108,30 +108,53 @@ This maps onto the product rather than being bolted on: **previewing costs
 cents, publishing costs more**, so nobody pays to publish something they have
 not seen.
 
-### 3.2 Ledger — AI Agents x Ledger (priority 2)
+### 3.2 ENS — Best Use of ENSv2 (priority 2)
 
-**The track asks for:** the Ledger Agent Stack where device-backed security is
-central — agents using scoped secrets, secure payments, or human-in-the-loop
-approvals.
+**The track asks for:** ENSv2 on Sepolia using the hierarchical registry,
+wildcard resolution, Enhanced Access Control or Permissioned Resolvers, and
+explicitly encourages AI agent identity.
 
-**Why we are a natural fit rather than a stretch:** our own product design hands
-us this problem twice.
+**Why it fits:** each stage of the pipeline is an addressable agent with a
+different authority. `recipe`, `craft` and `publish` are separate services that
+charge separately and can do different things, which is exactly the shape a
+hierarchy of names with per-name permissions is for.
 
-1. **We hold other people's Roblox API keys.** Users bring their own key so the
-   asset lands in their account. That means we store third-party secrets, which
-   makes us a target. Scoped storage and a hardware-held key ring is the correct
-   answer, not a nice-to-have.
-2. **The agent spends money.** Raising its cap, or approving an unusually large
-   craft, is exactly the human-in-the-loop confirmation the track describes.
+It also finishes a sentence we currently say by half. "The agent discovers
+services and pays for them" is true of the paying; the discovering is a URL we
+hand it. Subnames make discovery a lookup rather than a configuration file,
+which is what ENS is for.
 
-**What we build:** the agent's operating allowance is scoped and low. Anything
-above it — raising the cap, a batch craft, withdrawing from the split vault —
-requires a device confirmation from a human. Roblox keys move out of plain
-application storage into scoped secret handling.
+**What we build:** `recipe.voxelbench.eth`, `craft.voxelbench.eth` and
+`publish.voxelbench.eth`, each resolving to its service and carrying, through
+Enhanced Access Control, what that service may be paid and what it may do.
 
-Note that Roblox API keys carry an IP allowlist. Users allowlist our server, so
-a leaked key is useless anywhere else. That is defence in depth beneath the key
-handling, not a replacement for it.
+### 3.2b Why not Ledger
+
+Ledger's AI Agents track was our second priority until we tried to reach it. It
+is out, and the reasoning is worth keeping because the numbers alone would have
+justified the swap anyway.
+
+**Their tooling needs hardware we do not have.** `wallet-cli ring init` — which
+the track names specifically — lists "a Ledger on USB" as a prerequisite in its
+own README. Ledger confirmed during the event that no devices would be provided
+and pointed at the Speculos emulator instead.
+
+**But Speculos does not reach the part that matters.** `ring init` only
+constructs node-hid and webusb transports, so an emulated device is not
+something it can talk to. The SDK does ship `@ledgerhq/speculos-transport` and
+its trustchain tests use `createSpeculosDevice`, so the capability exists — it
+is the CLI that does not expose it. Reaching the Key Ring would mean driving the
+SDK directly and reimplementing what the CLI does, which the track's own wording
+("in particular on the Ledger Key Ring CLI") may not accept.
+
+**And ENS is simply the better prize.** $4,500 paying four places against
+$3,500 paying three, with no hardware and a known path. With a maximum of three
+partner prizes, ENS wins on the numbers even if the hardware had been solved.
+
+The counter-argument, for honesty: that same friction thins the field, and a
+smaller pool among fewer entrants can be better odds. We chose against it on
+time — it is Wednesday, and "make Speculos talk to a CLI that does not support
+it" is research of unknown length, while ENS subnames is a task of known size.
 
 ### 3.3 Circle / Arc — Agentic Economy, and Launch on Arc (priority 3)
 
@@ -147,15 +170,9 @@ published price per service, and its allowance is enforced onchain.
 listed because the settlement layer genuinely wants a stablecoin, not to collect
 another logo.
 
-### 3.4 ENS — Best Use of ENSv2 (backup)
+### 3.4 What is held in reserve
 
-Held in reserve. The track explicitly encourages AI agent identity, and each
-service in our pipeline is an addressable agent that could carry a subname with
-its permissions attached — `craft.voxelbench.eth`, `publish.voxelbench.eth` —
-using Enhanced Access Control to express what each may spend.
-
-It is cheap to add and the pool is large, but it is the first thing to drop if
-the week tightens, because identity is not load-bearing for the demo.
+Nothing, now. The three above are the three we are entering.
 
 ### 3.5 What we are not chasing, and why
 
