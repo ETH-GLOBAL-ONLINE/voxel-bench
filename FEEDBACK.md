@@ -14,7 +14,7 @@ have left out anything we suspect but did not verify.
 
 **The testnet facilitator being public and free is the reason x402 was viable
 for us at all.** `x402.org/facilitator` needs no account and no application,
-which meant the payment layer was something we could try on a Wednesday rather
+which meant the payment layer was something we could try in an afternoon rather
 than something we had to plan around.
 
 **`hedera-dev/x402-inference-pay-per-request-poc` answered more questions than

@@ -1,7 +1,8 @@
 # How we work
 
 Two people, six days, and a hackathon that reads the git history. These rules
-exist so the history is legible on Sunday, not so process feels good on Tuesday.
+exist so the history is legible at the end, not so process feels good in the
+middle.
 
 ## Nobody commits to `main`
 
@@ -72,7 +73,7 @@ Write what changed and why in the body, not just what.
 
 The disclosure required by the rules lives in [AI_USAGE.md](AI_USAGE.md), which
 is where judges will look for it. Keep it current as you go — writing it from
-memory on Saturday produces a worse and less accurate document.
+memory at the end produces a worse and less accurate document.
 
 No `Co-Authored-By` trailers, no assistant signatures in commits.
 

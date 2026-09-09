@@ -1,7 +1,6 @@
 # Voxel Bench — plan
 
-ETHOnline 2026 · Classic track (from scratch) · submission Sun 13 Sep, 12:00 EDT
-Team of 2.
+ETHOnline 2026 · Classic track, built from scratch · a team of two.
 
 Written in English so both of us and any judge can read it.
 
@@ -140,14 +139,14 @@ That last row is why this matters. **A bench that shows whose recipe you are
 using and what they earn from it explains the entire economic model without a
 line of narration.** In a three-minute video, that is worth more than a slide.
 
-**Scaffolded Monday**, ahead of the original plan, because with two people Track
+**Scaffolded early**, ahead of the original plan, because with two people Track
 B does not have to wait on Track A. Next.js + TypeScript + Tailwind is up, with
 the crafted object already viewable in the browser.
 
 The standing constraint is on *polish*, not on existence: a beautiful interface
-is exactly the thing that eats a whole week, and if there is no real `assetId`
-by Tuesday there is nothing worth decorating. Track B builds structure first and
-finishes it Friday.
+is exactly the thing that eats a whole week, and until there is a real `assetId`
+there is nothing worth decorating. Track B builds structure first and finishes
+it last.
 
 Palette: warm grey ground under an amber accent. A saturated brown floor reads
 as a tavern rather than a workshop, so the warmth lives in the accent and the
@@ -188,7 +187,7 @@ Maximum 3 partner prizes per submission.
 |---|---|---|
 | **1** | **Hedera — AI & Agentic Payments** ($6k, up to 3 teams @ $2k) | Asks literally for x402-gated services that agents discover and pay for without API keys. That is our architecture verbatim. |
 | **2** | **ENS — Best Use of ENSv2** ($4.5k, pays 4) | The track encourages agent identity outright, and each stage of our pipeline is an addressable agent with a different authority. Replaced Ledger, whose tooling needs hardware we do not have — reasoning in `docs/ONCHAIN.md` 3.2b. |
-| **3** | **Circle / Arc — Agentic Economy** ($1.7k) + Launch on Arc ($3.5k) | USDC subscription and agent-held wallets. Only if Friday has room. |
+| **3** | **Circle / Arc — Agentic Economy** ($1.7k) + Launch on Arc ($3.5k) | USDC subscription and agent-held wallets. The wiring exists; what is left is a faucet and a token association. |
 
 Not chasing: 1inch, Uniswap, Chainlink. No honest fit, and forcing one to
 collect a logo is visible to judges. Ledger was priority 2 until its tooling
@@ -211,27 +210,23 @@ True, on-topic, and it scores originality and WOW.
 
 ---
 
-## 7. Schedule
+## 7. How the work is ordered
 
-We are two people, so this runs as two tracks in parallel from Tuesday. An
-earlier version of this plan had the UI starting Thursday; that was written for
-one person and was wrong. The Thursday constraint applies to *polishing* the
-bench, not to scaffolding it.
+Two people, two tracks running in parallel. **Track A** is the pipeline, the
+chain and the agent; **Track B** is the frontend and the wallet. The split
+exists so neither waits on the other, not to keep anyone in a lane — whoever is
+free takes what is next.
 
-**Track A — pipeline, chain, agent.** **Track B — frontend and wallet.**
+The order is kept in `docs/STATUS.md`, which is the one place it lives so it
+cannot disagree with itself. It changes as we learn, which is the point of
+keeping it in one file rather than baked into a plan written before we started.
 
-| Day | Track A | Track B |
-|---|---|---|
-| **Mon 7** (done) | Crafter working: recipe to FBX/GLB/preview, headless, ~7s. Studs conversion. Uploader written, untested. | Site scaffolded early: Next.js 16 + TS + Tailwind 4, crafted GLB orbitable in the browser, landing copy done |
-| **Tue 8** | **First real upload, real assetId.** Verify in Studio against a character. | Scaffold Next.js + TS + Tailwind (done Mon), wallet connect working |
-| **Wed 9** | `RecipeBook` + splits contract on Hedera testnet. Orchestrator wallet. Luau scripts on objects via `.rbxmx`. | Bench layout: slots, recipe panel, output slot. Static data is fine. |
-| **Thu 10** | x402 gating. Agent pays per craft. Spending cap onchain. | Wire the bench to the real API: prompt in, preview out |
-| **Fri 11** | The obby: place assembly and publish. Cut this first if anything slipped. | Recipe marketplace view, the "recipe by @author" line, wallet state |
-| **Sat 12** | **Freeze code at midday.** Record the video. README, AI_USAGE, FEEDBACK. | Same |
-| **Sun 13** | Submit in the morning. Deadline is 12:00 EDT — not 11:50. | — |
+Two things are fixed regardless of order:
 
-The landing page *is* the bench. No separate marketing site: a "Launch App"
-button costs fifteen seconds of a three-minute video and scores nothing.
+- **The video is recorded before the deadline, not at it.** Recording takes
+  longer than anyone plans for.
+- **Anything that would leave the demo half-working gets cut rather than
+  rushed.** Section 10 is built so the video shortens instead of breaking.
 
 ### Stack
 
@@ -244,25 +239,23 @@ kits are explicitly allowed by the rules; prior project code is not.
 
 | Point | If it works | If it fails |
 |---|---|---|
-| **Tue: Roblox accepts the FBX** | Continue as planned | Retry as GLB. If that also fails, Roblox becomes optional: the three.js viewer is the primary output and the pitch becomes an engine-agnostic asset factory. The onchain half is untouched either way. |
-| **Wed: contract deploys to Hedera testnet** | Continue | Deploy to any EVM testnet and drop the Hedera prize; keep x402 as the story |
-| **Thu: x402 gating works end to end** | Continue | Gate one service instead of three, and demo that one honestly |
-| **Fri: stretches** | Bonus prize | Drop without hesitation. They are labelled stretch for a reason. |
+| **Roblox accepts what we send** | Continue as planned | Retry as GLB. If that also fails, Roblox becomes optional: the three.js viewer is the primary output and the pitch becomes an engine-agnostic asset factory. The onchain half is untouched either way. |
+| **The contracts deploy to Hedera testnet** | Continue | Deploy to any EVM testnet and drop the Hedera prize; keep x402 as the story |
+| **x402 gating works end to end** | Continue | Gate one service instead of three, and demo that one honestly |
+| **The stretches** | Bonus prize | Drop without hesitation. They are labelled stretch for a reason. |
 
 Nothing in the left column is load-bearing for the project as a whole. Every
 failure has a version of the demo that still runs.
-
----
 
 ## 8. Risks
 
 | Risk | Mitigation |
 |---|---|
 | **Agentic Blender produces junk** | Narrow domain, parametric composition, not freehand geometry. The preview gate means the user never publishes something they haven't seen. |
-| **Roblox API rejects the FBX, or is down during the demo** | The pipeline already emits GLB. A three.js web viewer is the parallel output. If Roblox fails on Saturday, the demo still runs. |
+| **Roblox API rejects the FBX, or is down during the demo** | The pipeline already emits GLB. A three.js web viewer is the parallel output. If Roblox is down while we record, the demo still runs. |
 | **Three integrations, all shallow** | One chain with one clear job. Arc and ENS are explicitly cuttable. |
 | **We hold user secrets and leak one** | Encrypted at rest, `assets` scope only, IP-allowlisted to our server, never logged. |
-| **The bench UI eats the week** | It does not start before Thursday, and it is CSS-heavy by design. |
+| **The bench UI eats the week** | Structure first, polish last, and it is CSS-heavy by design. |
 
 ---
 
@@ -339,7 +332,7 @@ terrible.
 - **A VPS for the crafter.** Roughly 2 vCPU and 4 GB is plenty for scenes this
   small; €4 to $12 a month. Deliberately *not* this week: HTTPS, systemd and the
   EEVEE problem below would cost half a day, and a tunnel to a laptop gets us to
-  Sunday.
+  the end.
 
   The trap waiting there: **EEVEE needs a GPU**, and cheap VPSs do not have one.
   Either render with Cycles on CPU — fine for a 400-triangle scene, and the
@@ -353,15 +346,15 @@ terrible.
 ## 10. The demo video, built to survive cuts
 
 Three minutes, and the pieces most likely to be cut are at the end on purpose.
-If Friday goes badly the video is shorter, not broken.
+If the last items slip, the video is shorter rather than broken.
 
 | Time | Beat | Depends on |
 |---|---|---|
 | 0:00–0:20 | The problem: a game needs hundreds of objects, each modelled by hand | nothing |
-| 0:20–1:00 | Prompt, craft, preview, publish. A real `assetId` in a real account | **Tuesday** |
-| 1:00–1:40 | The agent pays per craft. Spending cap lives onchain, not in the prompt | Wednesday, Thursday |
-| 1:40–2:20 | The marketplace: this recipe is someone else's, and they earn from it | Wednesday |
-| 2:20–2:50 | **The wow: here is an obby built from these recipes. Click it. Play it.** | Friday, first to cut |
+| 0:20–1:00 | Prompt, craft, preview, publish. A real `assetId` in a real account | done |
+| 1:00–1:40 | The agent pays per craft. Spending cap lives onchain, not in the prompt | done |
+| 1:40–2:20 | The marketplace: this recipe is someone else's, and they earn from it | the marketplace view |
+| 2:20–2:50 | **The wow: here is an obby built from these recipes. Click it. Play it.** | the obby, first to cut |
 | 2:50–3:00 | The bounded claim, and what comes next | nothing |
 
 Cut the obby and beats 1 to 4 still make a complete two-and-a-half minute video
@@ -377,7 +370,7 @@ reject AI voiceover, text-to-speech, phone recordings, and anything outside the
 ## 11. Open questions — verify before they reach the pitch
 
 - [ ] Does Open Cloud accept classic 2D clothing (Shirt/Pants/TShirt) uploads,
-      or only Decal? Determines whether the Friday stretch is real.
+      or only Decal? Determines whether the 2D clothing stretch is real.
 - [ ] Does Roblox OAuth 2.0 for Open Cloud require app registration/approval?
       Determines how honest the roadmap slide can be.
 - [ ] Current Roblox DevEx rate and minimum payout. Quoted in the pitch as "the
