@@ -23,10 +23,10 @@ The economics, in three points:
 
 1. **Creators keep their game revenue in full.** We charge for crafting, not for
    what the game earns.
-2. **Payment is in stablecoins, for a practical reason.** Roblox creators are
-   worldwide and many are young and unbanked. Charging two cents to someone in
-   Manila is possible onchain and uneconomic through card rails, where the fee
-   exceeds the charge.
+2. **Payment is in stablecoins, for a practical reason.** The unit of sale is
+   one craft, which should cost cents. Card rails cannot process a two-cent
+   charge for less than two cents, and a large share of Roblox creators are
+   young enough that a card is not theirs to use in the first place.
 3. **Recipes earn.** Every object is crafted from a reusable recipe. If forty
    people craft with your recipe, you are paid on each craft, split onchain.
    The accounting is public, so nobody has to trust ours.

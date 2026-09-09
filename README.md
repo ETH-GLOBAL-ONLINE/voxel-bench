@@ -38,6 +38,7 @@ Three stages:
 | | |
 |---|---|
 | [docs/STATUS.md](docs/STATUS.md) | **what works today and what is left, with where to start on each** |
+| [docs/RECIPE_LIBRARY.md](docs/RECIPE_LIBRARY.md) | building the recipe library: the loop, the format, and a catalogue of themed kits |
 | [PLAN.md](PLAN.md) | the plan: schedule, decisions and why, risks, the demo structure |
 | [docs/ONCHAIN.md](docs/ONCHAIN.md) | every use of the chain, the non-blockchain alternative we rejected, and the sponsor tracks |
 | [docs/LOG.md](docs/LOG.md) | what has actually been built and measured, and what has not |
@@ -151,7 +152,7 @@ Two processes: the crafter needs Blender and a real machine, the site does not.
 
 ```bash
 python services/crafter.py            # the bench, :8000
-cd web && npm install && npm run dev  # the site, :3002
+cd web && npm install && npm run dev  # the site; Next prints the port
 ```
 
 The site finds the crafter through `CRAFTER_URL` (see `web/.env.local`). Without

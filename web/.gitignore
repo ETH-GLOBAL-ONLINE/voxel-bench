@@ -46,3 +46,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# The template is meant to be committed; it must come after every .env rule,
+# because in gitignore the last matching rule wins.
+!.env.example

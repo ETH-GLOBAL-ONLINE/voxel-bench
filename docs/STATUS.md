@@ -14,8 +14,8 @@ what finished looks like, so you should not need to ask.
 done, end to end, in the browser.
 
 ```bash
-python services/crafter.py          # the bench, :8000
-cd web && npm run dev               # the site, :3002
+python services/crafter.py          # the crafter, :8000
+cd web && npm run dev               # the site; Next prints the port
 ```
 
 | Piece | State | Measured |
@@ -77,7 +77,22 @@ priority, and it asks for exactly this.
 **Done looks like** the orchestrator paying per call from its own wallet, no
 shared secrets between stages, and a spending cap the agent cannot raise itself.
 
-### 3. The recipe marketplace · Track B
+### 3. The recipe library · anyone with a 3D eye, no code needed
+
+A curated set of good recipes does three things at once: it gives the model
+better examples to imitate, it makes anything already in the library craft
+instantly with no model call, and it means the marketplace has stock rather
+than being an empty shelf on Sunday.
+
+The fourth thing is worth more than the recipes: whoever builds it will find
+out what the model gets wrong *systematically*, and each of those is one line
+in the prompt that fixes every future craft.
+
+**Start at** [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) — the loop, the
+format, what makes a recipe good, what our five primitives do badly, and a
+catalogue organised as themed kits that can build whole games.
+
+### 4. The recipe marketplace · Track B
 
 Not a new system — it is the interface to `RecipeBook`. Publish a recipe, others
 craft with it, you earn per craft.
@@ -90,7 +105,7 @@ gets faster as it gets more recipes.
 **Start at** `web/app/components/Bench.tsx`. The card in the "Why onchain"
 section of `page.tsx` is the shape it should take, currently illustrative.
 
-### 4. Roblox materials · Track A, cheap and high value
+### 5. Roblox materials · Track A, cheap and high value
 
 Every Roblox part has a `Material` property — `Wood`, `Metal`, `Slate`,
 `CorrodedMetal`, `Grass`. Setting it gives real surface texture with no image,
@@ -105,7 +120,7 @@ Blender too — map each material to a roughness and a little relief.
 `bench/describe.py`. Verify the enum values by asking Studio through the MCP
 rather than trusting a list.
 
-### 5. Luau scripts on objects · Track A
+### 6. Luau scripts on objects · Track A
 
 A crate that sits there is decoration; a crate that gives you coins when touched
 is a mechanic. Generating Luau is the *easy* part of this project — it is
@@ -118,7 +133,7 @@ we already write.
 scripts. If that takes hours rather than seconds, scripts cannot be in a live
 demo.
 
-### 6. The obby · Track A — the wow, and the first thing to cut
+### 7. The obby · Track A — the wow, and the first thing to cut
 
 An obby is a sequence of platforms, hazards, checkpoints and a finish, which is
 spatial arrangement of objects. **An obby is a recipe of recipes.** Nothing new
@@ -130,7 +145,7 @@ need to regenerate.
 **Cut this first if anything slips.** See `PLAN.md` section 10: the demo video is
 built so that losing this shortens it rather than breaking it.
 
-### 7. The video · Saturday, both of us
+### 8. The video · Saturday, both of us
 
 Two to four minutes, **narrated by one of us** — the rules reject AI voiceover,
 text-to-speech and phone recordings. Structure and fallbacks are in `PLAN.md`

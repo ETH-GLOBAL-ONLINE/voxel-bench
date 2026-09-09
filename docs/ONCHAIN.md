@@ -21,9 +21,10 @@ between the platform and that author. No Roblox revenue is ever involved.
 
 ### 2.1 Charging two cents to someone with no bank account
 
-Roblox creators are worldwide, skew young, and frequently have neither a credit
-card nor a bank account. Our unit of sale is a single craft, which should cost
-cents.
+Our unit of sale is a single craft, which should cost cents. Roblox creators
+skew young, so a card is frequently not theirs to use, and the platform's reach
+is global enough that assuming any particular payment rail excludes a real share
+of them.
 
 Card rails cannot do this. A two-cent charge costs more than two cents to
 process, before considering that the customer has no card. Subscriptions would
