@@ -12,9 +12,46 @@ remembered.
 Branch per track, matching the plan:
 
 ```
-track-a/<what>     pipeline, contract, agent      e.g. track-a/roblox-upload
-track-b/<what>     frontend and wallet            e.g. track-b/bench-layout
+track-a/<thing>    pipeline, contract, agent
+track-b/<thing>    frontend and wallet
 ```
+
+**`<thing>` names what you are working on, not what you did to it.** A branch
+is a place to put work, so it should read like a topic you could come back to:
+
+```
+track-a/allowance          the contract
+track-a/crafter-stages     splitting the pipeline
+track-b/recipe-marketplace the view
+```
+
+not
+
+```
+track-a/allowance-and-the-prize-swap
+track-a/llm-deadlines-and-groq
+track-b/the-bench-in-the-browser
+```
+
+Those are descriptions of a pull request wearing a branch's clothes. They do
+not group anything and they are useless to search. Two or three words, a noun
+phrase, lowercase with hyphens.
+
+## Titles say what changed
+
+Pull request titles and commit subject lines are the same job: name the change.
+Save the reasoning for the body, where there is room for it and where someone
+looking for it will actually be looking.
+
+```
+Add the Allowance contract
+Split crafting into three stages
+Fix the preview writing outside the project
+```
+
+The body is where "why" lives, and it should — a change nobody can explain is
+worse than an ugly title. But a title that reads as a sentence is a title doing
+the body's job badly.
 
 Open the PR early, even while the work is unfinished — it is how the other
 person sees what is coming without asking.
