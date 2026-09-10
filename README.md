@@ -117,7 +117,8 @@ for nothing — worth having, since running the bench should not require a funde
 wallet.
 
 `VOXEL_ENS_PARENT` turns on name resolution. Without it the agent uses
-`PAYWALL_URL` and takes each price from the 402 that states it, and says so.
+`PAYWALL_URL` and takes each price from the 402 that states it — enough to craft
+on a fresh clone, with only its own cap and nothing to check a price against.
 
 ## Where it runs
 

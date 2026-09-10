@@ -93,8 +93,9 @@ Each service holds exactly one role on its own name: permission to write its own
 cannot make the two numbers agree. `Allowance` stops the agent overspending;
 this stops a service overcharging.
 
-Without `VOXEL_ENS_PARENT`, or with Sepolia unreachable, the agent falls back to
-`PAYWALL_URL` and says so. Running the bench should not need a second chain.
+If Sepolia is unreachable the agent says so on the page and falls back to the
+configured endpoint, where it has only its own cap and no second price to check
+against. Enough to craft on a fresh clone; not the arrangement being built.
 
 ### Where it runs
 
