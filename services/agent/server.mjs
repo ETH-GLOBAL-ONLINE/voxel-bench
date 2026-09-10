@@ -64,8 +64,10 @@ function ledger(stages) {
   return stages.map((s) => ({
     stage: s.stage,
     description: s.description,
-    amount: s.hbar.amount,
-    label: tinybar(s.hbar.amount),
+    amount: s.price,
+    // Without a name there is no quote until the 402 arrives, and a price the
+    // page does not know yet should read as unknown rather than as zero.
+    label: s.price ? tinybar(s.price) : "quoted on request",
     status: "quoted",
     seconds: null,
     transaction: null,
@@ -171,6 +173,10 @@ function start(kind, offer, stages) {
     agent: agent.accountId,
     payTo: offer.payTo,
     network: offer.network,
+    // Where the terms came from, so the page can say whether the prices it is
+    // showing were resolved from names or taken from the service's own word.
+    discovery: offer.source,
+    parent: offer.parent ?? null,
     payments: ledger(stages),
   });
   return id;
@@ -196,7 +202,7 @@ app.post("/craft", async (req, res) => {
   const offer = await quote(res);
   if (!offer) return;
 
-  const stages = offer.stages.filter((s) => s.stage !== "publish");
+  const stages = Object.values(offer.services).filter((s) => s.stage !== "publish");
   const id = start("craft", offer, stages);
 
   runCraft(id, prompt.slice(0, 280));
@@ -215,7 +221,7 @@ app.post("/publish", async (req, res) => {
   const offer = await quote(res);
   if (!offer) return;
 
-  const stages = offer.stages.filter((s) => s.stage === "publish");
+  const stages = Object.values(offer.services).filter((s) => s.stage === "publish");
   const id = start("publish", offer, stages);
 
   runPublish(id, String(name), String(apiKey), String(userId));
@@ -243,7 +249,16 @@ app.get("/health", async (_req, res) => {
   } catch {
     // the paywall being down is a fact to report, not an error here
   }
-  res.json({ ok: true, agent: agent.accountId, paywall, crafter, jobs: jobs.size });
+  const terms = await agent.offer().catch(() => null);
+  res.json({
+    ok: true,
+    agent: agent.accountId,
+    paywall,
+    crafter,
+    jobs: jobs.size,
+    discovery: terms?.source ?? null,
+    parent: terms?.parent ?? null,
+  });
 });
 
 app.listen(PORT, "127.0.0.1", () => {

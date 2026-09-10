@@ -99,6 +99,58 @@ about how much the party who does is paying.
 
 ---
 
+---
+
+## ENS
+
+### The commitment window runs on the chain's clock, not yours
+
+Registration is a commit, a sixty-second wait, and a reveal. We waited
+sixty-five seconds by our own clock and the reveal reverted with
+`CommitmentTooNew`.
+
+Sepolia's head runs a few seconds behind wall time, and the gas estimate that
+precedes the send is simulated against the latest block. So the wait has to be
+measured in block timestamps — read `commitmentAt(commitment)`, add
+`MIN_COMMITMENT_AGE`, and poll until a block says it has passed.
+
+The documentation says "wait at least MIN_COMMITMENT_AGE (60 seconds)", which is
+true of the contract and misleading about the client. One sentence naming the
+block timestamp as the thing that counts would have saved the first attempt.
+
+### Resolving a name a record at a time costs twenty-four seconds
+
+Three names, five text records each. Fetched one after another through the
+Universal Resolver this took **24 seconds** — longer than the craft it precedes.
+Issued together so the client's batcher can collapse them into multicalls, the
+same fifteen lookups take **1.0 second**.
+
+A twenty-fourfold difference between the obvious way to write it and the fast
+one is worth a line in the app developer guide. The batching is the client's
+job, but nothing prompts you to ask for it, and a first integration will be
+written the slow way.
+
+### Reverts are legible, once you have the ABI
+
+`0x6be614e3` and `0x4b27a133` mean `CommitmentTooNew` and
+`EACUnauthorizedAccountRoles`. Both were only findable by pulling the interface
+from the contracts repository and hashing candidate signatures — neither is in
+4byte.directory. Publishing the error selectors alongside the deployment
+addresses would be cheap and would make a bad afternoon a short one.
+
+### Enhanced Access Control fits agent-to-agent payment better than we expected
+
+`authorizeTextRoles(name, key, account, grant)` grants the right to write **one
+text key on one name**. We used it to let each service edit its own `url` and
+nothing else, which makes its price a number it cannot change.
+
+We went looking for a way to describe a service and found a way to constrain
+one. That is a stronger primitive than the track's framing suggests, and it is
+worth naming in the documentation: per-record delegation is how you publish
+terms that the party being paid cannot rewrite.
+
+---
+
 ## Roblox Open Cloud
 
 Not a sponsor, but the same category of finding and it is where we lost the most

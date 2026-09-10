@@ -11,6 +11,7 @@ import { createClientHederaSigner } from "@x402/hedera";
 import { ExactHederaScheme } from "@x402/hedera/exact/client";
 
 export { loadEnv } from "../env.mjs";
+import { disagreement, discover } from "./discover.mjs";
 
 export const PAYWALL = () => process.env.PAYWALL_URL ?? "http://127.0.0.1:4402";
 export const ASSET = () => process.env.VOXEL_PAY_ASSET ?? "hbar";
@@ -74,26 +75,62 @@ export function createAgent() {
   // instance that made the payment, and only this layer knows how to decode
   // the header the facilitator sets.
   const http = new x402HTTPClient(client);
+
+  // Before signing anything, check the bill against the name.
+  //
+  // A 402 is the service stating its own price. When the stage was discovered
+  // through ENS there is a second statement to compare it against — one the
+  // service cannot edit, because the role for its `x402:price` record was never
+  // granted to it. Disagreement means something is wrong, and the right move is
+  // to stop rather than to pay the larger of two numbers.
+  //
+  // Throwing here is what stops the payment, but the wrapper reports it as a
+  // failed fetch and the reason is the whole point — so it is kept aside by
+  // url and read back after, where it can be raised properly.
+  const refusals = new Map();
+
+  http.onPaymentRequired(async ({ paymentRequired, requestUrl }) => {
+    const { services } = await discover();
+    const terms = Object.values(services).find((s) => s.url === requestUrl);
+    if (!terms) return;
+
+    for (const requirement of paymentRequired.accepts ?? []) {
+      const wrong = disagreement(terms, requirement);
+      if (wrong) {
+        refusals.set(requestUrl, wrong);
+        throw new Error(wrong);
+      }
+    }
+  });
+
   const paidFetch = wrapFetchWithPayment(globalThis.fetch, http);
 
-  // The stages, their prices and who is paid. Read once and reused, because it
-  // is the menu rather than the order — but read from the service rather than
-  // hardcoded, since a price we assume is a price we can be wrong about.
-  async function offer() {
-    const res = await fetch(`${PAYWALL()}/services`, {
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error(`the paywall did not answer (${res.status})`);
-    return res.json();
-  }
+  /** The stages, their endpoints and their prices, resolved from names. */
+  const offer = () => discover();
 
   async function callStage(stage, body) {
     const started = Date.now();
-    const res = await paidFetch(`${PAYWALL()}/${ASSET()}/${stage}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const { services } = await discover();
+    const terms = services[stage];
+    if (!terms) throw new Error(`no service called ${stage}`);
+
+    refusals.delete(terms.url);
+
+    let res;
+    try {
+      res = await paidFetch(terms.url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      const refused = refusals.get(terms.url);
+      if (refused) {
+        refusals.delete(terms.url);
+        throw new Error(`did not pay — ${refused}`);
+      }
+      throw err;
+    }
 
     // processResponse decodes the PAYMENT-RESPONSE header the facilitator sets
     // once it has co-signed and submitted, which is where the transaction id
@@ -110,6 +147,8 @@ export function createAgent() {
       body: await res.json(),
       receipt: {
         stage,
+        url: terms.url,
+        quoted: terms.price,
         seconds: Number(((Date.now() - started) / 1000).toFixed(1)),
         paid: Boolean(settled?.success),
         transaction: settled?.transaction ?? null,

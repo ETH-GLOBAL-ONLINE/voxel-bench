@@ -77,6 +77,9 @@ and no stage can do another's job. Its per-payment cap is enforced by the client
 before a payment is even constructed.
 
 ```
+             ENS
+              │  names, prices, who is paid
+              ▼
 site  ──►  agent  ──402──►  paywall  ──►  crafter  ──►  Roblox
              │                    │
           wallet              3 prices
@@ -86,6 +89,12 @@ site  ──►  agent  ──402──►  paywall  ──►  crafter  ──�
 The site asks the agent, not the crafter. That is the whole arrangement: the
 browser watches an agent spend its own money, stage by stage, and never holds a
 key or signs anything.
+
+The agent finds the services by resolving `recipe.voxelbench.eth`,
+`craft.voxelbench.eth` and `publish.voxelbench.eth` on ENSv2, and each name
+carries the price. When a 402 asks for something the name does not say, it does
+not sign. A service may edit its own `url` record and not its price, so the two
+numbers are not both written by the party being paid.
 
 Run it:
 
@@ -106,6 +115,10 @@ The agent needs `HEDERA_AGENT_ACCOUNT_ID` and `HEDERA_AGENT_PRIVATE_KEY`. Withou
 them, point `web/.env.local` at `CRAFTER_URL` alone and the site crafts directly
 for nothing — worth having, since running the bench should not require a funded
 wallet.
+
+`VOXEL_ENS_PARENT` turns on name resolution. Without it the agent uses
+`PAYWALL_URL` and takes each price from the 402 that states it — enough to craft
+on a fresh clone, with only its own cap and nothing to check a price against.
 
 ## Where it runs
 

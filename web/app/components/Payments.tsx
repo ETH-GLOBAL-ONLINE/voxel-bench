@@ -32,12 +32,22 @@ export default function Payments({
   payments,
   payTo,
   network,
+  discovery,
+  parent,
 }: {
   payments: Payment[];
   payTo?: string | null;
   network?: string | null;
+  discovery?: string | null;
+  parent?: string | null;
 }) {
   if (!payments.length) return null;
+
+  // When the terms came from ENS, the stage is shown as the name it was read
+  // from. The point is not decoration: that name is where the price came from,
+  // and the service cannot edit it.
+  const resolved = discovery === "ens" && Boolean(parent);
+  const label = (stage: string) => (resolved ? `${stage}.${parent}` : stage);
 
   const total = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const settled = payments.filter((p) => p.status === "paid").length;
@@ -48,6 +58,12 @@ export default function Payments({
         <p className="label">
           the agent pays per stage — {settled} of {payments.length} settled
         </p>
+        {resolved && (
+          <p className="label !text-faint">
+            prices resolved from <span className="text-amber">{parent}</span>,
+            not from the service
+          </p>
+        )}
         {payTo && (
           <p className="label !text-faint">
             to <span className="font-mono">{payTo}</span>
@@ -72,7 +88,11 @@ export default function Payments({
               }`}
               aria-hidden
             />
-            <span className="w-16 font-mono text-sm text-ink">{p.stage}</span>
+            <span
+              className={`font-mono text-sm text-ink ${resolved ? "w-52" : "w-16"}`}
+            >
+              {label(p.stage)}
+            </span>
             <span className="w-24 font-mono text-xs text-amber">{p.label}</span>
             <span
               className={`w-20 text-xs ${
