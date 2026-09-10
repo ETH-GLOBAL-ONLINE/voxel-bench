@@ -303,3 +303,51 @@ Every Groq request came back `403 error code 1010`, which is Cloudflare, not
 Groq: it rejects clients by signature and urllib announces itself as
 `Python-urllib/3.12`. Every real SDK sends its own User-Agent and ours sent
 none. One header, and the same call reached the API.
+
+## Cones
+
+### The enum lists four shapes the renderer will not draw
+
+A cone became a cylinder because Roblox has no cone part. That is the wrong
+silhouette for the two things recipes use cones for — spikes and tiered roofs —
+and both arrived wrong: posts, and flat discs.
+
+`SpecialMesh` looked like the route out. `Enum.MeshType.Pyramid` exists, accepts
+the assignment, throws nothing, and renders an invisible part. So do `Prism`,
+`ParallelRamp` and `RightAngleRamp`. Only `Brick`, `Wedge`, `CornerWedge`,
+`Sphere` and `Cylinder` draw anything.
+
+Found by building all nine side by side in Studio and looking, which is the only
+method that would have found it. A deprecated value that errors costs a minute;
+one that silently draws nothing costs an afternoon.
+
+### A cone is four corner wedges
+
+`CornerWedge` is a quarter of a pyramid, and four turned about the up axis close
+into a square-based one. Native parts, no mesh, no upload. Four parts instead of
+one — across all 28 recipes that is 203 parts becoming 233, which is nothing.
+
+A single `CornerWedge` is already spike-shaped and costs one part, but its apex
+sits over a corner rather than the centre, and next to the four-part version the
+difference is obvious.
+
+### A rotation that was free in Blender and was not in Roblox
+
+The pagoda roofs carry `rot: [0, 0, 45]`. On a cone that is a no-op — a cone is
+round — so the recipe could hold it without consequence. As a square pyramid it
+turns the roof into a diamond, and a 6-stud square rotated 45° only covers a
+4.24-stud one. The 4.3-stud body underneath pushed its corners through.
+
+Cones now discard the spin and take their orientation from their axis alone. The
+general shape of this: **a value that is meaningless in the source can become
+meaningful in the target, and it will not announce itself when it does.**
+
+### The report says both numbers now
+
+A cone being four parts means the ingredient count and the part count are no
+longer the same number. Both are reported: one is what the recipe asked for, the
+other is what Roblox receives.
+
+`stage_craft` computed the note about substituted shapes and dropped it, so the
+free path warned and the paid one — the one the site is moving to — did not.
+Both now call the same function.

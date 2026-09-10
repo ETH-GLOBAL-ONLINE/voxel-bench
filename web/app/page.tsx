@@ -12,6 +12,8 @@ type Report = {
   name: string;
   tris: number;
   ingredients: number;
+  // A cone becomes four Roblox parts, so this is not the ingredient count.
+  parts?: number;
   // number[] rather than a 3-tuple: the imported JSON widens it, and a cast
   // through unknown to win that argument would only hide a real mismatch.
   dims_studs: number[];
@@ -203,6 +205,7 @@ export default async function Home() {
             sample={{
               name: report.name,
               ingredients: report.ingredients,
+              parts: report.parts,
               tris: report.tris,
               studs: dims,
             }}

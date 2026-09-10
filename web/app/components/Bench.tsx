@@ -8,6 +8,7 @@ type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
 type Result = {
   name: string;
   ingredients: number;
+  parts: number | null;
   tris: number | null;
   studs: number[];
   model: string;
@@ -16,7 +17,13 @@ type Result = {
   files: Files;
 };
 
-type Sample = { name: string; ingredients: number; tris: number; studs: number[] };
+type Sample = {
+  name: string;
+  ingredients: number;
+  parts?: number;
+  tris: number;
+  studs: number[];
+};
 type Published = { assetId: string; moderation: string; insert: string };
 
 const POLL_MS = 2000;
@@ -170,6 +177,7 @@ export default function Bench({ sample }: { sample: Sample }) {
     ? {
         name: result.name,
         ingredients: result.ingredients,
+        parts: result.parts,
         tris: result.tris,
         studs: result.studs,
         preview: `/api/out/${result.name}_preview.png`,
@@ -179,6 +187,7 @@ export default function Bench({ sample }: { sample: Sample }) {
     : {
         name: sample.name,
         ingredients: sample.ingredients,
+        parts: sample.parts ?? sample.ingredients,
         tris: sample.tris,
         studs: sample.studs,
         preview: `/api/out/${sample.name}_preview.png`,
@@ -284,7 +293,9 @@ export default function Bench({ sample }: { sample: Sample }) {
           ["triangles", shown.tris ? String(shown.tris) : "—"],
           ["studs", shown.studs.map((v) => v.toFixed(1)).join(" × ")],
           ["vs player", `${(shown.studs[2] / 5).toFixed(1)}×`],
-          ["parts", String(shown.ingredients)],
+          // An ingredient is usually one part and a cone is four, so these
+          // two are no longer the same number.
+          ["parts", shown.parts ? String(shown.parts) : "—"],
         ].map(([k, v]) => (
           <div key={k} className="bg-bench-900 px-4 py-3">
             <dt className="label">{k}</dt>

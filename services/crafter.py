@@ -74,6 +74,15 @@ class PublishRequest(BaseModel):
     user_id: Optional[str] = Field(default=None, max_length=32)
 
 
+def _shape_notes(rbx):
+    """What the Roblox conversion had to change, said the same way whichever
+    path asked. The staged path used to compute this and drop it, so the free
+    route warned and the paid one did not."""
+    return ["%s is a cone; Roblox has no cone, so it is built from four "
+            "corner wedges" % name
+            for name in rbx.get("cones_as_pyramids") or []]
+
+
 def _set(job_id: str, **fields):
     with JOBS_LOCK:
         JOBS[job_id].update(fields)
@@ -113,8 +122,7 @@ def _run(job_id: str, prompt: str):
                 rbx = json.loads(line[len("RBXMX_REPORT "):])
 
         size, _ = extents(recipe["ingredients"])
-        for cone in rbx.get("approximated_as_cylinder") or []:
-            notes.append("%s was a cone; Roblox has none, so it is a cylinder" % cone)
+        notes.extend(_shape_notes(rbx))
 
         _set(job_id,
              status="done",
@@ -125,6 +133,8 @@ def _run(job_id: str, prompt: str):
                  "recipe": recipe,
                  "notes": notes,
                  "ingredients": len(recipe["ingredients"]),
+                 # Not the same number since a cone became four parts.
+                 "parts": rbx.get("parts"),
                  "tris": report.get("tris"),
                  "studs": [round(v, 2) for v in size],
                  "model": usage.get("model"),
@@ -286,7 +296,7 @@ def stage_craft(req: CraftStage):
     size, _ = extents(recipe["ingredients"])
     return {
         "name": recipe["name"],
-        "notes": notes,
+        "notes": notes + _shape_notes(rbx),
         "tris": report.get("tris"),
         "studs": [round(v, 2) for v in size],
         "parts": rbx.get("parts"),
