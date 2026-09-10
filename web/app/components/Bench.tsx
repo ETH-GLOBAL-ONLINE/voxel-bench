@@ -26,7 +26,13 @@ type Sample = {
   studs: number[];
 };
 type Published = { assetId: string; moderation: string; insert: string };
-type Ledger = { payments: Payment[]; payTo?: string | null; network?: string | null };
+type Ledger = {
+  payments: Payment[];
+  payTo?: string | null;
+  network?: string | null;
+  discovery?: string | null;
+  parent?: string | null;
+};
 
 const POLL_MS = 2000;
 // The crafter's own deadline is 120s for the recipe plus Blender's time. Give
@@ -112,6 +118,8 @@ export default function Bench({ sample }: { sample: Sample }) {
             payments: data.payments,
             payTo: data.payTo,
             network: data.network,
+            discovery: data.discovery,
+            parent: data.parent,
           });
         }
         if (data.status === "done") {
@@ -174,6 +182,8 @@ export default function Bench({ sample }: { sample: Sample }) {
             payments: data.payments,
             payTo: data.payTo,
             network: data.network,
+            discovery: data.discovery,
+            parent: data.parent,
           });
         }
         if (data.status === "done") {
@@ -271,6 +281,8 @@ export default function Bench({ sample }: { sample: Sample }) {
           payments={ledger.payments}
           payTo={ledger.payTo}
           network={ledger.network}
+          discovery={ledger.discovery}
+          parent={ledger.parent}
         />
       )}
 
@@ -382,6 +394,8 @@ export default function Bench({ sample }: { sample: Sample }) {
           payments={publishLedger.payments}
           payTo={publishLedger.payTo}
           network={publishLedger.network}
+          discovery={publishLedger.discovery}
+          parent={publishLedger.parent}
         />
       )}
 

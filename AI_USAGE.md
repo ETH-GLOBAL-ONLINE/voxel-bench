@@ -44,6 +44,7 @@ would not have come out of reading.
 | `contracts/` — `Allowance` | Wrote the spending cap contract, its tests and the live verification script that draws within the cap and is refused past it | Decided that the cap belongs in a contract rather than in the agent's configuration, and that it is its own contract rather than a modifier |
 | `services/agent/server.mjs`, `web/app/components/Payments.tsx` | Turned the agent into a service the site calls, and built the payment ledger the browser shows while a craft runs | Called for it: the site crafting for free while the agent paid in a terminal was two stories, and the one that mattered was happening where nobody would see it |
 | Cone geometry in `bench/to_rbxmx.py` | Found that a cone was arriving as a cylinder, tested all nine `MeshType` values in Studio, and rewrote cones as four `CornerWedge` parts | **Chose the shape.** The AI recommended the cheaper one-part version; the call was to look at both in Studio and pick the four-part pyramid, because its apex is centred and the one-part version's is not. The AI's own cost objection turned out to be worth 30 parts across 28 recipes, which is nothing |
+| `contracts/scripts/ens/`, `services/agent/discover.mjs` | Registered the name on ENSv2, deployed the subname registry and the permissioned resolver, and rewrote the agent to resolve names instead of reading a URL from a file | Decided what the names are for. The first sketch was three names resolving to three endpoints, which is an address book; the useful version came out of asking what the records could be trusted to say, and landed on the price being a record the service is not allowed to write |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Written without AI
@@ -88,6 +89,10 @@ in so the site has something to display on a fresh clone or a deployment.
   on Hedera despite the documentation saying otherwise, and a verification script
   that reported a broken split when the contract was correct — the same account
   was playing both roles.
+- The ENS entries in `FEEDBACK.md` are the same shape. The commitment window
+  running on the chain's clock rather than ours, and name resolution costing
+  twenty-four seconds written the obvious way against one second batched, were
+  both found by the first attempt failing rather than by reading ahead.
 - Where the AI stated something it was not sure of — whether Open Cloud accepts
   classic 2D clothing, whether Roblox OAuth needs app approval, current DevEx
   rates — those are recorded as open questions in `PLAN.md` section 11 rather

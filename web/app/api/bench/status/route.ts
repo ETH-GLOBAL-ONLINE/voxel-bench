@@ -35,6 +35,8 @@ export async function GET() {
       online,
       paid: target.paid,
       agent: health.agent ?? null,
+      discovery: health.discovery ?? null,
+      parent: health.parent ?? null,
     });
   } catch {
     return Response.json({ online: false, paid: target.paid, reason: "unreachable" });

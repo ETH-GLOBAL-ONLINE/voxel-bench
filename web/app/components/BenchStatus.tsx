@@ -7,6 +7,7 @@ type State = "checking" | "online" | "offline";
 export default function BenchStatus() {
   const [state, setState] = useState<State>("checking");
   const [agent, setAgent] = useState<string | null>(null);
+  const [parent, setParent] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -18,6 +19,7 @@ export default function BenchStatus() {
         // Only when the agent is the bench. Naming the account it spends from
         // is the difference between claiming it pays and showing who does.
         if (d.online && d.paid && d.agent) setAgent(d.agent);
+        if (d.online && d.discovery === "ens") setParent(d.parent);
       })
       .catch(() => alive && setState("offline"));
     return () => {
@@ -45,6 +47,12 @@ export default function BenchStatus() {
         <span className="label !text-faint">
           · agent <span className="font-mono text-amber">{agent}</span> pays per
           stage
+        </span>
+      )}
+      {parent && (
+        <span className="label !text-faint">
+          · services resolved from{" "}
+          <span className="font-mono text-amber">{parent}</span>
         </span>
       )}
     </p>

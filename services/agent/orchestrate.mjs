@@ -42,13 +42,22 @@ async function main() {
   }
 
   const offer = await agent.offer();
-  const total = offer.stages.reduce((sum, s) => sum + Number(s.hbar.amount), 0);
+  const services = Object.values(offer.services);
+  const total = services.reduce((sum, s) => sum + Number(s.price ?? 0), 0);
 
   console.log(`\n  "${prompt}"\n`);
   console.log(`  agent    ${agent.accountId}`);
-  console.log(`  paying   ${offer.payTo} on ${offer.network}`);
-  console.log(`  quoted   ${offer.stages.map((s) => `${s.stage} ${tinybar(s.hbar.amount)}`).join(", ")}`);
-  console.log(`  total    ${tinybar(total)}\n`);
+  if (offer.source === "ens") {
+    console.log(`  found    ${services.length} services under ${offer.parent}`);
+    console.log(`  paying   ${offer.payTo} on ${offer.network}`);
+    console.log(`  quoted   ${services.map((s) => `${s.stage} ${tinybar(s.price)}`).join(", ")}`);
+    console.log(`  total    ${tinybar(total)}\n`);
+  } else {
+    // Worth saying plainly: with no name to check against, the price is
+    // whatever each 402 asks for, and the agent has only its own cap.
+    console.log(`  found    services from configuration — ${offer.why}`);
+    console.log(`  quoted   nothing; each 402 states its own price\n`);
+  }
 
   const { recipe, notes, usage } = await run("recipe", { prompt });
   const built = await run("craft", { recipe });

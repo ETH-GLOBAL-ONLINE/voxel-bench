@@ -114,19 +114,42 @@ not seen.
 wildcard resolution, Enhanced Access Control or Permissioned Resolvers, and
 explicitly encourages AI agent identity.
 
-**Why it fits:** each stage of the pipeline is an addressable agent with a
-different authority. `recipe`, `craft` and `publish` are separate services that
-charge separately and can do different things, which is exactly the shape a
-hierarchy of names with per-name permissions is for.
+**What it fixes.** "The agent discovers services and pays for them" was true of
+the paying and not of the discovering: the agent read `PAYWALL_URL` out of a
+file and took each price from the 402 that asked for it. Both of those are the
+service describing itself. A configuration file is not discovery.
 
-It also finishes a sentence we currently say by half. "The agent discovers
-services and pays for them" is true of the paying; the discovering is a URL we
-hand it. Subnames make discovery a lookup rather than a configuration file,
-which is what ENS is for.
+**What is built.** `voxelbench.eth` is registered on the ENSv2 beta, and its
+children are answered by a registry we deployed rather than by the shared one.
+Under it:
 
-**What we build:** `recipe.voxelbench.eth`, `craft.voxelbench.eth` and
-`publish.voxelbench.eth`, each resolving to its service and carrying, through
-Enhanced Access Control, what that service may be paid and what it may do.
+| Name | Records |
+|---|---|
+| `recipe.voxelbench.eth` | `url`, `x402:price`, `x402:asset`, `x402:network`, `x402:payTo` |
+| `craft.voxelbench.eth` | the same, at its own price |
+| `publish.voxelbench.eth` | the same, at its own price |
+
+The agent resolves the three at startup through the Universal Resolver and reads
+the terms. Then, on every 402, it compares what the service asks against what
+the name says, and refuses to sign when they disagree.
+
+**Why that is worth doing, rather than nice to have.** The service cannot make
+them agree. Each service holds one role on its own name — permission to write
+its own `url` record, so it can move hosts without asking us — and nothing else.
+`x402:price` belongs to the operator.
+
+So the name is a quote and the 402 is a claim, and one of them is not written by
+the party being paid.
+
+That closes a symmetry the project was missing. `Allowance` stops the agent
+spending more than its cap; ENS stops a service charging more than its name.
+Neither limit is a promise in a prompt or a check in our own backend — both are
+permissions on a chain, and the agent verifies them without asking us.
+
+**Non-blockchain alternative considered:** a service registry in our own
+database, or a signed manifest we publish. Rejected for the same reason as 2.2 —
+it works, and it makes us the only party who can say what a service costs. The
+point is that the buyer can check the price without trusting the seller *or* us.
 
 ### 3.2b Why not Ledger
 
