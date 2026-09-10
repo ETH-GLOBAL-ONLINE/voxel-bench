@@ -214,12 +214,35 @@ this section is the evidence that we asked ourselves the same question.
 
 ---
 
-## 6. Open questions
+## 6. Questions we opened, and how they closed
 
-- [ ] Which x402 facilitator we use on Hedera, and whether the testnet
-      facilitator is stable enough to demo live or needs a recorded fallback.
-- [ ] Whether `Allowance` should be its own contract or a modifier on the
-      others. Leaning separate, for the reason in section 4.
-- [ ] Gas cost of a craft settlement on Hedera. If it approaches the craft fee,
-      the economics argument in section 2.1 weakens and we should batch
-      settlements rather than settle per craft.
+Kept rather than deleted: what we assumed before measuring is part of the
+argument, and two of these turned out differently than we expected.
+
+- [x] **Which facilitator, and is it stable enough to demo live?**
+      `https://x402.org/facilitator`, the public testnet one. Every payment in
+      this document went through it and none failed. No recorded fallback
+      needed, though section 10 of `PLAN.md` still has one.
+
+- [x] **Should `Allowance` be its own contract or a modifier on the others?**
+      Its own, for the reason in section 4. A cap that is a separate contract is
+      a cap someone can read on its own; a modifier is a cap you have to trust
+      the surrounding code to have applied.
+
+- [x] **Gas cost of a settlement, against the craft fee.** Worse than we
+      guessed, and it does not matter — which is the interesting part.
+
+      Every settlement costs **261,483 tinybars**, measured across three
+      consecutive payments on the mirror node. The recipe stage sells for
+      100,000. Gas is 2.6x the thing being bought.
+
+      It lands on nobody in this architecture. The facilitator pays it: the
+      agent's account moves exactly the price, the service account receives
+      exactly the price, and the fee comes out of the facilitator's balance.
+      That is the arrangement x402 is built around — the agent needs an account
+      but never needs gas.
+
+      So the economics argument in section 2.1 holds for us, and the question
+      moves somewhere else: at volume, a facilitator absorbing 0.0026 HBAR per
+      call is a business model we are not paying for. Worth knowing before
+      depending on a public one in production.

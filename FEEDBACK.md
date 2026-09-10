@@ -81,6 +81,24 @@ existing sentence would have saved us the hunt.
 
 ---
 
+### The facilitator pays more gas than the service costs
+
+Measured across three consecutive settlements on the mirror node: every one
+charged **261,483 tinybars** in fees, against a service priced at 100,000. The
+transaction costs 2.6x the thing being bought.
+
+It falls on the facilitator, not on either party to the trade — the agent's
+account moves exactly the price and the service account receives exactly the
+price. That is the arrangement working as designed, and it is the reason an
+agent needs an account but never needs gas.
+
+Worth stating plainly in the x402 documentation all the same, since it is the
+number that decides whether anyone can afford to run a facilitator at volume.
+The client and server guides are clear about who does not pay gas and quiet
+about how much the party who does is paying.
+
+---
+
 ## Roblox Open Cloud
 
 Not a sponsor, but the same category of finding and it is where we lost the most
