@@ -3,28 +3,40 @@
 // else, and "somewhere else" is frequently a laptop that is closed.
 //
 // This tells the site which it is, so a closed laptop reads as "the bench is
-// offline" rather than as a broken site.
+// offline" rather than as a broken site. It also reports whether the bench
+// behind it is the paying agent, so the page can say what it actually does
+// instead of promising payments that are not happening.
+
+import { bench } from "../../bench";
 
 export const dynamic = "force-dynamic";
 
-const CRAFTER_URL = process.env.CRAFTER_URL;
 const TIMEOUT_MS = 2500;
 
 export async function GET() {
-  if (!CRAFTER_URL) {
-    return Response.json({
-      online: false,
-      reason: "no crafter configured",
-    });
+  const target = bench();
+  if (!target) {
+    return Response.json({ online: false, paid: false, reason: "nothing configured" });
   }
 
   try {
-    const res = await fetch(new URL("/health", CRAFTER_URL), {
+    const res = await fetch(new URL("/health", target.base), {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       cache: "no-store",
     });
-    return Response.json({ online: res.ok });
+    if (!res.ok) return Response.json({ online: false, paid: target.paid });
+
+    const health = await res.json();
+    // The agent answers for the whole chain behind it. It being up while the
+    // crafter is down is still an offline bench, and saying otherwise would
+    // send someone into a craft that cannot finish.
+    const online = target.paid ? Boolean(health.crafter && health.paywall) : true;
+    return Response.json({
+      online,
+      paid: target.paid,
+      agent: health.agent ?? null,
+    });
   } catch {
-    return Response.json({ online: false, reason: "crafter unreachable" });
+    return Response.json({ online: false, paid: target.paid, reason: "unreachable" });
   }
 }

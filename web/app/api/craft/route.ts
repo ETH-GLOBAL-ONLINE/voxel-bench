@@ -1,18 +1,17 @@
 // Starting a craft has to return immediately. The work takes twenty to sixty
-// seconds and a Vercel function gets ten, so this hands the prompt to the
-// crafter, gets a job id back, and lets the browser poll.
+// seconds and a Vercel function gets ten, so this hands the prompt over, gets a
+// job id back, and lets the browser poll.
+//
+// What it hands the prompt to is the agent, which pays for each stage before
+// asking for it. See ../bench.ts for the fallback when no agent is configured.
+
+import { bench, OFFLINE, reason } from "../bench";
 
 export const dynamic = "force-dynamic";
 
-const CRAFTER_URL = process.env.CRAFTER_URL;
-
 export async function POST(req: Request) {
-  if (!CRAFTER_URL) {
-    return Response.json(
-      { error: "The bench is offline — no crafter is configured." },
-      { status: 503 },
-    );
-  }
+  const target = bench();
+  if (!target) return Response.json(OFFLINE, { status: 503 });
 
   let prompt: unknown;
   try {
@@ -29,13 +28,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    const res = await fetch(new URL("/craft", CRAFTER_URL), {
+    const res = await fetch(new URL("/craft", target.base), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ prompt: prompt.trim().slice(0, 280) }),
-      signal: AbortSignal.timeout(8000),
+      // The agent reads the price list before it answers, so give it a little
+      // longer than the crafter needed just to accept a job.
+      signal: AbortSignal.timeout(15000),
     });
-    return Response.json(await res.json(), { status: res.status });
+    const data = await res.json();
+    if (!res.ok) {
+      return Response.json(
+        { error: reason(data, "the bench refused") },
+        { status: res.status },
+      );
+    }
+    return Response.json({ ...data, paid: target.paid });
   } catch {
     return Response.json(
       { error: "The bench did not answer. It may be offline." },

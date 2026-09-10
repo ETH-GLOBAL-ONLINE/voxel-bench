@@ -14,6 +14,7 @@ step of it.** Both halves run.
 ```bash
 python services/crafter.py          # the crafter,  :8000
 node services/paywall/server.mjs    # the paywall,  :4402
+node services/agent/server.mjs      # the agent,    :4403
 cd web && npm run dev               # the site; Next prints the port
 ```
 
@@ -55,6 +56,17 @@ so the agent needs an account but never needs gas.
 `/services` advertises what is on offer and what it costs, unpriced, since an
 agent has to read the menu before it can decide to buy.
 
+**The site pays through the agent, and shows it.** Typing a sentence in the
+browser lists the stages and their prices before any of them is paid for, then
+moves each one quoted → paying → paid with its transaction id linked to
+HashScan. One story rather than two: there is no longer a free path in the
+browser and a paid one in a terminal.
+
+The wallet stays on the machine that runs Blender. The browser never sees a
+private key and never signs anything — it watches an agent spend its own money,
+which is the only arrangement that is both honest and safe to put on a public
+site.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
@@ -66,23 +78,7 @@ breaking.
 
 ## What is left
 
-### 1. The site pays · Track B · next
-
-Two paths exist and do not meet: the site crafts for free by calling the crafter
-directly, and the agent pays for the same work from a terminal. One story, not
-two — the browser should show the three payments happening while the object is
-built.
-
-This is also what makes the Hedera work legible. The payments currently run
-where nobody watching a demo would see them.
-
-**Start at** `web/app/components/Bench.tsx` and `services/agent/orchestrate.mjs`.
-The agent becomes something the site calls rather than a command someone runs.
-
-**Done looks like** typing a sentence in the browser and watching *paying for
-the recipe, paying for the craft, paying to publish* go by, then the object.
-
-### 2. ENS — a name per service · Track A
+### 1. ENS — a name per service · Track A · next
 
 Each stage becomes an addressable agent: `recipe.voxelbench.eth`,
 `craft.voxelbench.eth`, `publish.voxelbench.eth`, each resolving to its service
@@ -95,7 +91,7 @@ an environment variable is not.
 
 **Start at** `docs/ONCHAIN.md` 3.2. ENSv2 on Sepolia, Enhanced Access Control.
 
-### 3. USDC instead of HBAR · Circle / Arc
+### 2. USDC instead of HBAR · Circle / Arc
 
 The cheapest of the three, because the wiring already exists: the paywall offers
 both assets and the agent can pay either. What is missing is testnet USDC from
@@ -105,7 +101,7 @@ can receive a non-native token.
 **Done looks like** the same demo settling in USDC, which makes one
 implementation serve two tracks.
 
-### 4. The recipe marketplace · Track B
+### 3. The recipe marketplace · Track B
 
 The interface to `RecipeBook`: real recipes, their authors, how often each was
 crafted and what it earned, read from the chain rather than mocked. The card in
@@ -115,17 +111,17 @@ It also fixes latency, which is the interesting part: a recipe that already
 exists needs no model call, so it crafts instantly and its author is paid. The
 platform gets faster as it gets more recipes.
 
-### 5. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
+### 4. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
 
 Stefan's. Good recipes give the model better work to imitate, make anything in
 the library instant, and give the marketplace something to show.
 
-### 6. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
+### 5. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
 
 Also Stefan's, and independent of everything else — the contracts are finished,
 so this can happen any time.
 
-### 7. Roblox materials
+### 6. Roblox materials
 
 Every part has a `Material` property — `Wood`, `Metal`, `Slate`. Real surface
 texture with no image, no upload, no UV mapping: one more field in the recipe,
@@ -138,7 +134,7 @@ it in Blender too — map each material to a roughness and a little relief.
 **Start at** `bench/to_rbxmx.py` and the schema in `bench/describe.py`. Check the
 enum values by asking Studio through the MCP rather than trusting a list.
 
-### 8. Luau scripts on objects
+### 7. Luau scripts on objects
 
 A crate that sits there is decoration; a crate that gives you coins when touched
 is a mechanic. Generating Luau is the easy part of this project — well
@@ -147,7 +143,7 @@ documented, and unlike geometry it either runs or throws.
 **Worth checking first:** Roblox moderates models containing scripts. If that
 takes hours rather than seconds, scripts stay out of a live demo.
 
-### 9. The obby — the wow, and the first thing to cut
+### 8. The obby — the wow, and the first thing to cut
 
 A sequence of platforms, hazards, checkpoints and a finish is spatial
 arrangement of objects. An obby is a recipe of recipes: nothing new to invent,
@@ -159,7 +155,7 @@ Needs `universe-places` on the API key, which is editable on the existing one.
 **Cut this first if anything slips.** `PLAN.md` section 10 has the demo built so
 losing it shortens the video rather than breaking it.
 
-### 10. The video
+### 9. The video
 
 Two to four minutes, narrated by one of us — the rules reject AI voiceover,
 text-to-speech and phone recordings. Structure and fallbacks in `PLAN.md`

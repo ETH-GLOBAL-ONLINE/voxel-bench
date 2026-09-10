@@ -77,8 +77,8 @@ export default async function Home() {
     <div className="min-h-screen">
       <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
         <p className="label !text-amber">
-          Prototype · the crafter runs on a real machine, not here · wallet,
-          payments and publishing are not wired yet
+          Prototype · the crafter runs on a real machine, not here · the agent
+          pays for each stage on Hedera testnet
         </p>
       </div>
 
@@ -347,7 +347,12 @@ export default async function Home() {
                 <span className="text-sm text-dim">recipe by @author</span>
                 <span className="font-mono text-amber">0.002 USDC / craft</span>
               </div>
-              <p className="label mt-4">illustrative — the contract lands Wednesday</p>
+              {/* The contracts are live; this card is not reading from them yet.
+                  Saying so is cheaper than being caught implying otherwise. */}
+              <p className="label mt-4">
+                illustrative — the contracts are deployed, this card does not
+                read from them yet
+              </p>
             </div>
             <p className="max-w-md self-center text-sm leading-relaxed text-faint">
               Your game&rsquo;s revenue never touches any of this. Roblox

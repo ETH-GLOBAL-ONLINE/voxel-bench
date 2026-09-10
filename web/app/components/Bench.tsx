@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Viewer from "./Viewer";
+import Payments, { type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
 
 type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
@@ -25,6 +26,7 @@ type Sample = {
   studs: number[];
 };
 type Published = { assetId: string; moderation: string; insert: string };
+type Ledger = { payments: Payment[]; payTo?: string | null; network?: string | null };
 
 const POLL_MS = 2000;
 // The crafter's own deadline is 120s for the recipe plus Blender's time. Give
@@ -49,6 +51,10 @@ export default function Bench({ sample }: { sample: Sample }) {
   const [published, setPublished] = useState<Published | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [account, setAccount] = useState<RobloxAccount | null>(null);
+  // Kept whole rather than merged into the result, because it is worth watching
+  // while the craft runs and worth reading after it finishes.
+  const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [publishLedger, setPublishLedger] = useState<Ledger | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pubTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -70,6 +76,8 @@ export default function Bench({ sample }: { sample: Sample }) {
     setResult(null);
     setPublished(null);
     setPublishError(null);
+    setLedger(null);
+    setPublishLedger(null);
     setElapsed(0);
     setStage("sending it to the bench");
 
@@ -99,6 +107,13 @@ export default function Bench({ sample }: { sample: Sample }) {
       try {
         const res = await fetch(`/api/craft/${job}`, { cache: "no-store" });
         const data = await res.json();
+        if (data.payments) {
+          setLedger({
+            payments: data.payments,
+            payTo: data.payTo,
+            network: data.network,
+          });
+        }
         if (data.status === "done") {
           setStage(null);
           setResult(data.result);
@@ -154,6 +169,13 @@ export default function Bench({ sample }: { sample: Sample }) {
       try {
         const res = await fetch(`/api/craft/${job}`, { cache: "no-store" });
         const data = await res.json();
+        if (data.payments) {
+          setPublishLedger({
+            payments: data.payments,
+            payTo: data.payTo,
+            network: data.network,
+          });
+        }
         if (data.status === "done") {
           setPublishing(null);
           setPublished(data.result);
@@ -242,6 +264,14 @@ export default function Bench({ sample }: { sample: Sample }) {
             — the model writes a recipe, then Blender crafts it
           </span>
         </p>
+      )}
+
+      {ledger && (
+        <Payments
+          payments={ledger.payments}
+          payTo={ledger.payTo}
+          network={ledger.network}
+        />
       )}
 
       {error && (
@@ -346,6 +376,14 @@ export default function Bench({ sample }: { sample: Sample }) {
           or download the .rbxmx
         </a>
       </div>
+
+      {publishLedger && (
+        <Payments
+          payments={publishLedger.payments}
+          payTo={publishLedger.payTo}
+          network={publishLedger.network}
+        />
+      )}
 
       {publishError && (
         <p className="mt-4 border-l-2 border-ember pl-3 text-sm text-ember">
