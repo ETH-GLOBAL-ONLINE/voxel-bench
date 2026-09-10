@@ -77,19 +77,35 @@ and no stage can do another's job. Its per-payment cap is enforced by the client
 before a payment is even constructed.
 
 ```
-agent  ──402──►  paywall  ──►  crafter  ──►  Roblox
-  │                 │
-wallet          3 prices
-  cap           1 account paid
+site  ──►  agent  ──402──►  paywall  ──►  crafter  ──►  Roblox
+             │                    │
+          wallet              3 prices
+            cap             1 account paid
 ```
+
+The site asks the agent, not the crafter. That is the whole arrangement: the
+browser watches an agent spend its own money, stage by stage, and never holds a
+key or signs anything.
 
 Run it:
 
 ```bash
-python services/crafter.py                        # the work,     :8000
-node services/paywall/server.mjs                  # the prices,   :4402
-node services/agent/orchestrate.mjs "an oil drum" # the wallet
+python services/crafter.py            # the work,    :8000
+node services/paywall/server.mjs      # the prices,  :4402
+node services/agent/server.mjs        # the wallet,  :4403
+cd web && npm run dev                 # the site
 ```
+
+Or from a terminal, without the site:
+
+```bash
+node services/agent/orchestrate.mjs "an oil drum"
+```
+
+The agent needs `HEDERA_AGENT_ACCOUNT_ID` and `HEDERA_AGENT_PRIVATE_KEY`. Without
+them, point `web/.env.local` at `CRAFTER_URL` alone and the site crafts directly
+for nothing — worth having, since running the bench should not require a funded
+wallet.
 
 ## Where it runs
 

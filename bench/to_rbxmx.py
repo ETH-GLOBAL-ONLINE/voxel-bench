@@ -305,6 +305,21 @@ def main():
     }
     print("RBXMX_REPORT " + json.dumps(report))
 
+    # Blender wrote a report for this same object a moment ago and does not know
+    # how many Roblox parts it turned into, because that is decided here. Fold
+    # the number in rather than leaving two reports that disagree.
+    crafted = os.path.join(outdir, name + ".report.json")
+    if os.path.isfile(crafted):
+        try:
+            with open(crafted, "r", encoding="utf-8") as fh:
+                existing = json.load(fh)
+            existing["parts"] = parts
+            with open(crafted, "w", encoding="utf-8") as fh:
+                json.dump(existing, fh, indent=2)
+        except (OSError, ValueError):
+            # A report we cannot read is not a reason to fail the conversion.
+            pass
+
 
 if __name__ == "__main__":
     main()

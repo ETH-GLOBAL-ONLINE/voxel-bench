@@ -1,17 +1,16 @@
-// Publishing runs as a job like crafting, and reports through the same status
+// Publishing runs as a job like crafting and reports through the same status
 // endpoint — the upload is quick but moderation is Roblox's clock, not ours.
+//
+// The Roblox key belongs to whoever is publishing. It arrives with the request,
+// is passed through once, and is never logged or stored on the way.
+
+import { bench, OFFLINE, reason } from "../bench";
 
 export const dynamic = "force-dynamic";
 
-const CRAFTER_URL = process.env.CRAFTER_URL;
-
 export async function POST(req: Request) {
-  if (!CRAFTER_URL) {
-    return Response.json(
-      { error: "The bench is offline — nothing can be published." },
-      { status: 503 },
-    );
-  }
+  const target = bench();
+  if (!target) return Response.json(OFFLINE, { status: 503 });
 
   let name: unknown;
   let apiKey: unknown;
@@ -27,30 +26,25 @@ export async function POST(req: Request) {
   }
 
   try {
-    const res = await fetch(new URL("/publish", CRAFTER_URL), {
+    const res = await fetch(new URL("/publish", target.base), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      // Passed through, never logged and never stored on the way.
       body: JSON.stringify({
         name,
         api_key: typeof apiKey === "string" ? apiKey : undefined,
         user_id: typeof userId === "string" ? userId : undefined,
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(15000),
     });
     const data = await res.json();
-    // FastAPI puts its refusals in `detail`; the browser reads `error`.
     if (!res.ok) {
       return Response.json(
-        { error: data.detail ?? data.error ?? "the bench refused" },
+        { error: reason(data, "the bench refused") },
         { status: res.status },
       );
     }
-    return Response.json(data);
+    return Response.json({ ...data, paid: target.paid });
   } catch {
-    return Response.json(
-      { error: "The bench did not answer." },
-      { status: 503 },
-    );
+    return Response.json({ error: "The bench did not answer." }, { status: 503 });
   }
 }

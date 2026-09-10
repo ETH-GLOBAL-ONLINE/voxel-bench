@@ -26,6 +26,10 @@ import { paymentMiddleware } from "@x402/express";
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactHederaScheme } from "@x402/hedera/exact/server";
 
+import { loadEnv } from "../env.mjs";
+
+loadEnv();
+
 const PORT = Number(process.env.PAYWALL_PORT ?? 4402);
 const CRAFTER = process.env.CRAFTER_URL ?? "http://127.0.0.1:8000";
 const PAY_TO = process.env.HEDERA_SERVICE_ACCOUNT_ID;
