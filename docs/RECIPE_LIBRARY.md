@@ -149,9 +149,15 @@ organic curves, characters and creatures, cloth and rope, foliage in detail,
 anything that needs a real mesh. A tree works as a cylinder trunk with cone or
 sphere masses; a dragon does not work at all.
 
-Two notes: **Roblox has no cone** — a cone is approximated as a cylinder when it
-lands there, and the report tells you when that happened. And **`plane` is a very
-thin cube**, useful for signs, leaves and decals.
+Two notes. **Roblox has no cone**, so one is built there from four corner wedges
+— a square pyramid rather than a round point, which reads correctly as a spike or
+a tiered roof. The report names every cone it did this to. One consequence worth
+knowing: a rotation about a cone's own axis does nothing in Blender, since a cone
+is round, but it turns that square pyramid into a diamond. We drop it on the way
+across, so there is nothing to avoid; it is just the kind of thing that is free
+in one place and not in the other.
+
+And **`plane` is a very thin cube**, useful for signs, leaves and decals.
 
 If something in the catalogue below turns out to be impossible with five shapes,
 say so — that is useful information, and adding a wedge is a small change.

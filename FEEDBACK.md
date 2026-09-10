@@ -96,6 +96,16 @@ time overall. Recorded here so it is in one place.
   native parts avoids the conversion entirely and was the better path for us.
 - **A negative part size is not rejected** — it is clamped to 0.001, so the part
   exists, has the right colour, and is invisible. Nothing errors.
+- **Four `MeshType` values are listed and never drawn.** `Pyramid`, `Prism`,
+  `ParallelRamp` and `RightAngleRamp` accept the assignment, raise nothing, and
+  render an invisible part. `Brick`, `Wedge`, `CornerWedge`, `Sphere` and
+  `Cylinder` work. We only found it by putting all nine on screen side by side;
+  a deprecated value that silently draws nothing costs more than one that errors.
+- **Geometry can be substituted with no signal that it was.** Open Cloud accepts
+  a `.rbxmx`, moderation approves it, and nothing anywhere reports that a shape
+  the file asked for is not a shape Roblox has. The only way to find out is to
+  open the result in Studio and look. An upload response that listed what it
+  could not honour would have saved us the round trip.
 
 ---
 

@@ -191,6 +191,9 @@ All of these cost time once already. `docs/LOG.md` has them in full.
   part is there, the right colour, and invisible.
 - **A Roblox model without a `PrimaryPart`** borrows a pivot orientation from
   its bounding box, so moving it tilts everything.
+- **Four `MeshType` values are listed and never drawn** — `Pyramid`, `Prism`,
+  `ParallelRamp`, `RightAngleRamp`. They accept the assignment and render
+  nothing. Check a shape in Studio before building on it.
 - **Blender resolves a relative render path against its own base**, not the
   working directory, and writes the preview somewhere else entirely.
 - **On Hedera, `msg.value` is in tinybars** while `getBalance` answers in wei.

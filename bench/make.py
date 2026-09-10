@@ -123,8 +123,9 @@ def main():
     print("  %s, %s tokens" % (usage["model"], usage["tokens"]))
     for note in notes:
         print("  note: %s" % note)
-    for name in rbx.get("approximated_as_cylinder") or []:
-        print("  note: %s was a cone; Roblox has none, so it is a cylinder" % name)
+    for name in rbx.get("cones_as_pyramids") or []:
+        print("  note: %s is a cone; Roblox has no cone, so it is built from "
+              "four corner wedges" % name)
 
     print("\n  preview   %s" % report.get("preview", "-"))
     print("  recipe    %s" % recipe_path)
