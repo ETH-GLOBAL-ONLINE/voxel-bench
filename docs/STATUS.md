@@ -162,6 +162,18 @@ substitutes their own address produces a signature that does not recover.
 So owning what you made costs nothing and requires no funded account, which is
 the property the rest of the project is built on.
 
+Verified from a browser, with MetaMask and Phantom installed side by side: a
+tank crafted, the claim signed as a message — no gas, no transaction — and the
+agent relaying it. `RecipeBook` on Arc records the signer as the author:
+
+```
+publishFor   0x9c862484…2cba2bb   success
+author       0xd7ed1a1F…6C0e      read back from the contract
+relayer      0xfe3caAd6…0034      paid the gas
+```
+
+[The transaction on Arcscan](https://testnet.arcscan.app/tx/0x9c862484dc2407d1f2c443c165bb0565d1ce09d784910b32f2c199afd2cba2bb).
+
 ### The spending cap is the brake, not a note about one
 
 Every craft begins by drawing what it is about to spend out of an `Allowance`
@@ -222,28 +234,17 @@ breaking.
 
 ## What is left
 
-### 1. Claiming a recipe from a browser · next
-
-The contract, the agent and the page are all in place: connect a wallet, craft,
-press claim, sign the message the agent hands you, and the agent relays it and
-pays the gas. Every part has been exercised except the one that needs a person —
-a real wallet extension producing a real signature.
-
-**Done looks like** connecting once, crafting, signing a message rather than a
-transaction, and the recipe appearing under your own address in the
-marketplace.
-
-### 2. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
+### 1. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
 
 Stefan's. Good recipes give the model better work to imitate, make anything in
 the library instant, and give the marketplace something to show.
 
-### 3. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
+### 2. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
 
 Also Stefan's, and independent of everything else — the contracts are finished,
 so this can happen any time.
 
-### 4. Roblox materials
+### 3. Roblox materials
 
 Every part has a `Material` property — `Wood`, `Metal`, `Slate`. Real surface
 texture with no image, no upload, no UV mapping: one more field in the recipe,
@@ -256,7 +257,7 @@ it in Blender too — map each material to a roughness and a little relief.
 **Start at** `bench/to_rbxmx.py` and the schema in `bench/describe.py`. Check the
 enum values by asking Studio through the MCP rather than trusting a list.
 
-### 5. Luau scripts on objects
+### 4. Luau scripts on objects
 
 A crate that sits there is decoration; a crate that gives you coins when touched
 is a mechanic. Generating Luau is the easy part of this project — well
@@ -265,7 +266,7 @@ documented, and unlike geometry it either runs or throws.
 **Worth checking first:** Roblox moderates models containing scripts. If that
 takes hours rather than seconds, scripts stay out of a live demo.
 
-### 6. The obby — the wow, and the first thing to cut
+### 5. The obby — the wow, and the first thing to cut
 
 A sequence of platforms, hazards, checkpoints and a finish is spatial
 arrangement of objects. An obby is a recipe of recipes: nothing new to invent,
@@ -277,7 +278,7 @@ Needs `universe-places` on the API key, which is editable on the existing one.
 **Cut this first if anything slips.** `PLAN.md` section 10 has the demo built so
 losing it shortens the video rather than breaking it.
 
-### 7. The video
+### 6. The video
 
 Two to four minutes, narrated by one of us — the rules reject AI voiceover,
 text-to-speech and phone recordings. Structure and fallbacks in `PLAN.md`
