@@ -625,3 +625,34 @@ the App ID alone:
 curl -s https://auth.privy.io/api/v1/apps/$APP_ID -H "privy-app-id: $APP_ID"
 # google_oauth: false  ->  the switch is off, whatever the panel shows
 ```
+
+## A build that ran out of memory
+
+### The deployment compiled Privy twice, for a server that cannot run it
+
+Once Privy was added, every deployment failed on Vercel while the same commit
+built locally: from a clean clone, with npm 10 and 11, with and without install
+scripts, with and without the App ID. The log named the moment: Turbopack
+compiling, `Turbopack build failed with 1 error: ./web/app/globals.css`, and a
+build system report of an Out of Memory event. `globals.css` was only the module
+in hand when the machine filled up.
+
+Measured locally, the build peaked at roughly 5 to 6.5 GB whichever way it ran;
+webpack used more, not less. Two options that sound right do nothing here:
+`turbopackMemoryEviction` applies to development sessions only, and worker
+counts matter after the stage that failed.
+
+What was large was Privy: WalletConnect, Solana, Coinbase and more, compiled
+once for the browser and once for the server, because the provider wrapped the
+whole page and client components are rendered on the server too. Privy is now
+an island loaded with `next/dynamic` and `ssr: false`, reporting the wallet to
+the page through the same context. The server output contains no Privy code at
+all, the browser output has it in three chunks, and the page still renders on
+the server in full. Vercel builds it, with the App ID absent as well as present.
+
+### Reporting state from an island needs a stable report
+
+The island sets state in the page, which renders the island again. Privy returns
+a new wallet object on every render, so a report built from it changed every
+time: `Maximum update depth exceeded`. The report is keyed on the address, and
+the functions it carries read Privy's latest state from a ref.
