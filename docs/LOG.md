@@ -549,3 +549,22 @@ never seen it.
 The error had been invisible: every failure in signing was treated as the
 visitor declining, so the button did nothing. Only a real rejection counts as
 declining now; anything else is shown.
+
+## A second route to the model
+
+### A busy free tier is not a bug, but it stops a craft
+
+Gemini's free tier answered `503 — This model is currently experiencing high
+demand` in the middle of a test, and the retries only wait that out. The fix is
+a second route rather than a better first one: `VOXEL_LLM_FALLBACK` names a
+provider and model tried once when the first gives up, and the usage report
+says when it was used.
+
+The free models on OpenRouter were measured before being ruled out, on the real
+pipeline with the same validator — a tank and a crate each. Every one was
+several times slower than the default (36 to 281 seconds), and the ones that
+were not slow were rate-limited within two requests. The fallback is the paid
+`gemini-2.5-flash-lite` through OpenRouter: as fast as the default, about four
+hundredths of a cent per recipe, and on a quota the free tier does not share.
+Verified by pointing the primary at a model that does not exist and watching
+the recipe arrive anyway.
