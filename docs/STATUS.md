@@ -192,6 +192,15 @@ author tx count  0
 
 [The transaction on Arcscan](https://testnet.arcscan.app/tx/0xd5629e8be5defb1c0db8039898893c5d8601f20417f17542d9d33931f429ddf0).
 
+### A backpack of what you own
+
+Signed in, the header offers Backpack: every recipe the address owns, with its
+name, preview, chain, craft count and earnings. Ownership is read from the
+chains; names and previews come from a catalog in Supabase, filed under the id
+of each recipe and checked against it. 34 recipes are in the catalog. The site
+needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and
+the agent files new crafts with `SUPABASE_SERVICE_ROLE_KEY`.
+
 ### The spending cap is the brake, not a note about one
 
 Every craft begins by drawing what it is about to spend out of an `Allowance`

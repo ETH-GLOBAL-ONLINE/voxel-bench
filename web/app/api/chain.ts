@@ -16,6 +16,7 @@ import {
   formatUnits,
   http,
   parseAbi,
+  parseAbiItem,
 } from "viem";
 
 const hedera = defineChain({
@@ -94,12 +95,14 @@ export async function publishedOn(name: LedgerName, limit = 12) {
   const seen = new Map<string, string>();
   for (let to = head; to >= ledger.from && seen.size < limit; to -= ledger.window) {
     const from = to - ledger.window + 1n;
-    const logs = await client.getLogs({
-      address: ledger.book as `0x${string}`,
-      event,
-      fromBlock: from > ledger.from ? from : ledger.from,
-      toBlock: to,
-    });
+    const logs = await patiently(() =>
+      client.getLogs({
+        address: ledger.book as `0x${string}`,
+        event,
+        fromBlock: from > ledger.from ? from : ledger.from,
+        toBlock: to,
+      }),
+    );
     for (const log of logs) {
       const { recipeId, author } =
         (log as { args?: { recipeId?: string; author?: string } }).args ?? {};
@@ -110,12 +113,14 @@ export async function publishedOn(name: LedgerName, limit = 12) {
   const ids = [...seen.keys()].slice(-limit).reverse();
   const recipes = await Promise.all(
     ids.map(async (id) => {
-      const [author, crafts, earned] = (await client.readContract({
-        address: ledger.book as `0x${string}`,
-        abi: bookAbi,
-        functionName: "recipes",
-        args: [id as `0x${string}`],
-      })) as [string, bigint, bigint];
+      const [author, crafts, earned] = (await patiently(() =>
+        client.readContract({
+          address: ledger.book as `0x${string}`,
+          abi: bookAbi,
+          functionName: "recipes",
+          args: [id as `0x${string}`],
+        }),
+      )) as [string, bigint, bigint];
 
       return {
         id,
@@ -132,6 +137,85 @@ export async function publishedOn(name: LedgerName, limit = 12) {
     explorer: ledger.explorer(ledger.book),
     recipes,
   };
+}
+
+// The public nodes limit how fast they are asked. Past the limit they answer
+// "Request exceeds defined limit", and a backpack that took the refusal for "no
+// recipes" told owners their recipes were gone. So a refusal for rate is waited
+// out and asked again; any other error is a real failure, and surfaces.
+const RATE_LIMITED = /rate limit|exceeds defined limit|429|too many requests/i;
+
+async function patiently<T>(ask: () => Promise<T>, attempts = 4): Promise<T> {
+  for (let i = 0; ; i++) {
+    try {
+      return await ask();
+    } catch (err) {
+      const e = err as { message?: string; details?: string; shortMessage?: string };
+      const said = `${e.shortMessage ?? ""} ${e.details ?? ""} ${e.message ?? ""}`;
+      if (i + 1 >= attempts || !RATE_LIMITED.test(said)) throw err;
+      await new Promise((wait) => setTimeout(wait, 500 * 2 ** i));
+    }
+  }
+}
+
+const recipePublished = parseAbiItem(
+  "event RecipePublished(bytes32 indexed recipeId, address indexed author)",
+);
+
+/**
+ * Every recipe one address owns on one chain.
+ *
+ * The author is an indexed topic, so the node does the filtering and every
+ * window is cheap. The walk goes all the way back rather than stopping early:
+ * an author's first recipe is as much theirs as their latest.
+ */
+export async function ownedBy(name: LedgerName, author: `0x${string}`) {
+  const ledger = LEDGERS[name];
+  const client = clientFor(name);
+  const head = await client.getBlockNumber();
+
+  const windows: [bigint, bigint][] = [];
+  for (let to = head; to >= ledger.from; to -= ledger.window) {
+    const from = to - ledger.window + 1n;
+    windows.push([from > ledger.from ? from : ledger.from, to]);
+  }
+
+  // One window at a time. Asking for ten at once is how the node's rate limit
+  // was found, and a backpack is not worth being refused for.
+  const ids: `0x${string}`[] = [];
+  for (const [fromBlock, toBlock] of windows) {
+    const logs = await patiently(() =>
+      client.getLogs({
+        address: ledger.book as `0x${string}`,
+        event: recipePublished,
+        args: { author },
+        fromBlock,
+        toBlock,
+      }),
+    );
+    for (const log of logs) if (log.args.recipeId) ids.push(log.args.recipeId);
+  }
+
+  return Promise.all(
+    ids.map(async (id) => {
+      const [, crafts, earned] = (await patiently(() =>
+        client.readContract({
+          address: ledger.book as `0x${string}`,
+          abi: bookAbi,
+          functionName: "recipes",
+          args: [id],
+        }),
+      )) as [string, bigint, bigint];
+
+      return {
+        id: id.toLowerCase(),
+        chain: ledger.chain.name,
+        explorer: ledger.explorer(ledger.book),
+        crafts: Number(crafts),
+        earned: `${formatUnits(earned, ledger.decimals)} ${ledger.symbol}`,
+      };
+    }),
+  );
 }
 
 /** What the agent may still spend on one chain, in this window. */

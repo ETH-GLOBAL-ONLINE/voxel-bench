@@ -221,6 +221,12 @@ Owning a recipe takes a wallet that can sign. With `NEXT_PUBLIC_PRIVY_APP_ID`
 set, a visitor signs in with an email or a Google account and Privy makes one
 for them; without it, the page offers whatever extensions the browser has.
 
+The backpack reads names and previews from a Supabase catalog. The site needs
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; the agent
+that writes it needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
+The schema is `supabase/migrations/0001_recipes.sql`, and recipes crafted before
+the catalog existed are filed with `node services/agent/backfill-catalog.mjs`.
+
 ## Deploying
 
 The site deploys from `web/`, not the repo root. `web/vercel.json` declares the
@@ -238,6 +244,7 @@ Set `CRAFTER_URL` in the Vercel project once a crafter is reachable. Without it
 
 Set `NEXT_PUBLIC_PRIVY_APP_ID` there too for email and Google sign-in. It is
 read at build time, so it takes effect on the next deployment, not on a restart.
+The two Supabase variables for the site belong there as well.
 
 ## Publishing to Roblox
 

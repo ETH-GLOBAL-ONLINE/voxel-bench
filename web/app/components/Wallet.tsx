@@ -36,6 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
+import Backpack from "./Backpack";
 import {
   WalletContext,
   short,
@@ -233,6 +234,7 @@ export function HeaderWallet() {
   if (address) {
     return (
       <span className="ml-auto flex items-center gap-3 md:ml-0">
+        <Backpack />
         <span className={`${frame} border-amber/50 font-mono text-amber`}>
           {short(address)}
         </span>

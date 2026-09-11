@@ -656,3 +656,64 @@ The island sets state in the page, which renders the island again. Privy returns
 a new wallet object on every render, so a report built from it changed every
 time: `Maximum update depth exceeded`. The report is keyed on the address, and
 the functions it carries read Privy's latest state from a ref.
+
+## A backpack of what you own
+
+### Ownership from the chain, names from a catalog
+
+A backpack needs two things the chain alone cannot give: a name and a picture.
+RecipeBook records a recipe as a hash and an author, and the content lived only
+on the disk of the machine that crafted it. So the content now also lives in a
+Supabase table, filed under the same id, with its preview in a public bucket.
+
+The table has no author column. Which recipes an address owns is read from
+`RecipePublished`, where the author is an indexed topic, so the node filters by
+it: a few seconds across both chains. The catalog only answers what each id is,
+and the route checks every row by hashing its content again and comparing it
+with the id it is filed under. A row that fails is dropped, and the recipe is
+still listed, by its id.
+
+Postgres stores JSON in its own form, reordering keys and normalising numbers,
+which could have broken that check. It did not: the hash is taken over a
+serialisation with sorted keys, and every recipe read back hashed to its id.
+
+### Filing what was already made
+
+Five of the six recipes on the chain matched a file in `out/` exactly, by
+content. The sixth had been overwritten by a later craft of the same name, and
+stays out of the catalog rather than being matched by name. The comparison also
+corrected a label: the recipe claimed from MetaMask as a tank is, by its
+content, `pirate_loot_chest`.
+
+34 recipes filed, 34 with a preview. New crafts are filed by the agent after
+settling; without `SUPABASE_SERVICE_ROLE_KEY` the bench crafts exactly as before.
+
+The call in the agent that files a new craft was then run live: a small red
+mailbox, crafted through the site, came back from the agent with its catalog
+row saved, filed in Supabase under the id its content hashes to, and with its
+preview served publicly.
+
+### A fixed element inside a blur is not fixed
+
+The backpack opened behind the page. Its button lives in the header, and the
+header blurs what scrolls under it with `backdrop-filter`. An element with a
+backdrop filter becomes the containing block for any `position: fixed`
+descendant, so the modal was positioned against the header rather than the
+viewport, and painted inside the header's stacking context. It is rendered into
+`body` through a portal now, and covers the page as a modal should.
+
+### A busy node is not an empty backpack
+
+A backpack with two recipes in it said "Nothing here yet". Arc's public node
+limits how fast it is asked, and the backpack asked for ten block windows at
+once: every request came back `Request exceeds defined limit` with `rate limit
+exceeded`, three rounds in a row. The code read a rejected chain as a chain
+with nothing on it, so a refusal became a false statement about someone's work.
+
+Now the windows are read one at a time, a refusal for rate is waited out and
+asked again with a growing pause, and any other error still surfaces. A chain
+that cannot be read after that is named in the answer, and the backpack says so
+with a way to try again, next to whatever did load. The marketplace reads the
+same node the same way.
+
+The two recipes came back on the first call after the change, in five seconds.
