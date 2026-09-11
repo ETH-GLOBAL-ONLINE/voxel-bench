@@ -39,6 +39,8 @@ export type WalletState = {
   available: boolean;
   /** Connect to a named wallet, or to the only one there is. */
   connect: (wallet?: Announced) => Promise<void>;
+  /** Leave, so that connecting again starts from nothing. */
+  disconnect: () => Promise<void>;
   signTypedData: (typed: unknown) => Promise<string | null>;
 };
 

@@ -13,7 +13,7 @@
 // same for every kind of wallet.
 
 import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { defineChain } from "viem";
 import { WalletContext, signOn, type Ethereum } from "./walletCore";
 
@@ -50,7 +50,7 @@ export default function PrivyWalletProvider({
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["email", "google", "wallet"],
+        loginMethods: ["email", "google", "twitter", "wallet"],
         appearance: {
           theme: "#131110",
           accentColor: "#ffae3b",
@@ -68,7 +68,7 @@ export default function PrivyWalletProvider({
 
 /** Turns Privy's view of the visitor into the one the rest of the page reads. */
 function Bridge({ children }: { children: ReactNode }) {
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
 
   // The wallet Privy made for this visitor if there is one, otherwise the one
@@ -77,9 +77,37 @@ function Bridge({ children }: { children: ReactNode }) {
     ? (wallets.find((w) => w.walletClientType === "privy") ?? wallets[0])
     : undefined;
 
+  // Privy keeps a session of its own, apart from any wallet. Someone who signed
+  // in with MetaMask and then locked it is still signed in to Privy with no
+  // wallet to sign with — and login() is silently ignored while a session
+  // exists, so Sign in did nothing. A session without a wallet is closed first,
+  // and Sign in always opens the whole dialog.
+  //
+  // Not in the same breath, though: straight after logout() Privy still counts
+  // the session as open and drops the login, which made Sign in take two
+  // clicks. So the login waits until the session is seen closed.
+  const [loginAfterLogout, setLoginAfterLogout] = useState(false);
+
+  useEffect(() => {
+    if (loginAfterLogout && ready && !authenticated) {
+      setLoginAfterLogout(false);
+      login();
+    }
+  }, [loginAfterLogout, ready, authenticated, login]);
+
   const connect = useCallback(async () => {
-    if (ready) login();
-  }, [ready, login]);
+    if (!ready) return;
+    if (!authenticated) {
+      login();
+      return;
+    }
+    setLoginAfterLogout(true);
+    await logout();
+  }, [ready, authenticated, login, logout]);
+
+  const disconnect = useCallback(async () => {
+    await logout();
+  }, [logout]);
 
   const signTypedData = useCallback(
     async (typed: unknown) => {
@@ -99,9 +127,10 @@ function Bridge({ children }: { children: ReactNode }) {
       // it can, and telling someone there is no wallet would be untrue.
       available: true,
       connect,
+      disconnect,
       signTypedData,
     }),
-    [wallet, connect, signTypedData],
+    [wallet, connect, disconnect, signTypedData],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
