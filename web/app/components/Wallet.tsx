@@ -37,16 +37,10 @@ export function useWallet() {
     setAvailable(Boolean(eth));
     if (!eth) return;
 
-    // Already connected from a previous visit: eth_accounts asks without
-    // prompting, so a returning visitor is not made to click again.
-    eth
-      .request({ method: "eth_accounts" })
-      .then((accounts) => {
-        const [first] = (accounts as string[]) ?? [];
-        if (first) setAddress(first);
-      })
-      .catch(() => {});
-
+    // Nothing is asked of the wallet on load. Probing with eth_accounts to
+    // remember a previous visit sets two installed extensions fighting over
+    // who answers, and the loser throws inside its own injected script where
+    // no catch of ours can reach it. Connecting is a click.
     const onAccountsChanged = (...args: never[]) => {
       const [accounts] = args as unknown as [string[]];
       setAddress(accounts?.[0] ?? null);
@@ -59,12 +53,15 @@ export function useWallet() {
     const eth = window.ethereum;
     if (!eth) return;
     try {
+      // Some providers throw synchronously rather than rejecting, so the await
+      // is inside the try rather than the call being handed a .catch.
       const accounts = (await eth.request({
         method: "eth_requestAccounts",
       })) as string[];
       setAddress(accounts?.[0] ?? null);
     } catch {
-      // Declining a connection is an answer, not an error.
+      // Declining is an answer, and a wallet that refuses to be asked is the
+      // user's business rather than a failure of the page.
     }
   }, []);
 

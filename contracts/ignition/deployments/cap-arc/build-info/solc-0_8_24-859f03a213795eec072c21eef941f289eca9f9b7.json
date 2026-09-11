@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-859f03a213795eec072c21eef941f289eca9f9b7",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "src/Allowance.sol": "project/src/Allowance.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/Allowance.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.24;\r\n\r\n/// @title Allowance\r\n/// @notice The agent's spending money, and the ceiling on it.\r\n///\r\n/// The agent does not hold funds. It draws them from here, and this refuses\r\n/// past the cap. That is the difference between a limit and a request: nothing\r\n/// here asks the agent to behave, and there is no instruction it could be\r\n/// argued out of, because the money it cannot draw is money it does not have.\r\n///\r\n/// The x402 client enforces a per-payment cap of its own, before a payment is\r\n/// even constructed. This is the other half: a cap over time, held somewhere\r\n/// the agent cannot reach. Either alone is a control the same system operates.\r\n/// Together they are a control and a bound.\r\n///\r\n/// Raising the cap is the owner's, and is meant to be the moment a human is\r\n/// asked. A prepaid card, not your credit card.\r\ncontract Allowance {\r\n    address public owner;\r\n    address public agent;\r\n\r\n    /// @notice The most the agent may draw within one window.\r\n    uint256 public cap;\r\n\r\n    /// @notice How long a window lasts. Windows do not slide; the first draw\r\n    /// after one expires starts the next, which is cheaper than tracking a\r\n    /// rolling sum and is honest about what it measures.\r\n    uint64 public window;\r\n\r\n    uint64 public windowStartedAt;\r\n    uint256 public drawnThisWindow;\r\n\r\n    event Funded(address indexed from, uint256 amount);\r\n    event Drawn(address indexed agent, uint256 amount, uint256 remaining);\r\n    event CapChanged(uint256 cap, uint64 window);\r\n    event AgentChanged(address indexed agent);\r\n    event Swept(uint256 amount);\r\n\r\n    error NotOwner();\r\n    error NotAgent();\r\n    error OverCap(uint256 requested, uint256 remaining);\r\n    error NothingRequested();\r\n    error TransferFailed();\r\n    error ZeroAddress();\r\n\r\n    modifier onlyOwner() {\r\n        if (msg.sender != owner) revert NotOwner();\r\n        _;\r\n    }\r\n\r\n    constructor(address agent_, uint256 cap_, uint64 window_) payable {\r\n        if (agent_ == address(0)) revert ZeroAddress();\r\n        owner = msg.sender;\r\n        agent = agent_;\r\n        cap = cap_;\r\n        window = window_ == 0 ? 1 days : window_;\r\n        windowStartedAt = uint64(block.timestamp);\r\n        if (msg.value > 0) emit Funded(msg.sender, msg.value);\r\n    }\r\n\r\n    /// @notice Anyone may top it up; only the agent may take from it.\r\n    receive() external payable {\r\n        emit Funded(msg.sender, msg.value);\r\n    }\r\n\r\n    /// @notice What the agent could still draw right now.\r\n    function remaining() public view returns (uint256) {\r\n        uint256 drawn = _expired() ? 0 : drawnThisWindow;\r\n        uint256 left = cap > drawn ? cap - drawn : 0;\r\n        uint256 held = address(this).balance;\r\n        return left < held ? left : held;\r\n    }\r\n\r\n    function _expired() internal view returns (bool) {\r\n        return block.timestamp >= windowStartedAt + window;\r\n    }\r\n\r\n    /// @notice Take up to the cap. Reverts rather than sending less, so a\r\n    /// caller that asked for too much finds out instead of half-succeeding.\r\n    function draw(uint256 amount) external {\r\n        if (msg.sender != agent) revert NotAgent();\r\n        if (amount == 0) revert NothingRequested();\r\n\r\n        if (_expired()) {\r\n            windowStartedAt = uint64(block.timestamp);\r\n            drawnThisWindow = 0;\r\n        }\r\n\r\n        uint256 left = remaining();\r\n        if (amount > left) revert OverCap(amount, left);\r\n\r\n        drawnThisWindow += amount;\r\n\r\n        (bool ok, ) = agent.call{value: amount}(\"\");\r\n        if (!ok) revert TransferFailed();\r\n\r\n        emit Drawn(agent, amount, remaining());\r\n    }\r\n\r\n    /// @notice The human's decision. Everything else here runs without one.\r\n    function setCap(uint256 cap_, uint64 window_) external onlyOwner {\r\n        cap = cap_;\r\n        if (window_ != 0) window = window_;\r\n        emit CapChanged(cap, window);\r\n    }\r\n\r\n    function setAgent(address agent_) external onlyOwner {\r\n        if (agent_ == address(0)) revert ZeroAddress();\r\n        agent = agent_;\r\n        emit AgentChanged(agent_);\r\n    }\r\n\r\n    /// @notice Take it all back. The point of holding the funds here rather\r\n    /// than in the agent's wallet is that this is possible at any moment.\r\n    function sweep() external onlyOwner {\r\n        uint256 amount = address(this).balance;\r\n        (bool ok, ) = owner.call{value: amount}(\"\");\r\n        if (!ok) revert TransferFailed();\r\n        emit Swept(amount);\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}

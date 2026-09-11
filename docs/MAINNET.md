@@ -45,8 +45,15 @@ operator key signs real transfers and the agent key spends real money.
   the ENS records that state what every service charges. It should be a
   multisig, not a person.
 - `Allowance` already limits the damage a compromised agent can do to one
-  window's cap. That is the argument for it, and it is worth more on mainnet
-  than it is here.
+  window's cap, and every craft now draws through it: when the window is used
+  up the contract refuses and the craft does not happen.
+
+  One thing has to change for that bound to be complete. The agent holds its own
+  balance on both chains, so today the cap limits what it *draws* rather than
+  everything it could spend. Funding the agent's account only from the allowance
+  makes the two the same number, and is the arrangement a real deployment
+  wants — it is also what makes buying credit sensible: a customer tops up the
+  allowance, and the agent cannot spend past what was bought.
 
 ### 2. The contracts get read by someone who did not write them
 

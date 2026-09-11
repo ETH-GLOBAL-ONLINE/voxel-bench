@@ -448,3 +448,51 @@ shows, and settling against `RecipeBook` produced a second thing that wanted the
 same name. Renamed: `quotes()` for the prices, `book` for what the contract
 recorded. The word also collides with a sponsor's name, which is reason enough
 on its own to spend it carefully.
+
+## The cap becomes a brake
+
+### A limit consulted before spending is advice
+
+`Allowance` was deployed, tested against the live chain and never called by
+anything that spends. The agent had its own balance and paid from it, so the
+cap bounded nothing.
+
+Every craft now begins with a draw. When the window is used up the contract
+reverts and the craft stops there, which is a different kind of thing from a
+check of ours: the process cannot skip it by taking another path.
+
+Proved by lowering the cap below what had already been drawn and trying to
+craft — `the spending cap is used up — asked for 0.001 HBAR, 0 HBAR left in
+this window` — then restoring it.
+
+### One cap per chain, and two ways to get that wrong
+
+The first version summed the stages and drew the total. The stages settle on
+different chains, so it was adding 100,000 tinybars to 5,000 USDC units and
+drawing 105,000 of something that does not exist.
+
+The second version separated them and still drew the wrong amount on Arc, since
+an x402 price there is quoted in the USDC ERC-20's 6 decimals while the
+allowance holds native USDC at 18. A factor of 10^12 between the number and what
+it meant.
+
+### Ignition parameters are futures, not values
+
+The module tried to accept amounts as strings, because a parameters file is JSON
+and 1e18 is past what a JSON number holds exactly. `typeof value === "string"`
+is false for what `getParameter` returns — it is a future resolved later — so
+every conversion silently took the fallback, and Arc deployed with Hedera's cap,
+eight orders of magnitude too small.
+
+It deployed, reported a cap of 0.0000000001 USDC, and nothing complained. Fixed
+with `setCap`, and the module now names the chain rather than pretending the
+amounts can be passed in.
+
+### Probing a wallet on page load starts a fight
+
+Reading `eth_accounts` on mount to remember a previous visit made two installed
+extensions race to answer, and the loser threw from inside its own injected
+script where no `catch` of ours can reach it. The user sees a console error from
+a file they have never heard of.
+
+Nothing is asked of a wallet until the connect button is pressed.
