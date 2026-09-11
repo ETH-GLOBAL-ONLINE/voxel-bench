@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
+import { HeaderWallet } from "./components/Wallet";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/sakura_garden.report.json";
@@ -109,13 +110,7 @@ export default async function Home() {
               </a>
             ))}
           </div>
-          <button
-            disabled
-            className="ml-auto cursor-not-allowed border border-bench-600 px-3.5 py-1.5 text-xs text-faint md:ml-0"
-            title="Not wired yet — Track B"
-          >
-            Connect wallet
-          </button>
+          <HeaderWallet />
         </nav>
       </header>
 

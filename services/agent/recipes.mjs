@@ -250,6 +250,18 @@ export function claimTypedData(id, author, ledgerName) {
       verifyingContract: ledger.book,
     },
     types: {
+      // Declared even though the domain is right there: eth_signTypedData_v4
+      // reads `types` to know how to hash, and a wallet handed a payload
+      // without EIP712Domain refuses to sign it. Libraries add this for you,
+      // and this payload goes to the browser as JSON with no library in
+      // between. The order of the fields is the order the contract hashes
+      // them in, and getting it wrong changes the digest rather than failing.
+      EIP712Domain: [
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+      ],
       Publish: [
         { name: "recipeId", type: "bytes32" },
         { name: "author", type: "address" },

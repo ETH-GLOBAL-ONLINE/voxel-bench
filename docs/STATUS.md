@@ -150,8 +150,17 @@ node rather than against us.
 
 Verified with an owner who is not us: a fresh account published a recipe, we
 crafted against it, `SplitVault` credited them 0.9 of 1 USDC, and they withdrew
-it. The one place that needed gas was their `publish`, which is the friction a
-signature-based claim would remove.
+it.
+
+That account needed gas once, to send its own `publish`, and `publishFor`
+removes even that. An author signs an EIP-712 message naming the recipe and
+themselves, anyone relays it, and `RecipeBook` credits the signer. The
+signature is bound to the contract and the chain, so it cannot be replayed
+elsewhere, and it needs no nonce because a recipe publishes once. A relayer who
+substitutes their own address produces a signature that does not recover.
+
+So owning what you made costs nothing and requires no funded account, which is
+the property the rest of the project is built on.
 
 ### The spending cap is the brake, not a note about one
 
@@ -213,28 +222,16 @@ breaking.
 
 ## What is left
 
-### 1. A recipe can be owned by the person who wrote it · next
+### 1. Claiming a recipe from a browser · next
 
-Today `publish` credits `msg.sender`, so a recipe created on the site belongs to
-whoever ran the transaction — us. For it to belong to a user, either they sign a
-transaction, which means holding gas and tokens, or they sign a message and we
-relay it.
+The contract, the agent and the page are all in place: connect a wallet, craft,
+press claim, sign the message the agent hands you, and the agent relays it and
+pays the gas. Every part has been exercised except the one that needs a person —
+a real wallet extension producing a real signature.
 
-The second is the only one that keeps the property the rest of the project is
-built on: nobody needs gas to use this. `RecipeBook` gains a `publishFor` that
-recovers an EIP-712 signature and credits the signer. The agent and the paywall
-do not change.
-
-**Done looks like** connecting a wallet once, crafting without signing anything,
-and the recipe appearing under your address in the marketplace.
-
-The interface to `RecipeBook`: real recipes, their authors, how often each was
-crafted and what it earned, read from the chain rather than mocked. The card in
-the "Why onchain" section of `page.tsx` is the shape it should take.
-
-It also fixes latency, which is the interesting part: a recipe that already
-exists needs no model call, so it crafts instantly and its author is paid. The
-platform gets faster as it gets more recipes.
+**Done looks like** connecting once, crafting, signing a message rather than a
+transaction, and the recipe appearing under your own address in the
+marketplace.
 
 ### 2. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
 
