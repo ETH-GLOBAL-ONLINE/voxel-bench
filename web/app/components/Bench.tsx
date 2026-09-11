@@ -299,11 +299,7 @@ export default function Bench({ sample }: { sample: Sample }) {
   return (
     <div>
       <p className="mb-3 flex flex-wrap items-center gap-x-2">
-        <Wallet
-          address={wallet.address}
-          available={wallet.available}
-          onConnect={wallet.connect}
-        />
+        <Wallet />
       </p>
 
       <div className="mb-4">
