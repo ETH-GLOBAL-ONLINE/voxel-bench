@@ -688,8 +688,10 @@ content, `pirate_loot_chest`.
 34 recipes filed, 34 with a preview. New crafts are filed by the agent after
 settling; without `SUPABASE_SERVICE_ROLE_KEY` the bench crafts exactly as before.
 
-Not yet exercised: the call in the agent that files a new craft. It runs the
-same function the backfill ran 34 times, but no live craft has been through it.
+The call in the agent that files a new craft was then run live: a small red
+mailbox, crafted through the site, came back from the agent with its catalog
+row saved, filed in Supabase under the id its content hashes to, and with its
+preview served publicly.
 
 ### A fixed element inside a blur is not fixed
 
