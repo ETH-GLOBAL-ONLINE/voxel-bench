@@ -81,6 +81,20 @@ existing sentence would have saved us the hunt.
 
 ---
 
+### Payment settles before the work happens, and the standard is quiet about it
+
+A stage is paid for, then run. When the stage fails the money is already gone,
+and a client that retries pays again — we watched three retries settle against a
+provider that was returning 500s, at a cost of 0.003 USDC and no output.
+
+That is a design decision rather than a defect, and it is the right default:
+holding funds until work completes needs escrow, and escrow is a much larger
+protocol. But which party absorbs a failed request is a question every
+integration has to answer, and neither the client nor the server guide raises
+it. A paragraph naming the trade-off — and pointing at the `upto` scheme, which
+exists partly for this — would put the decision in front of people before they
+meet it in production rather than after.
+
 ### The facilitator pays more gas than the service costs
 
 Measured across three consecutive settlements on the mirror node: every one
@@ -148,6 +162,68 @@ We went looking for a way to describe a service and found a way to constrain
 one. That is a stronger primitive than the track's framing suggests, and it is
 worth naming in the documentation: per-record delegation is how you publish
 terms that the party being paid cannot rewrite.
+
+---
+
+---
+
+## Circle / Arc
+
+### The facilitator does not serve Arc, and the pieces to replace it are already shipped
+
+`x402.org/facilitator` answers for nine networks and Arc is not among them, so
+the Arc side of this project runs on a facilitator of ours. That took an evening
+rather than a week, because `@x402/evm` ships the facilitator scheme as well as
+the client and server ones, and it declares `eip155:*` — so it covers any EVM
+chain including one it has never heard of.
+
+Worth saying out loud in the Arc quickstart. "Bring your own facilitator" reads
+as a large undertaking until you notice the package already contains it.
+
+### Two signer converters read a field viem does not have
+
+`toFacilitatorEvmSigner` and `toClientEvmSigner` both do `client.address`. A
+viem wallet client keeps its account at `client.account.address` and has no
+`.address`, so both silently produce an undefined address.
+
+The two failures look nothing alike and neither names the cause. On the server
+the facilitator advertises `signers: { "eip155:*": [null] }`, and a resource
+server rejects the **entire** `/supported` response as invalid without saying
+which field was wrong — every route fails to configure and the process exits. On
+the client it surfaces mid-signature as `Address "undefined" is invalid`.
+
+Either reading `client.account?.address` as a fallback, or validating the signer
+at registration, would turn both into one clear error at startup.
+
+### The token's EIP-712 domain has to be carried in the offer
+
+A client signing an EIP-3009 authorisation must rebuild the domain the token
+checks against, and cannot read it from the chain mid-payment. So the 402 has to
+carry `extra: { name, version }` for the asset — and nothing says so until the
+client fails with *"EIP-712 domain parameters (name, version) are required"*.
+
+The resource server knows the asset address and could read `name()` and
+`version()` off it at startup; we read both in two lines to find out what to put
+there. Failing that, naming the requirement where the price is configured would
+be enough.
+
+### The decimal asymmetry is not a Hedera quirk
+
+Arc's USDC is the native gas token at 18 decimals and an ERC-20 at
+`0x3600…0000` at 6. Same balance, two views, a factor of 10^12 between them:
+
+```
+erc20 balanceOf     18980175        = 18.980175 USDC
+native getBalance   18.98017515134    USDC
+```
+
+This is the same shape as the tinybar/wei gap that already cost us time on
+Hedera. Two of the three chains we have touched disagree with themselves about
+decimals, which stops looking like a quirk of one chain and starts looking like
+something a payment library should normalise, or at least warn about.
+
+Arc's documentation does say it, which Hedera's did not. That is the difference
+between an hour and a day.
 
 ---
 

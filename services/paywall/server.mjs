@@ -25,6 +25,7 @@ import express from "express";
 import { paymentMiddleware } from "@x402/express";
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactHederaScheme } from "@x402/hedera/exact/server";
+import { ExactEvmScheme } from "@x402/evm/exact/server";
 
 import { loadEnv } from "../env.mjs";
 
@@ -41,6 +42,26 @@ const NETWORK = "hedera:testnet";
 const FACILITATOR =
   process.env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
 
+// Arc is not one of the nine networks that facilitator serves, so the Arc side
+// runs on ours — see services/facilitator. A resource server takes a list and
+// routes by which one supports the network being paid on.
+const ARC_FACILITATOR =
+  process.env.ARC_FACILITATOR_URL ?? "http://127.0.0.1:4404";
+const ARC_NETWORK = "eip155:5042002";
+
+// Arc's USDC is the native gas token and an ERC-20 at a fixed address. The
+// ERC-20 view is the one x402 signs against, and it has 6 decimals where the
+// native balance has 18 — the same asymmetry Hedera has between tinybars and
+// wei, on a different chain. Prices here are in the 6-decimal units.
+const ARC_USDC = "0x3600000000000000000000000000000000000000";
+const ARC_PAY_TO = process.env.ARC_PAY_TO;
+
+// The EIP-712 domain of that token. A client signing an EIP-3009 authorisation
+// has to build the same domain the token will check it against, and it cannot
+// read it from the chain in the middle of a payment — so the offer carries it.
+// Read off the contract: name "USDC", version "2".
+const ARC_USDC_DOMAIN = { name: "USDC", version: "2" };
+
 if (!PAY_TO) {
   console.error("HEDERA_SERVICE_ACCOUNT_ID is required — it is who gets paid.");
   process.exit(1);
@@ -50,9 +71,15 @@ if (!PAY_TO) {
 // 100,000 tinybars is 0.001 HBAR.
 const HBAR = "0.0.0";
 const PRICES = {
-  recipe: { hbar: { asset: HBAR, amount: "100000" }, usdc: "$0.001" },
-  craft: { hbar: { asset: HBAR, amount: "500000" }, usdc: "$0.005" },
-  publish: { hbar: { asset: HBAR, amount: "1000000" }, usdc: "$0.01" },
+  recipe: { hbar: { asset: HBAR, amount: "100000" }, usdc: { asset: ARC_USDC, amount: "1000" } },
+  craft: { hbar: { asset: HBAR, amount: "500000" }, usdc: { asset: ARC_USDC, amount: "5000" } },
+  publish: { hbar: { asset: HBAR, amount: "1000000" }, usdc: { asset: ARC_USDC, amount: "10000" } },
+};
+
+// Which chain each asset settles on, and who receives it there.
+const RAILS = {
+  hbar: { network: NETWORK, payTo: () => PAY_TO, extra: undefined },
+  usdc: { network: ARC_NETWORK, payTo: () => ARC_PAY_TO, extra: ARC_USDC_DOMAIN },
 };
 
 const DESCRIPTIONS = {
@@ -61,9 +88,12 @@ const DESCRIPTIONS = {
   publish: "Upload the finished parts to a Roblox account",
 };
 
-const resourceServer = new x402ResourceServer(
+const resourceServer = new x402ResourceServer([
   new HTTPFacilitatorClient({ url: FACILITATOR }),
-).register("hedera:*", new ExactHederaScheme({}));
+  new HTTPFacilitatorClient({ url: ARC_FACILITATOR }),
+])
+  .register("hedera:*", new ExactHederaScheme({}))
+  .register(ARC_NETWORK, new ExactEvmScheme());
 
 const app = express();
 app.use(express.json({ limit: "4mb" }));
@@ -74,9 +104,21 @@ app.use(express.json({ limit: "4mb" }));
 const routes = {};
 for (const [stage, price] of Object.entries(PRICES)) {
   for (const [asset, amount] of Object.entries(price)) {
+    const rail = RAILS[asset];
+    // USDC settles on Arc and needs an account there. Offering a price nobody
+    // is configured to receive would fail at the moment of payment rather than
+    // at startup, so the route is simply not offered.
+    if (!rail.payTo()) continue;
+
     routes[`POST /${asset}/${stage}`] = {
       accepts: [
-        { scheme: "exact", price: amount, network: NETWORK, payTo: PAY_TO },
+        {
+          scheme: "exact",
+          price: amount,
+          network: rail.network,
+          payTo: rail.payTo(),
+          ...(rail.extra ? { extra: rail.extra } : {}),
+        },
       ],
       description: `${DESCRIPTIONS[stage]} — paid in ${asset.toUpperCase()}`,
       mimeType: "application/json",
@@ -127,9 +169,13 @@ app.get("/services", (_req, res) => {
     stages: Object.entries(PRICES).map(([stage, price]) => ({
       stage,
       description: DESCRIPTIONS[stage],
-      hbar: price.hbar,
-      usdc: price.usdc,
-      endpoints: [`POST /hbar/${stage}`, `POST /usdc/${stage}`],
+      hbar: { ...price.hbar, network: NETWORK, payTo: PAY_TO },
+      usdc: ARC_PAY_TO
+        ? { ...price.usdc, network: ARC_NETWORK, payTo: ARC_PAY_TO }
+        : null,
+      endpoints: Object.keys(routes)
+        .filter((route) => route.endsWith(`/${stage}`))
+        .map((route) => route),
     })),
   });
 });
@@ -149,6 +195,10 @@ app.get("/health", async (_req, res) => {
 
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`paywall  :${PORT}  ->  ${CRAFTER}`);
-  console.log(`paid to  ${PAY_TO} on ${NETWORK}`);
-  console.log(`facilitator  ${FACILITATOR}`);
+  console.log(`hbar     ${PAY_TO} on ${NETWORK}  via ${FACILITATOR}`);
+  if (ARC_PAY_TO) {
+    console.log(`usdc     ${ARC_PAY_TO} on ${ARC_NETWORK}  via ${ARC_FACILITATOR}`);
+  } else {
+    console.log("usdc     not offered — set ARC_PAY_TO to an account on Arc");
+  }
 });

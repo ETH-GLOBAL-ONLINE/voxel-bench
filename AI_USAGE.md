@@ -45,6 +45,7 @@ would not have come out of reading.
 | `services/agent/server.mjs`, `web/app/components/Payments.tsx` | Turned the agent into a service the site calls, and built the payment ledger the browser shows while a craft runs | Called for it: the site crafting for free while the agent paid in a terminal was two stories, and the one that mattered was happening where nobody would see it |
 | Cone geometry in `bench/to_rbxmx.py` | Found that a cone was arriving as a cylinder, tested all nine `MeshType` values in Studio, and rewrote cones as four `CornerWedge` parts | **Chose the shape.** The AI recommended the cheaper one-part version; the call was to look at both in Studio and pick the four-part pyramid, because its apex is centred and the one-part version's is not. The AI's own cost objection turned out to be worth 30 parts across 28 recipes, which is nothing |
 | `contracts/scripts/ens/`, `services/agent/discover.mjs` | Registered the name on ENSv2, deployed the subname registry and the permissioned resolver, and rewrote the agent to resolve names instead of reading a URL from a file | Decided what the names are for. The first sketch was three names resolving to three endpoints, which is an address book; the useful version came out of asking what the records could be trusted to say, and landed on the price being a record the service is not allowed to write |
+| `services/facilitator/`, Arc deployment | Deployed the contracts to Arc, built the facilitator the public one does not provide for that chain, and wired the paywall and agent to settle on either | Caught that the plan was wrong before it cost a day: it assumed USDC on Hedera would satisfy Circle's tracks, and both are about Arc. Also called for the facilitator to run on its own account rather than the agent's — sharing one works and hides the thing being demonstrated |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Written without AI
@@ -93,6 +94,10 @@ in so the site has something to display on a fresh clone or a deployment.
   running on the chain's clock rather than ours, and name resolution costing
   twenty-four seconds written the obvious way against one second batched, were
   both found by the first attempt failing rather than by reading ahead.
+- So are the Arc ones. Two x402 signer converters read a field viem does not
+  have, and the failure arrives as an invalid address in the middle of signing
+  rather than as a bad configuration at startup. Found by reading the library's
+  own source after the error made no sense.
 - Where the AI stated something it was not sure of — whether Open Cloud accepts
   classic 2D clothing, whether Roblox OAuth needs app approval, current DevEx
   rates — those are recorded as open questions in `PLAN.md` section 11 rather

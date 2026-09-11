@@ -12,10 +12,11 @@ start and what finished looks like.
 step of it.** Both halves run.
 
 ```bash
-python services/crafter.py          # the crafter,  :8000
-node services/paywall/server.mjs    # the paywall,  :4402
-node services/agent/server.mjs      # the agent,    :4403
-cd web && npm run dev               # the site; Next prints the port
+python services/crafter.py             # the crafter,     :8000
+node services/paywall/server.mjs       # the paywall,     :4402
+node services/agent/server.mjs         # the agent,       :4403
+node services/facilitator/server.mjs   # the facilitator, :4404
+cd web && npm run dev                  # the site; Next prints the port
 ```
 
 ### The pipeline
@@ -97,6 +98,40 @@ If Sepolia is unreachable the agent says so on the page and falls back to the
 configured endpoint, where it has only its own cap and no second price to check
 against. Enough to craft on a fresh clone; not the arrangement being built.
 
+### Two chains, chosen by a name
+
+The same contracts are deployed on Arc testnet, where USDC is the native token,
+so the split is denominated in dollars. Same bytecode, same addresses, same
+9000 bps — nothing in them names an asset.
+
+```
+Arc Testnet
+  crafting, paying 1 USDC...
+  author earned    0.9 USDC     author's share  9000 bps
+```
+
+The public x402 facilitator serves nine networks and Arc is not one, so
+`services/facilitator` is ours: the same three endpoints over `@x402/evm`, whose
+exact scheme covers any EVM chain. It runs on its own account rather than the
+agent's, so a receipt shows what the arrangement claims:
+
+```
+transaction from   0x1a307ae7…   the facilitator, which paid the gas
+agent              paid the price and nothing else
+```
+
+Which chain a service settles on is a record on its name. `craft.voxelbench.eth`
+is on Arc while its two siblings are on Hedera:
+
+```
+recipe   hedera:testnet   100000   0.0.10432254
+craft    eip155:5042002     5000   0x1083740075CB…
+publish  hedera:testnet  1000000   0.0.10432254
+```
+
+`contracts/scripts/ens/05-move-chain.mjs` moves one either way. Nothing is
+redeployed and nothing restarts — the agent finds it on its next run.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
@@ -108,17 +143,7 @@ breaking.
 
 ## What is left
 
-### 1. USDC instead of HBAR · Circle / Arc · next
-
-The cheapest of the three, because the wiring already exists: the paywall offers
-both assets and the agent can pay either. What is missing is testnet USDC from
-`faucet.circle.com` and the token association Hedera requires before an account
-can receive a non-native token.
-
-**Done looks like** the same demo settling in USDC, which makes one
-implementation serve two tracks.
-
-### 2. The recipe marketplace · Track B
+### 1. The recipe marketplace · Track B · next
 
 The interface to `RecipeBook`: real recipes, their authors, how often each was
 crafted and what it earned, read from the chain rather than mocked. The card in
@@ -128,17 +153,17 @@ It also fixes latency, which is the interesting part: a recipe that already
 exists needs no model call, so it crafts instantly and its author is paid. The
 platform gets faster as it gets more recipes.
 
-### 3. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
+### 2. The recipe library · [docs/RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)
 
 Stefan's. Good recipes give the model better work to imitate, make anything in
 the library instant, and give the marketplace something to show.
 
-### 4. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
+### 3. Contract audit · [docs/CONTRACT_AUDIT.md](CONTRACT_AUDIT.md)
 
 Also Stefan's, and independent of everything else — the contracts are finished,
 so this can happen any time.
 
-### 5. Roblox materials
+### 4. Roblox materials
 
 Every part has a `Material` property — `Wood`, `Metal`, `Slate`. Real surface
 texture with no image, no upload, no UV mapping: one more field in the recipe,
@@ -151,7 +176,7 @@ it in Blender too — map each material to a roughness and a little relief.
 **Start at** `bench/to_rbxmx.py` and the schema in `bench/describe.py`. Check the
 enum values by asking Studio through the MCP rather than trusting a list.
 
-### 6. Luau scripts on objects
+### 5. Luau scripts on objects
 
 A crate that sits there is decoration; a crate that gives you coins when touched
 is a mechanic. Generating Luau is the easy part of this project — well
@@ -160,7 +185,7 @@ documented, and unlike geometry it either runs or throws.
 **Worth checking first:** Roblox moderates models containing scripts. If that
 takes hours rather than seconds, scripts stay out of a live demo.
 
-### 7. The obby — the wow, and the first thing to cut
+### 6. The obby — the wow, and the first thing to cut
 
 A sequence of platforms, hazards, checkpoints and a finish is spatial
 arrangement of objects. An obby is a recipe of recipes: nothing new to invent,
@@ -172,7 +197,7 @@ Needs `universe-places` on the API key, which is editable on the existing one.
 **Cut this first if anything slips.** `PLAN.md` section 10 has the demo built so
 losing it shortens the video rather than breaking it.
 
-### 8. The video
+### 7. The video
 
 Two to four minutes, narrated by one of us — the rules reject AI voiceover,
 text-to-speech and phone recordings. Structure and fallbacks in `PLAN.md`
@@ -180,15 +205,22 @@ section 10. Recording takes longer than anyone plans for.
 
 ---
 
+## Beyond the hackathon
+
+[docs/MAINNET.md](MAINNET.md) is the road from testnet to a deployment that
+holds real balances: what carries over unchanged, what has to change, and the
+one item still unknown. Not current work, and not scheduled — written so the
+answer exists when someone asks for it.
+
+---
+
 ## Prizes
 
 Three at submission, chosen: **Hedera**, **ENS**, **Circle / Arc**.
 
-Ledger was second until its tooling turned out to need a physical device;
-`docs/ONCHAIN.md` 3.2b has the reasoning and the counter-argument.
-
-Not chasing 1inch, Uniswap or Chainlink — no honest fit, and reaching for one to
-collect a logo is visible.
+Not chasing 1inch, Uniswap or Chainlink — no honest fit, and reaching for one
+to collect a logo is visible. Ledger was priority two until its tooling turned
+out to want a physical device; `docs/ONCHAIN.md` 3.4 has the short version.
 
 ---
 

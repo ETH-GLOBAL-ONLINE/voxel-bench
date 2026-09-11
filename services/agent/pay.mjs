@@ -9,6 +9,10 @@ import { PrivateKey } from "@hiero-ledger/sdk";
 import { wrapFetchWithPayment, x402Client, x402HTTPClient } from "@x402/fetch";
 import { createClientHederaSigner } from "@x402/hedera";
 import { ExactHederaScheme } from "@x402/hedera/exact/client";
+import { toClientEvmSigner } from "@x402/evm";
+import { registerExactEvmScheme } from "@x402/evm/exact/client";
+import { createWalletClient, defineChain, http as httpTransport, publicActions } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 export { loadEnv } from "../env.mjs";
 import { disagreement, discover } from "./discover.mjs";
@@ -18,14 +22,32 @@ export const ASSET = () => process.env.VOXEL_PAY_ASSET ?? "hbar";
 
 export const tinybar = (n) => `${(Number(n) / 1e8).toFixed(4)} HBAR`;
 
+// Each chain states prices in its own smallest unit, and the two we settle on
+// disagree about both the scale and the name. Formatting one as the other is
+// the mistake that reads as a broken price rather than as a unit slip.
+export function money(amount, network) {
+  if (amount === null || amount === undefined) return null;
+  return network?.startsWith("eip155:")
+    ? `${(Number(amount) / 1e6).toFixed(4)} USDC`
+    : `${(Number(amount) / 1e8).toFixed(4)} HBAR`;
+}
+
 // Hedera's explorer. Worth linking rather than printing a bare id: the whole
 // argument for settling onchain is that someone else can check it.
 //
 // The facilitator hands back a transaction id as `payer@seconds.nanos`, while
 // HashScan and the mirror node both address it as `payer-seconds-nanos`. Same
 // transaction, two spellings; this is the one a link can use.
-export function hashscan(tx) {
+export function explorerFor(network, tx) {
   if (!tx) return null;
+
+  // Arc is an ordinary EVM chain and its transaction is a hash.
+  if (network?.startsWith("eip155:")) {
+    return `https://testnet.arcscan.app/tx/${tx}`;
+  }
+
+  // Hedera's is `payer@seconds.nanos`, while HashScan and the mirror node both
+  // address it as `payer-seconds-nanos`. Same transaction, two spellings.
   const at = tx.indexOf("@");
   const id = at === -1 ? tx : `${tx.slice(0, at)}-${tx.slice(at + 1).replace(".", "-")}`;
   return `https://hashscan.io/testnet/transaction/${id}`;
@@ -37,6 +59,19 @@ export function hashscan(tx) {
 // which is a good default: an agent should not be able to spend a token nobody
 // decided it could spend.
 const MAX_PER_PAYMENT_TINYBAR = () => process.env.VOXEL_MAX_TINYBAR ?? "2000000";
+
+// The same ceiling on the Arc side, in the ERC-20's 6 decimals: 0.02 USDC.
+const MAX_PER_PAYMENT_USDC = () => process.env.VOXEL_MAX_USDC ?? "20000";
+
+const ARC_USDC = "0x3600000000000000000000000000000000000000";
+
+export const arc = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  rpcUrls: { default: { http: [process.env.ARC_RPC_URL ?? "https://rpc.testnet.arc.io"] } },
+});
+const ARC_NETWORK = `eip155:${arc.id}`;
 
 export function createAgent() {
   const accountId = process.env.HEDERA_AGENT_ACCOUNT_ID;
@@ -62,9 +97,36 @@ export function createAgent() {
           asset: "0.0.0",
           maxAmountPerPayment: MAX_PER_PAYMENT_TINYBAR(),
         },
+        {
+          network: ARC_NETWORK,
+          asset: ARC_USDC,
+          maxAmountPerPayment: MAX_PER_PAYMENT_USDC(),
+        },
       ],
     })
     .register("hedera:testnet", new ExactHederaScheme(signer));
+
+  // The same agent on a second chain. An EVM key is the same 32 bytes as the
+  // Hedera one, so this is one identity paying on two rails rather than two
+  // agents — which is what makes moving a service between them a record change
+  // rather than a redeployment.
+  const arcKey = process.env.ARC_PRIVATE_KEY ?? privateKey;
+  if (arcKey) {
+    const evmAccount = privateKeyToAccount(
+      arcKey.startsWith("0x") ? arcKey : `0x${arcKey}`,
+    );
+    // Both converters read `client.address`, which a viem wallet client does
+    // not have — it keeps the account under `client.account`. Left alone the
+    // signer reports an undefined address and the failure surfaces as an
+    // invalid hex string in the middle of signing.
+    const evmClient = createWalletClient({
+      account: evmAccount, chain: arc, transport: httpTransport(),
+    }).extend(publicActions);
+
+    registerExactEvmScheme(client, {
+      signer: toClientEvmSigner(Object.assign(evmClient, { address: evmAccount.address })),
+    });
+  }
 
   // Every 402 this fetch meets is answered by signing a transfer and retrying.
   // Callers below are written as if payment did not exist, which is the point:
@@ -152,7 +214,10 @@ export function createAgent() {
         seconds: Number(((Date.now() - started) / 1000).toFixed(1)),
         paid: Boolean(settled?.success),
         transaction: settled?.transaction ?? null,
-        explorer: hashscan(settled?.transaction),
+        explorer: explorerFor(
+          settled?.network ?? "hedera:testnet",
+          settled?.transaction,
+        ),
         payer: settled?.payer ?? accountId,
         network: settled?.network ?? "hedera:testnet",
       },

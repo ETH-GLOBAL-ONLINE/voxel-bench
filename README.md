@@ -96,14 +96,22 @@ carries the price. When a 402 asks for something the name does not say, it does
 not sign. A service may edit its own `url` record and not its price, so the two
 numbers are not both written by the party being paid.
 
+Each name also says which chain it settles on, so a service moves between them
+by rewriting a record. Today `craft` settles in USDC on Arc while `recipe` and
+`publish` settle in HBAR on Hedera — one agent, one identity, two rails.
+
 Run it:
 
 ```bash
-python services/crafter.py            # the work,    :8000
-node services/paywall/server.mjs      # the prices,  :4402
-node services/agent/server.mjs        # the wallet,  :4403
-cd web && npm run dev                 # the site
+python services/crafter.py             # the work,     :8000
+node services/paywall/server.mjs       # the prices,   :4402
+node services/agent/server.mjs         # the wallet,   :4403
+node services/facilitator/server.mjs   # the gas,      :4404
+cd web && npm run dev                  # the site
 ```
+
+The facilitator is only needed for the Arc side. The public one at `x402.org`
+covers Hedera and does not cover Arc, so that half runs on ours.
 
 Or from a terminal, without the site:
 
@@ -119,6 +127,10 @@ wallet.
 `VOXEL_ENS_PARENT` turns on name resolution. Without it the agent uses
 `PAYWALL_URL` and takes each price from the 402 that states it — enough to craft
 on a fresh clone, with only its own cap and nothing to check a price against.
+
+Running this for real is a separate question, answered in
+[docs/MAINNET.md](docs/MAINNET.md): what carries over unchanged, what has to
+change, and what is still unknown.
 
 ## Where it runs
 
