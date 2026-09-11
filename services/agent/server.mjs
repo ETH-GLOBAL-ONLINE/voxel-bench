@@ -17,17 +17,24 @@
 // so this is a job board: start one, poll it. Jobs live in memory and die with
 // the process, which is correct for a bench that is switched on to demo.
 import { randomBytes } from "node:crypto";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import express from "express";
 
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
-import { claimTypedData, published, settle } from "./recipes.mjs";
+import { claimTypedData, published, recipeId, settle } from "./recipes.mjs";
 import { allCaps, draw } from "./allowance.mjs";
+import { saveRecipe } from "./catalog.mjs";
 
 loadEnv();
 
 const PORT = Number(process.env.AGENT_PORT ?? 4403);
 const CRAFTER = process.env.CRAFTER_URL ?? "http://127.0.0.1:8000";
+
+// Where the crafter leaves its files. The agent runs on the same machine, which
+// is how it can file a craft's preview in the catalog without asking for it.
+const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "out");
 
 let agent;
 try {
@@ -169,10 +176,19 @@ async function runCraft(id, prompt) {
     set(id, { stage: "recording it on RecipeBook" });
     const book = await settle(recipe);
 
+    // File what it is in the catalog, so a backpack can show it by name while
+    // this machine is asleep. Optional, and never allowed to fail the craft.
+    const catalog = await saveRecipe({
+      id: recipeId(recipe),
+      recipe,
+      preview: resolve(OUT, `${built.name}_preview.png`),
+    });
+
     set(id, {
       status: "done",
       stage: null,
       book,
+      catalog,
       result: {
         name: built.name,
         recipe,
