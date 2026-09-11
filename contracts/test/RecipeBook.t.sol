@@ -114,4 +114,97 @@ contract RecipeBookTest is Test {
 
         assertEq(vault.balanceOf(author) + vault.balanceOf(platform), paid);
     }
+
+    // ── publishing on someone else's behalf ──────────────────────────────
+
+    uint256 constant AUTHOR_KEY = 0xA11CE;
+
+    function _digest(bytes32 recipeId, address who) internal view returns (bytes32) {
+        bytes32 domain = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256("VoxelBench RecipeBook"),
+                keccak256("1"),
+                block.chainid,
+                address(book)
+            )
+        );
+        return keccak256(
+            abi.encodePacked(
+                hex"1901",
+                domain,
+                keccak256(abi.encode(book.PUBLISH_TYPEHASH(), recipeId, who))
+            )
+        );
+    }
+
+    function _sign(uint256 key, bytes32 recipeId, address who)
+        internal
+        view
+        returns (bytes memory)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, _digest(recipeId, who));
+        return abi.encodePacked(r, s, v);
+    }
+
+    function test_publishFor_credits_the_signer_not_the_sender() public {
+        address signer = vm.addr(AUTHOR_KEY);
+        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
+
+        // Anyone may relay, and relaying gains them nothing.
+        vm.prank(crafter);
+        book.publishFor(RECIPE, signer, signature);
+
+        assertEq(book.authorOf(RECIPE), signer);
+    }
+
+    function test_publishFor_refuses_a_substituted_author() public {
+        address signer = vm.addr(AUTHOR_KEY);
+        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
+
+        // The relayer swaps in their own address. The signature no longer
+        // recovers to it, which is the whole protection.
+        vm.expectRevert(RecipeBook.InvalidSignature.selector);
+        book.publishFor(RECIPE, crafter, signature);
+    }
+
+    function test_publishFor_refuses_a_signature_for_another_recipe() public {
+        address signer = vm.addr(AUTHOR_KEY);
+        bytes memory signature = _sign(AUTHOR_KEY, keccak256("something_else"), signer);
+
+        vm.expectRevert(RecipeBook.InvalidSignature.selector);
+        book.publishFor(RECIPE, signer, signature);
+    }
+
+    function test_publishFor_cannot_take_an_existing_recipe() public {
+        vm.prank(author);
+        book.publish(RECIPE);
+
+        address signer = vm.addr(AUTHOR_KEY);
+        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
+
+        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+        book.publishFor(RECIPE, signer, signature);
+        assertEq(book.authorOf(RECIPE), author);
+    }
+
+    function test_publishFor_refuses_a_malformed_signature() public {
+        address signer = vm.addr(AUTHOR_KEY);
+
+        vm.expectRevert(RecipeBook.InvalidSignature.selector);
+        book.publishFor(RECIPE, signer, hex"1234");
+    }
+
+    function test_a_relayed_author_is_paid_like_any_other() public {
+        address signer = vm.addr(AUTHOR_KEY);
+        book.publishFor(RECIPE, signer, _sign(AUTHOR_KEY, RECIPE, signer));
+
+        vm.deal(crafter, 1 ether);
+        vm.prank(crafter);
+        book.craft{ value: 1 ether }(RECIPE);
+
+        assertEq(vault.balanceOf(signer), 0.9 ether);
+    }
 }

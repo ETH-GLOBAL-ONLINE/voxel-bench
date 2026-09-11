@@ -18,9 +18,13 @@ someone has four minutes with them.
 
 | Contract | Job | Address (Hedera testnet) |
 |---|---|---|
-| `RecipeBook` | who wrote which recipe, how often it was crafted, how the fee divides | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
-| `SplitVault` | what each author has earned until they withdraw it | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
+| `RecipeBook` | who wrote which recipe, how often it was crafted, how the fee divides | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` |
+| `SplitVault` | what each author has earned until they withdraw it | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` |
 | `Allowance` | the crafting agent's spending money, and the ceiling on it | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` |
+
+The same contracts are on Arc testnet at different addresses — `docs/STATUS.md`
+has both columns. `RecipeBook` gained `publishFor` after the first deployment,
+which is why the addresses changed and why the two chains no longer match.
 
 **The flow.** An author calls `publish(recipeId)` and owns that recipe — the id
 is the hash of its content, so republishing cannot take it from them. Someone

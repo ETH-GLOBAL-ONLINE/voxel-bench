@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-94adcc08e0f0510376d80694d523023918eea657",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "src/SplitVault.sol": "project/src/SplitVault.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/SplitVault.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.24;\r\n\r\n/// @title SplitVault\r\n/// @notice Holds what each recipe author has earned until they withdraw it.\r\n///\r\n/// Kept separate from RecipeBook on purpose. RecipeBook decides how a craft\r\n/// fee divides; this only knows balances and withdrawals. Two contracts that\r\n/// each do one thing are easier to read in the four minutes a judge will spend\r\n/// on them, and easier to reason about when the thing being reasoned about is\r\n/// other people's money.\r\n///\r\n/// Anyone may credit anyone — a credit is funded by the value attached to it,\r\n/// so there is nothing to gain by crediting a stranger. Keeping it open means\r\n/// RecipeBook needs no privileged relationship with this contract.\r\ncontract SplitVault {\r\n    mapping(address => uint256) public balanceOf;\r\n\r\n    /// @notice Total held on behalf of everyone, so a mismatch with the\r\n    /// contract balance is visible rather than silent.\r\n    uint256 public totalOwed;\r\n\r\n    event Credited(address indexed account, uint256 amount, address indexed from);\r\n    event Withdrawn(address indexed account, uint256 amount);\r\n\r\n    error NothingToWithdraw();\r\n    error NothingSent();\r\n    error TransferFailed();\r\n\r\n    /// @notice Add the attached value to `account`'s balance.\r\n    function credit(address account) external payable {\r\n        if (msg.value == 0) revert NothingSent();\r\n        balanceOf[account] += msg.value;\r\n        totalOwed += msg.value;\r\n        emit Credited(account, msg.value, msg.sender);\r\n    }\r\n\r\n    /// @notice Send the caller everything they are owed.\r\n    function withdraw() external {\r\n        uint256 amount = balanceOf[msg.sender];\r\n        if (amount == 0) revert NothingToWithdraw();\r\n\r\n        // Zero the balance before sending. The recipient may be a contract and\r\n        // may call back in; by then there is nothing left to withdraw twice.\r\n        balanceOf[msg.sender] = 0;\r\n        totalOwed -= amount;\r\n\r\n        (bool ok, ) = msg.sender.call{value: amount}(\"\");\r\n        if (!ok) revert TransferFailed();\r\n\r\n        emit Withdrawn(msg.sender, amount);\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}

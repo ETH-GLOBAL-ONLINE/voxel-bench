@@ -45,8 +45,21 @@ if (!NETWORK) throw new Error(`CHAIN must be one of ${Object.keys(CHAINS).join("
 
 const money = (v) => `${formatUnits(v, NETWORK.valueDecimals)} ${NETWORK.symbol}`;
 
-const BOOK = process.env.RECIPE_BOOK ?? "0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5";
-const VAULT = process.env.SPLIT_VAULT ?? "0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C";
+// Per chain: the two deployments diverged when RecipeBook gained publishFor,
+// because the deployer's nonces were no longer in step.
+const ADDRESSES = {
+  hedera: {
+    book: "0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E",
+    vault: "0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE",
+  },
+  arc: {
+    book: "0xe0C3Bd1b9dD6ee6606C6780dc1979855556bb396",
+    vault: "0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721",
+  },
+};
+
+const BOOK = process.env.RECIPE_BOOK ?? ADDRESSES[process.env.CHAIN ?? "hedera"].book;
+const VAULT = process.env.SPLIT_VAULT ?? ADDRESSES[process.env.CHAIN ?? "hedera"].vault;
 const ZERO = "0x0000000000000000000000000000000000000000";
 
 const bookAbi = parseAbi([

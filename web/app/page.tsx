@@ -258,12 +258,12 @@ export default async function Home() {
 
           <div className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
             <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">Two cents is a real price</h3>
+              <h3 className="font-semibold">Two cents in, ninety out</h3>
               <p className="mt-2 text-sm leading-relaxed text-dim">
-                The unit of sale is one craft, which should cost cents. Card
-                rails cannot process two cents for less than two cents — and a
-                large share of Roblox creators are young enough that a card is
-                not theirs to use.
+                A craft should cost cents, and a card cannot process two cents
+                for less than two cents. The harder half is the other
+                direction: paying forty authors ninety cents each, in twenty
+                countries, costs more in fees and onboarding than it moves.
               </p>
             </div>
             <div className="bg-bench-850 p-6">

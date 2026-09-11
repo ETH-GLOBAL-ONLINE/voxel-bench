@@ -38,11 +38,11 @@ cd web && npm run dev                  # the site; Next prints the port
 Three contracts on Hedera testnet, 29 tests including three fuzz, each verified
 against the live chain rather than only locally.
 
-| Contract | Address |
-|---|---|
-| `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` |
-| `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` |
-| `Allowance` | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` |
+| Contract | Hedera testnet | Arc testnet |
+|---|---|---|
+| `RecipeBook` | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` | `0xe0C3Bd1b9dD6ee6606C6780dc1979855556bb396` |
+| `SplitVault` | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` | `0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721` |
+| `Allowance` | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` | — |
 
 Three crafts settled with the 90/10 split exact and `RecipeBook` holding
 nothing. The agent drew 0.05 HBAR from `Allowance` and was refused 10.

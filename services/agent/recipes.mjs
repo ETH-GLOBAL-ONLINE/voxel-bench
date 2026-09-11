@@ -23,11 +23,6 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-// Both chains carry the same deployment at the same addresses: the same
-// deployer, the same nonces.
-const BOOK = "0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5";
-const VAULT = "0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C";
-
 const hedera = defineChain({
   id: 296,
   name: "Hedera Testnet",
@@ -53,17 +48,23 @@ const arc = defineChain({
 // where there is something to find.
 export const LEDGERS = {
   hedera: {
-    chain: hedera, symbol: "HBAR", decimals: 8,
-    fee: 100000n, from: 40291051n, window: 10000n,
+    chain: hedera, symbol: "HBAR", decimals: 8, fee: 100000n,
+    book: "0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E",
+    vault: "0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE",
+    from: 40375669n, window: 10000n,
   },
   arc: {
-    chain: arc, symbol: "USDC", decimals: 18,
-    fee: 1000000000000000n, from: 61369361n, window: 10000n,
+    chain: arc, symbol: "USDC", decimals: 18, fee: 1000000000000000n,
+    book: "0xe0C3Bd1b9dD6ee6606C6780dc1979855556bb396",
+    vault: "0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721",
+    from: 61536156n, window: 10000n,
   },
 };
 
 const bookAbi = parseAbi([
   "function publish(bytes32 recipeId)",
+  "function publishFor(bytes32 recipeId, address author, bytes signature)",
+  "function PUBLISH_TYPEHASH() view returns (bytes32)",
   "function craft(bytes32 recipeId) payable",
   "function authorOf(bytes32) view returns (address)",
   "function recipes(bytes32) view returns (address author, uint64 crafts, uint128 earned)",
@@ -124,7 +125,7 @@ function clients(ledger) {
 export async function lookup(id, ledger = ledgerFor()) {
   const publicClient = createPublicClient({ chain: ledger.chain, transport: http() });
   const [author, crafts, earned] = await publicClient.readContract({
-    address: BOOK, abi: bookAbi, functionName: "recipes", args: [id],
+    address: ledger.book, abi: bookAbi, functionName: "recipes", args: [id],
   });
   return {
     id,
@@ -145,31 +146,36 @@ export async function lookup(id, ledger = ledgerFor()) {
  * Failure here does not fail the craft. The object exists and the user has it;
  * an unreachable RPC is a bookkeeping problem and is reported as one.
  */
-export async function settle(recipe, { author, ledgerName } = {}) {
+export async function settle(recipe, { author, signature, ledgerName } = {}) {
   const ledger = ledgerFor(ledgerName);
   const id = recipeId(recipe);
 
   try {
     const { account, publicClient, wallet } = clients(ledger);
     const existing = await publicClient.readContract({
-      address: BOOK, abi: bookAbi, functionName: "authorOf", args: [id],
+      address: ledger.book, abi: bookAbi, functionName: "authorOf", args: [id],
     });
 
     const send = async (functionName, args, value) => {
       const hash = await wallet.writeContract({
-        address: BOOK, abi: bookAbi, functionName, args, value,
+        address: ledger.book, abi: bookAbi, functionName, args, value,
       });
       await publicClient.waitForTransactionReceipt({ hash });
       return hash;
     };
 
     if (existing === ZERO) {
-      // publish() credits msg.sender, so a recipe owned by someone else has to
-      // be published by them. Until a user can sign for it, the platform holds
-      // new recipes and the name of the eventual owner is a front-end concern.
-      const hash = await send("publish", [id]);
+      // Without a signature, nothing is published. Claiming it for the
+      // platform would be the end of the matter — a recipe can only be
+      // published once — so the person who made it could never take it back.
+      // It stays unowned until someone signs for it.
+      if (!author || !signature) {
+        return { id, action: "unclaimed", chain: ledger.chain.name };
+      }
+
+      const hash = await send("publishFor", [id, author, signature]);
       return {
-        id, action: "published", author: account.address,
+        id, action: "published", author, relayed: true,
         transaction: hash, chain: ledger.chain.name,
       };
     }
@@ -203,7 +209,7 @@ export async function published({ ledgerName, limit = 50 } = {}) {
   for (let to = head; to >= ledger.from && seen.size < limit; to -= ledger.window) {
     const from = to - ledger.window + 1n;
     const logs = await publicClient.getLogs({
-      address: BOOK,
+      address: ledger.book,
       event,
       fromBlock: from > ledger.from ? from : ledger.from,
       toBlock: to,
@@ -214,7 +220,7 @@ export async function published({ ledgerName, limit = 50 } = {}) {
   const ids = [...seen.keys()].slice(-limit).reverse();
   const rows = await Promise.all(ids.map(async (id) => {
     const [author, crafts, earned] = await publicClient.readContract({
-      address: BOOK, abi: bookAbi, functionName: "recipes", args: [id],
+      address: ledger.book, abi: bookAbi, functionName: "recipes", args: [id],
     });
     return {
       id,
@@ -224,5 +230,32 @@ export async function published({ ledgerName, limit = 50 } = {}) {
     };
   }));
 
-  return { chain: ledger.chain.name, book: BOOK, vault: VAULT, recipes: rows };
+  return { chain: ledger.chain.name, book: ledger.book, vault: ledger.vault, recipes: rows };
+}
+
+/**
+ * The EIP-712 typed data an author signs to claim a recipe.
+ *
+ * Built here rather than in the browser so the page never carries a contract
+ * address or a chain id of its own — a page that hardcodes those is a page that
+ * keeps signing for the wrong contract after a redeployment.
+ */
+export function claimTypedData(id, author, ledgerName) {
+  const ledger = ledgerFor(ledgerName);
+  return {
+    domain: {
+      name: "VoxelBench RecipeBook",
+      version: "1",
+      chainId: ledger.chain.id,
+      verifyingContract: ledger.book,
+    },
+    types: {
+      Publish: [
+        { name: "recipeId", type: "bytes32" },
+        { name: "author", type: "address" },
+      ],
+    },
+    primaryType: "Publish",
+    message: { recipeId: id, author },
+  };
 }
