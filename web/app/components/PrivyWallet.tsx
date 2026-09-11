@@ -17,7 +17,7 @@
 // without it.
 
 import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { defineChain } from "viem";
 import { signOn, type Ethereum, type WalletState } from "./walletCore";
 
@@ -80,6 +80,17 @@ function Bridge({ onChange }: { onChange: (state: WalletState) => void }) {
   const wallet = authenticated
     ? (wallets.find((w) => w.walletClientType === "privy") ?? wallets[0])
     : undefined;
+  const address = wallet?.address ?? null;
+
+  // Privy hands back a new wallet object on every render, even for the same
+  // wallet. What this island reports to the page must only change when the
+  // visitor does — it sets state in the page, which renders this island again,
+  // and a report that changed every time would never stop. So the report is
+  // keyed on the address, and everything else is read from here when needed.
+  const latest = useRef({ ready, authenticated, login, logout, wallet });
+  useEffect(() => {
+    latest.current = { ready, authenticated, login, logout, wallet };
+  });
 
   // Privy keeps a session of its own, apart from any wallet. Someone who signed
   // in with MetaMask and then locked it is still signed in to Privy with no
@@ -100,39 +111,38 @@ function Bridge({ onChange }: { onChange: (state: WalletState) => void }) {
   }, [loginAfterLogout, ready, authenticated, login]);
 
   const connect = useCallback(async () => {
-    if (!ready) return;
-    if (!authenticated) {
-      login();
+    const now = latest.current;
+    if (!now.ready) return;
+    if (!now.authenticated) {
+      now.login();
       return;
     }
     setLoginAfterLogout(true);
-    await logout();
-  }, [ready, authenticated, login, logout]);
+    await now.logout();
+  }, []);
 
   const disconnect = useCallback(async () => {
-    await logout();
-  }, [logout]);
+    await latest.current.logout();
+  }, []);
 
-  const signTypedData = useCallback(
-    async (typed: unknown) => {
-      if (!wallet) return null;
-      const provider = (await wallet.getEthereumProvider()) as unknown as Ethereum;
-      return signOn(provider, wallet.address, typed);
-    },
-    [wallet],
-  );
+  const signTypedData = useCallback(async (typed: unknown) => {
+    const wallet = latest.current.wallet;
+    if (!wallet) return null;
+    const provider = (await wallet.getEthereumProvider()) as unknown as Ethereum;
+    return signOn(provider, wallet.address, typed);
+  }, []);
 
   const state = useMemo<WalletState>(
     () => ({
       kind: "privy",
-      address: wallet?.address ?? null,
+      address,
       wallets: [],
       available: true,
       connect,
       disconnect,
       signTypedData,
     }),
-    [wallet, connect, disconnect, signTypedData],
+    [address, connect, disconnect, signTypedData],
   );
 
   useEffect(() => {
