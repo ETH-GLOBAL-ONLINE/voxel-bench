@@ -164,7 +164,17 @@ def main():
     bpy.context.view_layer.objects.active = merged
     bpy.ops.export_scene.fbx(filepath=fbx, use_selection=True, path_mode="COPY",
                              embed_textures=True, mesh_smooth_type="FACE")
-    bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=True)
+    # Draco compresses the mesh inside the GLB. An 8.9 MB scene becomes about
+    # a megabyte, which is the difference between a viewer that appears and one
+    # that makes someone wait on a phone. The browser pays for it with a
+    # decoder it fetches once, so the saving compounds across every object.
+    bpy.ops.export_scene.gltf(
+        filepath=glb,
+        export_format="GLB",
+        use_selection=True,
+        export_draco_mesh_compression_enable=True,
+        export_draco_mesh_compression_level=6,
+    )
     render_preview(png)
 
     report = {

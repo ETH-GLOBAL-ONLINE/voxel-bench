@@ -54,6 +54,11 @@ would not have come out of reading.
 brief in `docs/RECIPE_LIBRARY.md`. Every one passed our validator without a
 single repair, which is not the normal rate.
 
+`sakura_garden` is his too, and it is the sample the bench shows: 4,408
+ingredients of cubes, cylinders and spheres, written by hand in the same format
+a prompt produces. It is on the page as the thing to build toward rather than as
+model output, and the page says so.
+
 They matter here beyond the count: the recipes are the input the rest of the
 pipeline exists to serve, and the geometry problem in the cone row above was
 found by running his work rather than ours.

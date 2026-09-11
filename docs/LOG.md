@@ -351,3 +351,69 @@ other is what Roblox receives.
 `stage_craft` computed the note about substituted shapes and dropped it, so the
 free path warned and the paid one — the one the site is moving to — did not.
 Both now call the same function.
+
+## A scene of four thousand parts
+
+### It goes to Roblox unchanged
+
+A hand-authored garden of 4,408 ingredients converts to `.rbxmx` in 0.33
+seconds and lands at 2.88 MB against Open Cloud's 20 MB limit. Moderation
+approved it. Nothing in the Roblox path needed a change for two orders of
+magnitude more parts than it had ever seen.
+
+Blender is the part that does not scale: **28 minutes**, because every
+primitive is a separate `bpy` operator call. That is fine for a sample rendered
+once and checked in, and it is the reason a scene this size cannot come out of
+the live prompt path.
+
+### The pivot trap, twice, and the second half of it
+
+Placing the model with `PivotTo(CFrame.new(0, 3, 0))` laid it on its edge. That
+CFrame carries no rotation, so Roblox turns the whole model to match — and the
+pivot is the `PrimaryPart`, which is the one part that *is* rotated, the disc
+standing flat. The file was correct; placing it broke it.
+
+Then it floated twelve studs, because the lowest point was computed as
+`Position.Y - Size.Y/2`. For a part standing on a rotated axis that is not where
+it reaches. The world-space half-height is the size projected through the part's
+own rotation:
+
+```lua
+0.5 * (|r10| * Size.X + |r11| * Size.Y + |r12| * Size.Z)
+```
+
+Both failures are the same mistake: **reading an orientation that belongs to the
+pivot as though it belonged to the world.** `GetBoundingBox` has it too — it
+returned an 8-stud height for a 17.8-stud garden.
+
+### Scale is not something the validator checks
+
+The garden arrived with a door 3.21 studs tall. A Roblox character is 5, so the
+door was shorter than the person walking through it, and the whole island was 31
+studs across. Multiplying every position and size by 2.2 puts the door at 7.06
+and the island at 68.
+
+Nothing rejected it. The validator checks that a dimension is not absurd on its
+own; it has no view on whether a scene reads at human scale. Worth having,
+because this is the first recipe written by a person rather than a model and the
+person had no 5-stud figure to check against.
+
+### Most of a GLB can be bookkeeping
+
+The export is 5.26 MB, and **3.33 MB of that is the JSON header**: 4,408
+primitives, 4,408 materials, 13,370 accessors. One material per ingredient means
+one primitive per ingredient, and Draco then compresses 4,408 tiny meshes
+separately instead of one large one.
+
+Draco still helps — `KHR_draco_mesh_compression` is in `extensionsRequired` and
+the geometry is a third of what it was. The remaining win is baking colours into
+a vertex colour layer so the whole scene is one material and one primitive. Not
+done: it changes how every object is exported, and the current output is what we
+are about to record.
+
+### Fire and forget does not survive the caller
+
+A 28-minute render launched with `nohup … &` from a tool call looked dead when
+checked twenty minutes in, and had in fact finished on time. A second render was
+started on the assumption it had died. Use the harness's own background mode for
+anything long, and check for the output file rather than for the process.
