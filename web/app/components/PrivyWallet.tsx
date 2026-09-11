@@ -1,6 +1,6 @@
 "use client";
 
-// Signing in with an email or a Google account, through Privy.
+// Signing in with an email, a Google or an X account, through Privy.
 //
 // The people this is for are building Roblox games, and most of them have never
 // installed a wallet. Asking for one first is a filter the product does not
@@ -9,13 +9,17 @@
 // signature, not where it came from. Someone who already has a wallet can still
 // bring it; it is one of the options in the same dialog.
 //
-// Nothing past this file changes. The claim, the agent and the contract are the
-// same for every kind of wallet.
+// This file is loaded in the browser only (see Wallet.tsx). Privy works only in
+// a browser anyway, and its dependencies — WalletConnect, Solana, Coinbase and
+// more — are large enough that compiling them for the server as well ran the
+// deployment's build out of memory. So this is an island: it renders nothing,
+// and reports the visitor's wallet to the page, which renders on the server
+// without it.
 
 import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { defineChain } from "viem";
-import { WalletContext, signOn, type Ethereum } from "./walletCore";
+import { signOn, type Ethereum, type WalletState } from "./walletCore";
 
 // The two chains the contracts live on. The wallet has to be able to switch to
 // either, because a claim is signed on whichever chain the recipe is recorded.
@@ -39,12 +43,12 @@ const hedera = defineChain({
   },
 });
 
-export default function PrivyWalletProvider({
+export default function PrivyIsland({
   appId,
-  children,
+  onChange,
 }: {
   appId: string;
-  children: ReactNode;
+  onChange: (state: WalletState) => void;
 }) {
   return (
     <PrivyProvider
@@ -61,13 +65,13 @@ export default function PrivyWalletProvider({
         supportedChains: [arc, hedera],
       }}
     >
-      <Bridge>{children}</Bridge>
+      <Bridge onChange={onChange} />
     </PrivyProvider>
   );
 }
 
 /** Turns Privy's view of the visitor into the one the rest of the page reads. */
-function Bridge({ children }: { children: ReactNode }) {
+function Bridge({ onChange }: { onChange: (state: WalletState) => void }) {
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
 
@@ -76,6 +80,17 @@ function Bridge({ children }: { children: ReactNode }) {
   const wallet = authenticated
     ? (wallets.find((w) => w.walletClientType === "privy") ?? wallets[0])
     : undefined;
+  const address = wallet?.address ?? null;
+
+  // Privy hands back a new wallet object on every render, even for the same
+  // wallet. What this island reports to the page must only change when the
+  // visitor does — it sets state in the page, which renders this island again,
+  // and a report that changed every time would never stop. So the report is
+  // keyed on the address, and everything else is read from here when needed.
+  const latest = useRef({ ready, authenticated, login, logout, wallet });
+  useEffect(() => {
+    latest.current = { ready, authenticated, login, logout, wallet };
+  });
 
   // Privy keeps a session of its own, apart from any wallet. Someone who signed
   // in with MetaMask and then locked it is still signed in to Privy with no
@@ -96,42 +111,43 @@ function Bridge({ children }: { children: ReactNode }) {
   }, [loginAfterLogout, ready, authenticated, login]);
 
   const connect = useCallback(async () => {
-    if (!ready) return;
-    if (!authenticated) {
-      login();
+    const now = latest.current;
+    if (!now.ready) return;
+    if (!now.authenticated) {
+      now.login();
       return;
     }
     setLoginAfterLogout(true);
-    await logout();
-  }, [ready, authenticated, login, logout]);
+    await now.logout();
+  }, []);
 
   const disconnect = useCallback(async () => {
-    await logout();
-  }, [logout]);
+    await latest.current.logout();
+  }, []);
 
-  const signTypedData = useCallback(
-    async (typed: unknown) => {
-      if (!wallet) return null;
-      const provider = (await wallet.getEthereumProvider()) as unknown as Ethereum;
-      return signOn(provider, wallet.address, typed);
-    },
-    [wallet],
-  );
+  const signTypedData = useCallback(async (typed: unknown) => {
+    const wallet = latest.current.wallet;
+    if (!wallet) return null;
+    const provider = (await wallet.getEthereumProvider()) as unknown as Ethereum;
+    return signOn(provider, wallet.address, typed);
+  }, []);
 
-  const value = useMemo(
+  const state = useMemo<WalletState>(
     () => ({
-      kind: "privy" as const,
-      address: wallet?.address ?? null,
+      kind: "privy",
+      address,
       wallets: [],
-      // Offered before Privy has finished loading: the dialog opens as soon as
-      // it can, and telling someone there is no wallet would be untrue.
       available: true,
       connect,
       disconnect,
       signTypedData,
     }),
-    [wallet, connect, disconnect, signTypedData],
+    [address, connect, disconnect, signTypedData],
   );
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  useEffect(() => {
+    onChange(state);
+  }, [state, onChange]);
+
+  return null;
 }
