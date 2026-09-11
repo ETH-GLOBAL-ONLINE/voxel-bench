@@ -217,6 +217,10 @@ The site finds the crafter through `CRAFTER_URL` (see `web/.env.local`). Without
 it the bench reports offline and shows the checked-in sample, which is what a
 deployment does when the crafter's machine is asleep.
 
+Owning a recipe takes a wallet that can sign. With `NEXT_PUBLIC_PRIVY_APP_ID`
+set, a visitor signs in with an email or a Google account and Privy makes one
+for them; without it, the page offers whatever extensions the browser has.
+
 ## Deploying
 
 The site deploys from `web/`, not the repo root. `web/vercel.json` declares the
@@ -231,6 +235,9 @@ cd web && npx vercel deploy --prod
 
 Set `CRAFTER_URL` in the Vercel project once a crafter is reachable. Without it
 `/api/bench/status` reports offline, and the site says so rather than breaking.
+
+Set `NEXT_PUBLIC_PRIVY_APP_ID` there too for email and Google sign-in. It is
+read at build time, so it takes effect on the next deployment, not on a restart.
 
 ## Publishing to Roblox
 

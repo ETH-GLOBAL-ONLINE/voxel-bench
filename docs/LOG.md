@@ -568,3 +568,31 @@ were not slow were rate-limited within two requests. The fallback is the paid
 hundredths of a cent per recipe, and on a quota the free tier does not share.
 Verified by pointing the primary at a model that does not exist and watching
 the recipe arrive anyway.
+
+## Signing in without a wallet
+
+### Most of the people this is for have never installed one
+
+Owning a recipe needs a signature, and until now a signature needed a browser
+extension. With a Privy app configured, a visitor signs in with an email or a
+Google account and Privy makes a wallet for them. That wallet signs EIP-712 like
+any other, so the claim, the agent and `RecipeBook` are unchanged. Someone who
+already has a wallet picks it in the same dialog.
+
+Without `NEXT_PUBLIC_PRIVY_APP_ID` the page falls back to the extensions it
+finds through EIP-6963, so a fresh clone still works.
+
+### An optional dependency can still block an install
+
+`@privy-io/react-auth` lists `permissionless` as an optional peer, and
+`permissionless` asks for `ox@^0.8` while viem ships `ox@0.14`. npm refuses the
+install over a package that is never installed. `--legacy-peer-deps` would pass
+by switching off peer checks for every package, and a deployment installing
+without it would fail the same way. A scoped override, letting `permissionless`
+use the `ox` viem already has, resolves exactly that; `permissionless` does not
+end up in the tree.
+
+Verified so far: the build passes under Turbopack with the page still
+prerendered, the header offers Sign in, and the dialog opens with email, Google
+and a wallet, with no console errors. Not yet verified: a claim signed by a
+wallet Privy created.

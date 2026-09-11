@@ -80,7 +80,7 @@ export default async function Home() {
       <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
         <p className="label !text-amber">
           Prototype · the crafter runs on a real machine, not here · the agent
-          pays for each stage on Hedera testnet
+          pays for each stage on Hedera and Arc testnets
         </p>
       </div>
 

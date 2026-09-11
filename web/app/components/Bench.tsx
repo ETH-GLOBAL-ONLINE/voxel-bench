@@ -386,7 +386,9 @@ export default function Bench({ sample }: { sample: Sample }) {
               </button>
             ) : (
               <span className="label !text-faint">
-                connect a wallet above to claim it
+                {wallet.kind === "privy"
+                  ? "sign in above to claim it"
+                  : "connect a wallet above to claim it"}
               </span>
             ))}
           {book.transaction && book.chain && (

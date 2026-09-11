@@ -174,6 +174,13 @@ relayer      0xfe3caAd6…0034      paid the gas
 
 [The transaction on Arcscan](https://testnet.arcscan.app/tx/0x9c862484dc2407d1f2c443c165bb0565d1ce09d784910b32f2c199afd2cba2bb).
 
+**Without a wallet at all.** With `NEXT_PUBLIC_PRIVY_APP_ID` set, the header
+offers Sign in: an email or a Google account, and Privy makes a wallet for
+anyone who arrives without one. Someone who has a wallet picks it in the same
+dialog. Signing in is verified; a claim signed by a wallet Privy created is
+the next thing to run. Without the variable the page offers browser extensions,
+as above.
+
 ### The spending cap is the brake, not a note about one
 
 Every craft begins by drawing what it is about to spend out of an `Allowance`

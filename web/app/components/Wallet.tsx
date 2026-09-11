@@ -10,7 +10,12 @@
 // bound to the contract's chain, and a wallet refuses to sign for any chain but
 // the one it is on. Switching costs nothing, so the page asks for it first.
 //
-// Wallets are found through EIP-6963 rather than through `window.ethereum`.
+// Where the wallet comes from depends on configuration. With a Privy app set in
+// NEXT_PUBLIC_PRIVY_APP_ID, a visitor signs in with an email or a Google account
+// and gets a wallet made for them — see PrivyWallet.tsx. Without one, as on a
+// fresh clone, the page finds the browser's extensions itself, below.
+//
+// Extensions are found through EIP-6963 rather than through `window.ethereum`.
 // That property is one slot and every extension wants it, so on a machine with
 // two installed the occupant is whoever loaded last, and asking it for an
 // account can land inside a chooser belonging to a wallet the visitor never
@@ -19,115 +24,41 @@
 // choice is ours to offer rather than theirs to seize.
 //
 // The connection lives in a context because the header offers it and the bench
-// uses it, and two Connect buttons that disagree about whether you are
-// connected are worse than one button in the wrong place.
-//
-// Deliberately no wallet library. Discovery is an event listener and signing is
-// one request, and a connector framework would be more moving parts than the
-// feature has.
+// uses it, and two buttons that disagree about whether you are connected are
+// worse than one button in the wrong place.
 
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import PrivyWalletProvider from "./PrivyWallet";
+import {
+  WalletContext,
+  short,
+  signOn,
+  useWallet,
+  type Announced,
+  type Ethereum,
+} from "./walletCore";
 
-type Ethereum = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on?: (event: string, handler: (...args: never[]) => void) => void;
-  removeListener?: (event: string, handler: (...args: never[]) => void) => void;
-};
+export { short, useWallet };
 
-type WalletInfo = { uuid: string; name: string; icon: string; rdns: string };
-type Announced = { info: WalletInfo; provider: Ethereum };
-
-declare global {
-  interface Window {
-    ethereum?: Ethereum;
-  }
-  interface WindowEventMap {
-    "eip6963:announceProvider": CustomEvent<Announced>;
-  }
-}
-
-export const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
-
-// What a wallet needs in order to add a chain it has never seen. Only the two
-// the contracts live on: a payload naming any other chain is not one this page
-// built.
-const CHAINS: Record<
-  number,
-  {
-    chainName: string;
-    nativeCurrency: { name: string; symbol: string; decimals: number };
-    rpcUrls: string[];
-    blockExplorerUrls: string[];
-  }
-> = {
-  296: {
-    chainName: "Hedera Testnet",
-    nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
-    rpcUrls: ["https://testnet.hashio.io/api"],
-    blockExplorerUrls: ["https://hashscan.io/testnet"],
-  },
-  5042002: {
-    chainName: "Arc Testnet",
-    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-    rpcUrls: ["https://rpc.testnet.arc.io"],
-    blockExplorerUrls: ["https://testnet.arcscan.app"],
-  },
-};
-
-const REJECTED = 4001;
-const UNKNOWN_CHAIN = 4902;
-
-// MetaMask sometimes reports an unknown chain inside the error rather than on
-// it, so both places are read.
-function codeOf(err: unknown): number | undefined {
-  const e = err as { code?: number; data?: { originalError?: { code?: number } } };
-  return e?.data?.originalError?.code ?? e?.code;
-}
-
-/** Puts the wallet on `chainId`, adding the chain first if it has to. */
-async function moveTo(provider: Ethereum, chainId: number) {
-  const wanted = `0x${chainId.toString(16)}`;
-  const active = (await provider.request({ method: "eth_chainId" })) as string;
-  if (active?.toLowerCase() === wanted) return;
-
-  try {
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: wanted }],
-    });
-  } catch (err) {
-    const known = CHAINS[chainId];
-    if (codeOf(err) !== UNKNOWN_CHAIN || !known) throw err;
-    await provider.request({
-      method: "wallet_addEthereumChain",
-      params: [{ chainId: wanted, ...known }],
-    });
-  }
-}
-
-type WalletState = {
-  address: string | null;
-  /** Everything that announced itself, in the order it did. */
-  wallets: Announced[];
-  /** Whether there is anything at all to connect to. */
-  available: boolean;
-  /** Connect to a named wallet, or to the only one there is. */
-  connect: (wallet?: Announced) => Promise<void>;
-  signTypedData: (typed: unknown) => Promise<string | null>;
-};
-
-const WalletContext = createContext<WalletState | null>(null);
+// Inlined at build time, so a deployment without it simply keeps extensions.
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  return PRIVY_APP_ID ? (
+    <PrivyWalletProvider appId={PRIVY_APP_ID}>{children}</PrivyWalletProvider>
+  ) : (
+    <InjectedWalletProvider>{children}</InjectedWalletProvider>
+  );
+}
+
+function InjectedWalletProvider({ children }: { children: ReactNode }) {
   const [wallets, setWallets] = useState<Announced[]>([]);
   const [address, setAddress] = useState<string | null>(null);
   const [legacy, setLegacy] = useState(false);
@@ -191,38 +122,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [wallets, onAccounts],
   );
 
-  /**
-   * Signs the typed data the agent built, on the chain it names. Returns null
-   * if the visitor declines; throws on anything else.
-   */
   const signTypedData = useCallback(
     async (typed: unknown) => {
       const provider = connected.current;
       if (!provider || !address) return null;
-      try {
-        const chainId = Number(
-          (typed as { domain?: { chainId?: number | string } }).domain?.chainId,
-        );
-        if (chainId) await moveTo(provider, chainId);
-
-        return (await provider.request({
-          method: "eth_signTypedData_v4",
-          params: [address, JSON.stringify(typed)],
-        })) as string;
-      } catch (err) {
-        // Declining the switch or the signature is an answer. Anything else is
-        // a failure, and a button that silently does nothing hides it.
-        if (codeOf(err) === REJECTED) return null;
-        throw new Error(
-          (err as { message?: string })?.message ?? "the wallet could not sign",
-        );
-      }
+      return signOn(provider, address, typed);
     },
     [address],
   );
 
   const value = useMemo(
     () => ({
+      kind: "injected" as const,
       address,
       wallets,
       available: wallets.length > 0 || legacy,
@@ -235,12 +146,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   return (
     <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
   );
-}
-
-export function useWallet(): WalletState {
-  const state = useContext(WalletContext);
-  if (!state) throw new Error("useWallet needs a WalletProvider above it");
-  return state;
 }
 
 /** The list offered when more than one extension answered. */
@@ -276,7 +181,7 @@ function Choices({
 
 /** The one in the header, where people look for it first. */
 export function HeaderWallet() {
-  const { address, wallets, available, connect } = useWallet();
+  const { kind, address, wallets, available, connect } = useWallet();
   const [choosing, setChoosing] = useState(false);
   const frame = "border px-3.5 py-1.5 text-xs";
 
@@ -290,9 +195,9 @@ export function HeaderWallet() {
     );
   }
 
-  // Rendered before the announcements arrive, and on a browser with no wallet
-  // at all. Both say the same thing, because neither is broken: the bench works
-  // without a wallet and what you make waits for you to claim it.
+  // Only extensions can be missing. Rendered before they announce themselves,
+  // and on a browser with none — and neither is broken: the bench works without
+  // a wallet and what you make waits for you to claim it.
   if (!available) {
     return (
       <span
@@ -304,6 +209,11 @@ export function HeaderWallet() {
     );
   }
 
+  const label =
+    kind === "privy"
+      ? "Sign in"
+      : `Connect wallet${wallets.length > 1 ? ` · ${wallets.length}` : ""}`;
+
   return (
     <div className="relative ml-auto md:ml-0">
       <button
@@ -311,7 +221,7 @@ export function HeaderWallet() {
         onClick={() => (wallets.length > 1 ? setChoosing((c) => !c) : connect())}
         className={`${frame} border-bench-600 text-dim transition-colors hover:border-amber/60 hover:text-ink`}
       >
-        Connect wallet{wallets.length > 1 ? ` · ${wallets.length}` : ""}
+        {label}
       </button>
       {choosing && (
         <Choices
@@ -328,7 +238,7 @@ export function HeaderWallet() {
 
 /** The one beside the prompt, which says what connecting is for. */
 export default function Wallet() {
-  const { address, wallets, available, connect } = useWallet();
+  const { kind, address, wallets, available, connect } = useWallet();
   const [choosing, setChoosing] = useState(false);
 
   if (address) {
@@ -355,7 +265,9 @@ export default function Wallet() {
         onClick={() => (wallets.length > 1 ? setChoosing((c) => !c) : connect())}
         className="label !text-dim underline decoration-bench-600 underline-offset-2 hover:!text-ink"
       >
-        · connect a wallet to own what you make
+        {kind === "privy"
+          ? "· sign in to own what you make"
+          : "· connect a wallet to own what you make"}
       </button>
       {choosing && (
         <Choices
