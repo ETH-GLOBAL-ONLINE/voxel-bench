@@ -22,6 +22,7 @@ import express from "express";
 
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
 import { claimTypedData, published, settle } from "./recipes.mjs";
+import { allCaps, draw } from "./allowance.mjs";
 
 loadEnv();
 
@@ -97,6 +98,43 @@ async function payFor(id, stage, body) {
   return result;
 }
 
+/**
+ * What this craft will cost, grouped by the chain it settles on.
+ *
+ * A cap is denominated, and the two chains disagree about the denomination —
+ * tinybars at 8 decimals against USDC at 18. Summing them gives a number that
+ * is wrong on both, which is what this did before: 100,000 tinybars plus 5,000
+ * USDC units came out as "0.00105 HBAR". One draw per chain instead.
+ */
+//
+// One more scale to reconcile. An x402 price on Arc is quoted in the USDC
+// ERC-20's 6 decimals, and the allowance holds native USDC at 18 — the same
+// balance, two views, a factor of 10^12 between them. Drawing the quoted
+// number would take a millionth of a millionth of what the craft costs.
+//
+// Third time this shape of bug has appeared in three chains. It is written up
+// in FEEDBACK because at three it stops being anyone's quirk.
+const CHAIN_OF = { "hedera:testnet": "hedera", "eip155:5042002": "arc" };
+const TO_ALLOWANCE_UNITS = { hedera: 1n, arc: 1000000000000n };
+const MINIMUM_DRAW = { hedera: 100000n, arc: 1000000000000n };
+
+function costOf(id) {
+  const job = jobs.get(id);
+  const totals = new Map();
+
+  for (const payment of job?.payments ?? []) {
+    const chain = CHAIN_OF[payment.network ?? "hedera:testnet"];
+    if (!chain) continue;
+    const amount = BigInt(payment.amount ?? 0) * TO_ALLOWANCE_UNITS[chain];
+    totals.set(chain, (totals.get(chain) ?? 0n) + amount);
+  }
+
+  // Nothing quoted yet — draw the smallest sensible amount, since the contract
+  // rejects zero outright.
+  if (!totals.size) totals.set("hedera", MINIMUM_DRAW.hedera);
+  return [...totals].filter(([, amount]) => amount > 0n);
+}
+
 function message(err) {
   const text = err instanceof Error ? err.message : String(err);
   // A 403 from Open Cloud is almost always the key's IP allowlist, and the
@@ -109,6 +147,16 @@ function message(err) {
 
 async function runCraft(id, prompt) {
   try {
+    // Draw what this craft will cost before spending any of it. When the
+    // window's cap is used up the contract refuses, and the craft stops here —
+    // which is the difference between a limit and a note about a limit.
+    set(id, { stage: "drawing from the spending cap" });
+    const allowance = [];
+    for (const [chain, amount] of costOf(id)) {
+      allowance.push(await draw(amount, chain));
+    }
+    set(id, { allowance });
+
     const { recipe, notes, usage } = await payFor(id, "recipe", { prompt });
 
     set(id, { stage: "crafting it in Blender" });
@@ -283,6 +331,15 @@ app.get("/craft/:job", (req, res) => {
     ...rest,
     elapsed: job.status === "running" ? since(startedAt) : job.elapsed,
   });
+});
+
+// What the agent may still spend in this window, and out of how much.
+app.get("/allowance", async (_req, res) => {
+  try {
+    res.json({ caps: await allCaps() });
+  } catch (err) {
+    res.status(502).json({ error: message(err) });
+  }
 });
 
 app.get("/health", async (_req, res) => {

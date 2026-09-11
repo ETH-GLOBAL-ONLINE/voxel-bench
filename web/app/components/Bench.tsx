@@ -5,6 +5,7 @@ import Viewer from "./Viewer";
 import Payments, { type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
 import Wallet, { short, useWallet } from "./Wallet";
+import SpendingCap from "./SpendingCap";
 
 type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
 type Result = {
@@ -326,6 +327,8 @@ export default function Bench({ sample }: { sample: Sample }) {
           {busy ? "Crafting…" : "Craft"}
         </button>
       </form>
+
+      <SpendingCap />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="label">try</span>

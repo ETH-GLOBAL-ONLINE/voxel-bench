@@ -207,6 +207,28 @@ The resource server knows the asset address and could read `name()` and
 there. Failing that, naming the requirement where the price is configured would
 be enough.
 
+### Three chains, three ways to disagree with yourself about decimals
+
+| | a contract is handed | a client reads back |
+|---|---|---|
+| Hedera | tinybars, 8 decimals | wei, 18 |
+| Arc, native | USDC, 18 decimals | USDC, 18 |
+| Arc, ERC-20 | — | USDC, 6 |
+
+We have now made this mistake three times in the same project, each time in a
+new disguise: formatting `msg.value` as wei on Hedera, reading an Arc balance at
+6 decimals that was held at 18, and — the one that took longest to see — adding
+a price quoted in the ERC-20's 6 decimals to one quoted in tinybars and
+spending the sum.
+
+None of these are caught by a type. They are all `uint256` and they are all
+plausible numbers; the answer is simply wrong by a factor of 10^10 or 10^12,
+which reads as a broken split rather than a unit mistake.
+
+A payment library that knows the network and the asset knows the scale of both.
+Carrying it in the amount, or refusing to compare two amounts that do not share
+one, would make this class of bug impossible rather than merely documented.
+
 ### The decimal asymmetry is not a Hedera quirk
 
 Arc's USDC is the native gas token at 18 decimals and an ERC-20 at

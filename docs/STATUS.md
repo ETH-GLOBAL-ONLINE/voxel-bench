@@ -153,6 +153,34 @@ crafted against it, `SplitVault` credited them 0.9 of 1 USDC, and they withdrew
 it. The one place that needed gas was their `publish`, which is the friction a
 signature-based claim would remove.
 
+### The spending cap is the brake, not a note about one
+
+Every craft begins by drawing what it is about to spend out of an `Allowance`
+contract. When the window's cap is used up the draw reverts and the craft does
+not happen — the refusal comes from the chain rather than from a check of ours
+that the same process could skip.
+
+Demonstrated by lowering the cap below what had been drawn:
+
+```
+the spending cap is used up — asked for 0.001 HBAR, 0 HBAR left in this window
+```
+
+One cap per chain, because a cap is a number in a currency:
+
+| | Address | Cap |
+|---|---|---|
+| Hedera | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` | 1 HBAR / day |
+| Arc | `0xcc8936bC21B8a521314740B21F300cdF7c0Ca627` | 1 USDC / day |
+
+The bench shows both as bars, with the contract addresses linked, because a
+limit nobody can check has the same shape as a promise.
+
+**What it does not bound.** The agent has its own balance on both chains, so
+today the cap limits what it draws rather than everything it could possibly
+spend. In a deployment the agent's account would be funded only from the
+allowance, and then the two are the same number. `docs/MAINNET.md` has it.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
