@@ -496,3 +496,28 @@ script where no `catch` of ours can reach it. The user sees a console error from
 a file they have never heard of.
 
 Nothing is asked of a wallet until the connect button is pressed.
+
+## Reading a chain from the site
+
+### map passes the index, and the index became a limit
+
+`names.map(read)` hands each callback `(element, index, array)`. The function
+being handed over took `(name, limit)`, so Hedera was asked for zero recipes and
+Arc for one.
+
+Nothing failed. The marketplace showed a short list, which is exactly what a
+nearly empty ledger also looks like, and the bug was only visible by scanning
+the logs directly and counting four events where the page showed one.
+
+### ES2017 has no bigint literals
+
+The web app's TypeScript target predated it ever touching a chain. `40375669n`
+is a syntax error under ES2017 and the compiler says so clearly, which is the
+easy half; the point worth keeping is that a target chosen for a page that
+renders text is the wrong one for a page that reads a ledger.
+
+### A key has to be unique, and a note is not
+
+Two ingredients can earn the same note — two cones in one recipe produce the
+same sentence twice — and the note text was the React key. Keyed by position
+now.

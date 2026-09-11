@@ -181,6 +181,27 @@ today the cap limits what it draws rather than everything it could possibly
 spend. In a deployment the agent's account would be funded only from the
 allowance, and then the two are the same number. `docs/MAINNET.md` has it.
 
+### Half of it works with the bench switched off
+
+Blender needs a machine, and that machine is a laptop that is usually closed.
+The contracts do not: a deployment reads them as well as anything else can.
+
+So the marketplace and the spending caps are read from the chains by the site
+itself rather than proxied through the agent. Someone opening the deployed URL
+with nobody's laptop awake still sees which recipes exist, who owns them, what
+they earned, and what the agent may still spend.
+
+```
+0x2bf0ce56…  Hedera Testnet  0xfe3caAd687…  1 craft,  0.9 HBAR
+0x2bf0ce56…  Arc Testnet     0xfe3caAd687…  1 craft,  0.9 USDC
+0x977447dd…  Arc Testnet     0x32Ed131b63…  0 crafts, 0 USDC
+0x9ef2dd6d…  Arc Testnet     0x29A64Af80A…  0 crafts, 0 USDC
+```
+
+The same recipe on two chains earning in two currencies, and two owned by
+addresses that are not ours — the ones claimed by accounts holding nothing, by
+signing.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site

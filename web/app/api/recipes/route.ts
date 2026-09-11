@@ -1,38 +1,33 @@
-// What RecipeBook holds, for the marketplace to show.
+// What RecipeBook holds, read from the chain by the site itself.
 //
-// The card used to be illustrative. Now it reads the chain: which recipes are
-// published, who wrote them, how often each was crafted and what that earned.
-// Nobody has to take our word for any of it — the addresses are in the answer
-// and the same numbers are readable from any node.
+// This used to go through the agent, which meant a deployment saw an empty
+// marketplace whenever the bench was offline — most of the time. The contracts
+// are public, so the site reads them, and the shelf is stocked whether or not
+// anybody's laptop is awake.
 
-import { bench, reason } from "../bench";
+import { acrossChains, publishedOn, type LedgerName } from "../chain";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: Request) {
-  const target = bench();
-  if (!target) {
-    return Response.json({ recipes: [], reason: "nothing is configured" });
-  }
-
-  const chain = new URL(req.url).searchParams.get("chain");
+  const asked = new URL(req.url).searchParams.get("chain") as LedgerName | null;
 
   try {
-    const res = await fetch(
-      new URL(`/recipes${chain ? `?chain=${chain}` : ""}`, target.base),
-      { cache: "no-store", signal: AbortSignal.timeout(30000) },
+    const ledgers = asked
+      ? [await publishedOn(asked)]
+      : await acrossChains(publishedOn);
+
+    // One shelf, with each recipe carrying the chain it was published on.
+    const recipes = ledgers.flatMap((l) =>
+      l.recipes.map((r) => ({ ...r, chain: l.chain, explorer: l.explorer })),
     );
-    const data = await res.json();
-    if (!res.ok) {
-      return Response.json(
-        { recipes: [], reason: reason(data, "the ledger did not answer") },
-        { status: res.status },
-      );
-    }
-    return Response.json(data);
+
+    return Response.json({
+      chains: ledgers.map((l) => ({ chain: l.chain, book: l.book, explorer: l.explorer })),
+      recipes,
+    });
   } catch {
-    // A marketplace that cannot reach the chain should say so rather than
-    // show an empty shelf as though nothing had ever been published.
     return Response.json(
       { recipes: [], reason: "could not reach the chain" },
       { status: 503 },
