@@ -175,11 +175,22 @@ relayer      0xfe3caAd6…0034      paid the gas
 [The transaction on Arcscan](https://testnet.arcscan.app/tx/0x9c862484dc2407d1f2c443c165bb0565d1ce09d784910b32f2c199afd2cba2bb).
 
 **Without a wallet at all.** With `NEXT_PUBLIC_PRIVY_APP_ID` set, the header
-offers Sign in: an email or a Google account, and Privy makes a wallet for
+offers Sign in: an email, a Google or an X account, and Privy makes a wallet for
 anyone who arrives without one. Someone who has a wallet picks it in the same
-dialog. Signing in is verified; a claim signed by a wallet Privy created is
-the next thing to run. Without the variable the page offers browser extensions,
-as above.
+dialog. Without the variable the page offers browser extensions, as above.
+
+Verified by signing in with Google, crafting a pine tree and claiming it. The
+wallet Privy made owns the recipe, holds nothing, and has never sent a
+transaction:
+
+```
+publishFor       0xd5629e8b…29ddf0   success
+author           0x2A46687a…1173     read back from the contract
+author balance   0 USDC
+author tx count  0
+```
+
+[The transaction on Arcscan](https://testnet.arcscan.app/tx/0xd5629e8be5defb1c0db8039898893c5d8601f20417f17542d9d33931f429ddf0).
 
 ### The spending cap is the brake, not a note about one
 

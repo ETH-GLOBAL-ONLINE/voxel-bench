@@ -592,7 +592,36 @@ without it would fail the same way. A scoped override, letting `permissionless`
 use the `ox` viem already has, resolves exactly that; `permissionless` does not
 end up in the tree.
 
-Verified so far: the build passes under Turbopack with the page still
-prerendered, the header offers Sign in, and the dialog opens with email, Google
-and a wallet, with no console errors. Not yet verified: a claim signed by a
-wallet Privy created.
+Verified: a Google sign-in, a recipe crafted and claimed, and the wallet Privy
+made recorded as its author, holding 0 USDC and having sent no transaction
+(`0xd5629e8b…29ddf0` on Arc).
+
+### A session outlives its wallet
+
+Privy keeps a session of its own, apart from any wallet. Signing in through
+MetaMask and then locking MetaMask left a Privy session open with no wallet to
+sign with, so the page showed Sign in again, and Privy silently ignores
+`login()` while a session exists. The button did nothing, with nothing in the
+console. The session was visible in the browser as `privy:token`.
+
+Sign in now closes a session that has no wallet before opening the dialog.
+Straight after `logout()` Privy still counts the session as open and drops the
+login, which made it take two clicks, so the login waits until the session is
+seen closed. There is also a Sign out beside the address, which there had not
+been: the only way out of that state was clearing the browser.
+
+The dialog logs a React warning about a missing `key` in a list. It comes from
+inside Privy, is dev-only, and does not reach a production build.
+
+### A login method is enabled by a switch, not by its settings
+
+Google was opened in Privy's dashboard, its optional credential fields seen, and
+Sign in with Google still answered `Login with Google not allowed`. The panel
+holds the settings and the switch separately, and only the switch counts. The
+app's public configuration says which is which without guessing, readable with
+the App ID alone:
+
+```bash
+curl -s https://auth.privy.io/api/v1/apps/$APP_ID -H "privy-app-id: $APP_ID"
+# google_oauth: false  ->  the switch is off, whatever the panel shows
+```

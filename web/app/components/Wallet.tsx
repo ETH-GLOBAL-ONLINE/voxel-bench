@@ -131,6 +131,14 @@ function InjectedWalletProvider({ children }: { children: ReactNode }) {
     [address],
   );
 
+  // A page cannot disconnect an extension. Forgetting it here is what is
+  // possible, and connecting again asks the extension afresh.
+  const disconnect = useCallback(async () => {
+    connected.current?.removeListener?.("accountsChanged", onAccounts);
+    connected.current = null;
+    setAddress(null);
+  }, [onAccounts]);
+
   const value = useMemo(
     () => ({
       kind: "injected" as const,
@@ -138,9 +146,10 @@ function InjectedWalletProvider({ children }: { children: ReactNode }) {
       wallets,
       available: wallets.length > 0 || legacy,
       connect,
+      disconnect,
       signTypedData,
     }),
-    [address, wallets, legacy, connect, signTypedData],
+    [address, wallets, legacy, connect, disconnect, signTypedData],
   );
 
   return (
@@ -181,16 +190,23 @@ function Choices({
 
 /** The one in the header, where people look for it first. */
 export function HeaderWallet() {
-  const { kind, address, wallets, available, connect } = useWallet();
+  const { kind, address, wallets, available, connect, disconnect } = useWallet();
   const [choosing, setChoosing] = useState(false);
   const frame = "border px-3.5 py-1.5 text-xs";
 
   if (address) {
     return (
-      <span
-        className={`ml-auto md:ml-0 ${frame} border-amber/50 font-mono text-amber`}
-      >
-        {short(address)}
+      <span className="ml-auto flex items-center gap-3 md:ml-0">
+        <span className={`${frame} border-amber/50 font-mono text-amber`}>
+          {short(address)}
+        </span>
+        <button
+          type="button"
+          onClick={() => disconnect()}
+          className="text-xs text-faint transition-colors hover:text-ink"
+        >
+          {kind === "privy" ? "Sign out" : "Disconnect"}
+        </button>
       </span>
     );
   }
