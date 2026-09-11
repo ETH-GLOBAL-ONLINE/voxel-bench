@@ -521,3 +521,31 @@ renders text is the wrong one for a page that reads a ledger.
 Two ingredients can earn the same note — two cones in one recipe produce the
 same sentence twice — and the note text was the React key. Keyed by position
 now.
+
+## Claiming a recipe from a browser
+
+### Two wallets, one slot
+
+`window.ethereum` is a single property and every extension wants it. With
+MetaMask and Phantom installed together, asking it for an account opened
+Phantom's own chooser, which then threw inside its injected script where no
+catch of ours could reach. Sites that work on the same machine discover wallets
+through EIP-6963, where each extension announces itself; this one now does too.
+
+### A wallet refuses typed data without EIP712Domain
+
+Signing libraries add the domain's type for you. The claim payload travels to
+the browser as plain JSON with no library in between, so it has to declare
+`EIP712Domain` in `types` itself. The digest does not change.
+
+### The signature is bound to a chain, and so is the wallet
+
+MetaMask refuses `eth_signTypedData_v4` when the domain's `chainId` is not the
+wallet's active chain — `Provided chainId "5042002" must match the active
+chainId "11155111"`. Signing is free, but it is not chainless. The page now
+switches the wallet to the contract's chain first, adding it if the wallet has
+never seen it.
+
+The error had been invisible: every failure in signing was treated as the
+visitor declining, so the button did nothing. Only a real rejection counts as
+declining now; anything else is shown.

@@ -4,9 +4,11 @@
 // make. It is not how anything gets paid for — the agent does that, out of its
 // own account, and it does it whether or not anyone is connected.
 //
-// So there is no chain to switch to, no balance to hold and no gas to find. The
-// wallet signs a message and nothing else, which is why an account created a
-// minute ago with nothing in it can own a recipe.
+// So there is no balance to hold and no gas to find. The wallet signs a message
+// and nothing else, which is why an account created a minute ago with nothing in
+// it can own a recipe. It does have to be on the right chain: a signature is
+// bound to the contract's chain, and a wallet refuses to sign for any chain but
+// the one it is on. Switching costs nothing, so the page asks for it first.
 //
 // Wallets are found through EIP-6963 rather than through `window.ethereum`.
 // That property is one slot and every extension wants it, so on a machine with
@@ -54,6 +56,63 @@ declare global {
 }
 
 export const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+// What a wallet needs in order to add a chain it has never seen. Only the two
+// the contracts live on: a payload naming any other chain is not one this page
+// built.
+const CHAINS: Record<
+  number,
+  {
+    chainName: string;
+    nativeCurrency: { name: string; symbol: string; decimals: number };
+    rpcUrls: string[];
+    blockExplorerUrls: string[];
+  }
+> = {
+  296: {
+    chainName: "Hedera Testnet",
+    nativeCurrency: { name: "HBAR", symbol: "HBAR", decimals: 18 },
+    rpcUrls: ["https://testnet.hashio.io/api"],
+    blockExplorerUrls: ["https://hashscan.io/testnet"],
+  },
+  5042002: {
+    chainName: "Arc Testnet",
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+    rpcUrls: ["https://rpc.testnet.arc.io"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"],
+  },
+};
+
+const REJECTED = 4001;
+const UNKNOWN_CHAIN = 4902;
+
+// MetaMask sometimes reports an unknown chain inside the error rather than on
+// it, so both places are read.
+function codeOf(err: unknown): number | undefined {
+  const e = err as { code?: number; data?: { originalError?: { code?: number } } };
+  return e?.data?.originalError?.code ?? e?.code;
+}
+
+/** Puts the wallet on `chainId`, adding the chain first if it has to. */
+async function moveTo(provider: Ethereum, chainId: number) {
+  const wanted = `0x${chainId.toString(16)}`;
+  const active = (await provider.request({ method: "eth_chainId" })) as string;
+  if (active?.toLowerCase() === wanted) return;
+
+  try {
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: wanted }],
+    });
+  } catch (err) {
+    const known = CHAINS[chainId];
+    if (codeOf(err) !== UNKNOWN_CHAIN || !known) throw err;
+    await provider.request({
+      method: "wallet_addEthereumChain",
+      params: [{ chainId: wanted, ...known }],
+    });
+  }
+}
 
 type WalletState = {
   address: string | null;
@@ -132,18 +191,31 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [wallets, onAccounts],
   );
 
-  /** Signs the typed data the agent built. Returns null if the user declines. */
+  /**
+   * Signs the typed data the agent built, on the chain it names. Returns null
+   * if the visitor declines; throws on anything else.
+   */
   const signTypedData = useCallback(
     async (typed: unknown) => {
       const provider = connected.current;
       if (!provider || !address) return null;
       try {
+        const chainId = Number(
+          (typed as { domain?: { chainId?: number | string } }).domain?.chainId,
+        );
+        if (chainId) await moveTo(provider, chainId);
+
         return (await provider.request({
           method: "eth_signTypedData_v4",
           params: [address, JSON.stringify(typed)],
         })) as string;
-      } catch {
-        return null;
+      } catch (err) {
+        // Declining the switch or the signature is an answer. Anything else is
+        // a failure, and a button that silently does nothing hides it.
+        if (codeOf(err) === REJECTED) return null;
+        throw new Error(
+          (err as { message?: string })?.message ?? "the wallet could not sign",
+        );
       }
     },
     [address],
