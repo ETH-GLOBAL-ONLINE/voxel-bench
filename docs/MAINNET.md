@@ -23,8 +23,8 @@ deployment took no changes at all:
 
 | | Hedera testnet | Arc testnet |
 |---|---|---|
-| `RecipeBook` | `0x58e6af2A5FEfb42d58Bd63aBc87fdA04aEddD9A5` | same address, same bytecode |
-| `SplitVault` | `0x95DC0868731Ea10b457d7b937217c2Ed3Da6623C` | same |
+| `RecipeBook` | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` | `0xe0C3Bd1b…` — same bytecode |
+| `SplitVault` | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` | `0x870771ec…` — same |
 | a craft of 1 | 0.9 HBAR to the author | **0.9 USDC to the author** |
 
 Same code, same 9000 bps, denominated in dollars on one and in HBAR on the

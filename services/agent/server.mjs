@@ -21,7 +21,7 @@ import { randomBytes } from "node:crypto";
 import express from "express";
 
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
-import { published, settle } from "./recipes.mjs";
+import { claimTypedData, published, settle } from "./recipes.mjs";
 
 loadEnv();
 
@@ -236,6 +236,31 @@ app.post("/publish", async (req, res) => {
 
   runPublish(id, String(name), String(apiKey), String(userId));
   res.json({ job: id });
+});
+
+// What an author signs to claim a recipe, built from the deployment rather
+// than from anything the page knows. A page that hardcodes a contract address
+// keeps signing for the wrong one after a redeployment.
+app.get("/claim/:id", (req, res) => {
+  const { id } = req.params;
+  const author = String(req.query.author ?? "");
+  if (!/^0x[a-f0-9]{64}$/i.test(id)) {
+    return res.status(400).json({ error: "bad recipe id" });
+  }
+  if (!/^0x[a-fA-F0-9]{40}$/.test(author)) {
+    return res.status(400).json({ error: "bad author address" });
+  }
+  res.json(claimTypedData(id, author));
+});
+
+// Relay a claim. The signature says who owns it; we only pay the gas.
+app.post("/claim", async (req, res) => {
+  const { recipe, author, signature } = req.body ?? {};
+  if (!recipe || !author || !signature) {
+    return res.status(400).json({ error: "recipe, author and signature are required" });
+  }
+  const result = await settle(recipe, { author, signature });
+  res.status(result.action === "failed" ? 502 : 200).json(result);
 });
 
 // What RecipeBook holds: every published recipe, its author, how often it was

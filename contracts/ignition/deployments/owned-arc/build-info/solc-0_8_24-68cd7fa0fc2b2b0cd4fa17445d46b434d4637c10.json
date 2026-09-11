@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-68cd7fa0fc2b2b0cd4fa17445d46b434d4637c10",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "src/RecipeBook.sol": "project/src/RecipeBook.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/RecipeBook.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.24;\r\n\r\ninterface ISplitVault {\r\n    function credit(address account) external payable;\r\n}\r\n\r\n/// @title RecipeBook\r\n/// @notice Who wrote which recipe, how often it has been crafted, and where\r\n/// the fee goes when it is.\r\n///\r\n/// The words here are the words on the site and in the docs — recipe, author,\r\n/// craft, crafter — so that reading the contract and using the product feel\r\n/// like the same thing.\r\n///\r\n/// The contract does not set prices. What a craft costs is quoted by the\r\n/// service that performs it, over x402, and the caller sends that amount here\r\n/// to settle. This contract's job is only to divide it and record that it\r\n/// happened, which is what an author needs in order to stop taking our word\r\n/// for the count.\r\ncontract RecipeBook {\r\n    struct Recipe {\r\n        address author;\r\n        uint64 crafts;\r\n        uint128 earned; // lifetime, for the author's share only\r\n    }\r\n\r\n    /// @dev A recipe id is the hash of its content, so the same recipe is the\r\n    /// same id no matter who publishes it, and republishing an existing one\r\n    /// cannot steal its authorship.\r\n    mapping(bytes32 => Recipe) public recipes;\r\n\r\n    ISplitVault public immutable vault;\r\n    address public owner;\r\n\r\n    /// @notice The platform's share of a craft, in basis points. The author\r\n    /// takes the remainder — most of it, which is the arrangement the whole\r\n    /// pitch rests on, so it is capped rather than left to trust.\r\n    uint16 public platformBps;\r\n    uint16 public constant MAX_PLATFORM_BPS = 3000; // 30%\r\n\r\n    event RecipePublished(bytes32 indexed recipeId, address indexed author);\r\n    event Crafted(\r\n        bytes32 indexed recipeId,\r\n        address indexed crafter,\r\n        address indexed author,\r\n        uint256 paid,\r\n        uint256 toAuthor\r\n    );\r\n    event PlatformBpsChanged(uint16 bps);\r\n\r\n    bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(\r\n        \"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)\"\r\n    );\r\n\r\n    /// @dev What an author signs: this recipe, owned by this address. Nothing\r\n    /// else, because nothing else needs to be agreed.\r\n    bytes32 public constant PUBLISH_TYPEHASH =\r\n        keccak256(\"Publish(bytes32 recipeId,address author)\");\r\n    event OwnerChanged(address indexed owner);\r\n\r\n    error AlreadyPublished();\n    error InvalidSignature();\r\n    error UnknownRecipe();\r\n    error NothingSent();\r\n    error ShareTooHigh();\r\n    error NotOwner();\r\n    error ZeroAddress();\r\n\r\n    modifier onlyOwner() {\r\n        if (msg.sender != owner) revert NotOwner();\r\n        _;\r\n    }\r\n\r\n    constructor(address vault_, uint16 platformBps_) {\r\n        if (vault_ == address(0)) revert ZeroAddress();\r\n        if (platformBps_ > MAX_PLATFORM_BPS) revert ShareTooHigh();\r\n        vault = ISplitVault(vault_);\r\n        owner = msg.sender;\r\n        platformBps = platformBps_;\r\n    }\r\n\r\n    /// @notice Claim authorship of a recipe. First publisher wins, and since\r\n    /// the id is the hash of the content, that is the person who wrote it.\r\n    function publish(bytes32 recipeId) external {\r\n        _publish(recipeId, msg.sender);\r\n    }\r\n\r\n    /// @notice Claim authorship on someone else's behalf, with their signature.\r\n    ///\r\n    /// The point of this project is that using it costs no gas and needs no\r\n    /// tokens. Requiring an author to send a transaction to own their own work\r\n    /// puts that back: they would need a funded account before they could keep\r\n    /// anything they made.\r\n    ///\r\n    /// So they sign, which is free, and anyone may relay it. The signature\r\n    /// names the recipe and the author and is bound to this contract on this\r\n    /// chain, so it cannot be replayed anywhere else. It needs no nonce: a\r\n    /// recipe can only be published once, and the second attempt reverts.\r\n    ///\r\n    /// Whoever relays pays the gas and gains nothing — authorship goes to the\r\n    /// signer, and a relayer who substitutes their own address produces a\r\n    /// signature that does not recover.\r\n    function publishFor(bytes32 recipeId, address author, bytes calldata signature)\r\n        external\r\n    {\r\n        if (author == address(0)) revert InvalidSignature();\r\n\r\n        bytes32 digest = keccak256(\r\n            abi.encodePacked(hex\"1901\", _domainSeparator(), keccak256(\r\n                abi.encode(PUBLISH_TYPEHASH, recipeId, author)\r\n            ))\r\n        );\r\n        if (_recover(digest, signature) != author) revert InvalidSignature();\r\n\r\n        _publish(recipeId, author);\r\n    }\r\n\r\n    function _publish(bytes32 recipeId, address author) internal {\r\n        if (recipes[recipeId].author != address(0)) revert AlreadyPublished();\r\n        recipes[recipeId].author = author;\r\n        emit RecipePublished(recipeId, author);\r\n    }\r\n\r\n    /// @dev Built per call rather than cached at deployment: a cached one is\r\n    /// wrong after a chain splits, and this contract is cheap enough that the\r\n    /// hashing costs less than the mistake would.\r\n    function _domainSeparator() internal view returns (bytes32) {\r\n        return keccak256(\r\n            abi.encode(\r\n                EIP712_DOMAIN_TYPEHASH,\r\n                keccak256(\"VoxelBench RecipeBook\"),\r\n                keccak256(\"1\"),\r\n                block.chainid,\r\n                address(this)\r\n            )\r\n        );\r\n    }\r\n\r\n    /// @dev Rejects the high half of the curve order, so one signature cannot\r\n    /// be turned into a second valid one for the same message.\r\n    function _recover(bytes32 digest, bytes calldata signature)\r\n        internal\r\n        pure\r\n        returns (address)\r\n    {\r\n        if (signature.length != 65) revert InvalidSignature();\r\n\r\n        bytes32 r;\r\n        bytes32 s;\r\n        uint8 v;\r\n        assembly {\r\n            r := calldataload(signature.offset)\r\n            s := calldataload(add(signature.offset, 32))\r\n            v := byte(0, calldataload(add(signature.offset, 64)))\r\n        }\r\n        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {\r\n            revert InvalidSignature();\r\n        }\r\n        if (v != 27 && v != 28) revert InvalidSignature();\r\n\r\n        address signer = ecrecover(digest, v, r, s);\r\n        if (signer == address(0)) revert InvalidSignature();\r\n        return signer;\r\n    }\r\n\r\n    /// @notice Settle a craft: split the fee, credit both sides, count it.\r\n    /// @dev Value is forwarded to the vault rather than held here, so this\r\n    /// contract never has a balance worth attacking.\r\n    function craft(bytes32 recipeId) external payable {\r\n        if (msg.value == 0) revert NothingSent();\r\n\r\n        Recipe storage recipe = recipes[recipeId];\r\n        address author = recipe.author;\r\n        if (author == address(0)) revert UnknownRecipe();\r\n\r\n        uint256 toPlatform = (msg.value * platformBps) / 10_000;\r\n        uint256 toAuthor = msg.value - toPlatform;\r\n\r\n        recipe.crafts += 1;\r\n        recipe.earned += uint128(toAuthor);\r\n\r\n        vault.credit{value: toAuthor}(author);\r\n        if (toPlatform > 0) {\r\n            vault.credit{value: toPlatform}(owner);\r\n        }\r\n\r\n        emit Crafted(recipeId, msg.sender, author, msg.value, toAuthor);\r\n    }\r\n\r\n    /// @notice What a craft of this recipe would pay out, before it happens.\r\n    /// Lets the site show the author's cut next to the price rather than\r\n    /// asking anyone to take it on faith.\r\n    function quote(uint256 amount)\r\n        external\r\n        view\r\n        returns (uint256 toAuthor, uint256 toPlatform)\r\n    {\r\n        toPlatform = (amount * platformBps) / 10_000;\r\n        toAuthor = amount - toPlatform;\r\n    }\r\n\r\n    function authorOf(bytes32 recipeId) external view returns (address) {\r\n        return recipes[recipeId].author;\r\n    }\r\n\r\n    function setPlatformBps(uint16 bps) external onlyOwner {\r\n        if (bps > MAX_PLATFORM_BPS) revert ShareTooHigh();\r\n        platformBps = bps;\r\n        emit PlatformBpsChanged(bps);\r\n    }\r\n\r\n    function setOwner(address newOwner) external onlyOwner {\r\n        if (newOwner == address(0)) revert ZeroAddress();\r\n        owner = newOwner;\r\n        emit OwnerChanged(newOwner);\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}

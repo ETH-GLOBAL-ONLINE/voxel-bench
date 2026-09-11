@@ -19,24 +19,39 @@ between the platform and that author. No Roblox revenue is ever involved.
 
 ## 2. Three problems, and why a chain is the answer to each
 
-### 2.1 Charging two cents to someone with no bank account
+### 2.1 A price of two cents, and a payout of ninety
 
-Our unit of sale is a single craft, which should cost cents. Roblox creators
-skew young, so a card is frequently not theirs to use, and the platform's reach
-is global enough that assuming any particular payment rail excludes a real share
-of them.
+Two things here are below the floor of card rails, and they are different
+problems.
 
-Card rails cannot do this. A two-cent charge costs more than two cents to
-process, before considering that the customer has no card. Subscriptions would
-solve the payments problem by breaking the product: a minimum monthly fee prices
-out exactly the person who wants to try one object.
+**The price.** The unit of sale is one craft, which should cost cents. A
+two-cent charge costs more than two cents to process, so the only way to sell it
+on a card is to stop selling it by the unit — a subscription with a monthly
+minimum, which prices out exactly the person who wants to try one object.
+
+**The payout, which is the harder one.** An author earns ninety cents of a
+dollar craft, and they can be anywhere. Paying forty of them, in twenty
+countries, amounts that small, means per-payee onboarding, minimum thresholds
+and fees that exceed the payment. That is not a rate problem that better terms
+would fix; it is the shape of the rails.
+
+**And the buyer is not always a person.** The crafter is an agent with its own
+account, paying per call. A card cannot be held by a process, and an API key
+shared between three services is the thing paying per call replaces.
 
 Stablecoin micropayments are the only mechanism where the price can match the
-unit of value delivered.
+unit of value delivered and the payout can reach the person who earned it.
+
+**What we are not claiming.** Roblox's DevEx is open from 13, with a guardian
+handling consent and tax documents for anyone under 18 — so a creator earning
+money already has an adult and a payment method somewhere in the picture. The
+argument here is about the size and the direction of the payments, not about
+whether the customer could hold a card.
 
 **Non-blockchain alternative considered:** prepaid credit packs bought by card.
-Rejected — it reintroduces the card, the minimum purchase and the unbanked
-problem, and it makes us hold customer balances.
+Rejected for the payout rather than the purchase — packs solve buying and leave
+us sending small sums to strangers worldwide, and holding their balances until
+we do.
 
 ### 2.2 Paying recipe authors without asking anyone to trust us
 

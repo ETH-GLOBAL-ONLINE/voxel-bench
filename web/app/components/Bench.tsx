@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Viewer from "./Viewer";
 import Payments, { type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
+import Wallet, { short, useWallet } from "./Wallet";
 
 type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
 type Result = {
   name: string;
+  recipe?: unknown;
   ingredients: number;
   parts: number | null;
   tris: number | null;
@@ -31,7 +33,8 @@ type Published = { assetId: string; moderation: string; insert: string };
 // against one that already has an owner and paid them.
 type Book = {
   id: string;
-  action: "published" | "crafted" | "failed";
+  action: "published" | "crafted" | "unclaimed" | "failed";
+  relayed?: boolean;
   author?: string;
   chain?: string;
   transaction?: string;
@@ -74,6 +77,9 @@ export default function Bench({ sample }: { sample: Sample }) {
   // while the craft runs and worth reading after it finishes.
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [book, setBook] = useState<Book | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const wallet = useWallet();
   const [publishLedger, setPublishLedger] = useState<Ledger | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pubTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,6 +105,7 @@ export default function Bench({ sample }: { sample: Sample }) {
     setLedger(null);
     setPublishLedger(null);
     setBook(null);
+    setClaimError(null);
     setElapsed(0);
     setStage("sending it to the bench");
 
@@ -156,6 +163,51 @@ export default function Bench({ sample }: { sample: Sample }) {
       timer.current = setTimeout(poll, POLL_MS);
     };
     timer.current = setTimeout(poll, POLL_MS);
+  }
+
+  /**
+   * Take ownership of the recipe just crafted.
+   *
+   * The agent says what to sign, the wallet signs it, and the agent relays it
+   * and pays the gas. Nothing here needs a funded account, which is the point:
+   * an address created a minute ago can own what it made.
+   */
+  async function claim() {
+    if (!result?.recipe || !book?.id || !wallet.address || claiming) return;
+    setClaimError(null);
+    setClaiming(true);
+
+    try {
+      const ask = await fetch(
+        `/api/claim?id=${book.id}&author=${wallet.address}`,
+        { cache: "no-store" },
+      );
+      const typed = await ask.json();
+      if (!ask.ok) throw new Error(typed.error ?? "could not prepare the claim");
+
+      const signature = await wallet.signTypedData(typed);
+      if (!signature) {
+        setClaiming(false);
+        return; // declined, which is an answer
+      }
+
+      const res = await fetch("/api/claim", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recipe: result.recipe,
+          author: wallet.address,
+          signature,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "the claim was refused");
+      setBook(data);
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : "the claim failed");
+    } finally {
+      setClaiming(false);
+    }
   }
 
   async function publish() {
@@ -245,6 +297,14 @@ export default function Bench({ sample }: { sample: Sample }) {
 
   return (
     <div>
+      <p className="mb-3 flex flex-wrap items-center gap-x-2">
+        <Wallet
+          address={wallet.address}
+          available={wallet.available}
+          onConnect={wallet.connect}
+        />
+      </p>
+
       <div className="mb-4">
         <RobloxConnect account={account} onChange={setAccount} />
       </div>
@@ -302,15 +362,34 @@ export default function Bench({ sample }: { sample: Sample }) {
         />
       )}
 
-      {/* Paying for the work and paying the author are different things, so
+      {/* Paying for the work and owning what was made are different things, so
           they are reported separately rather than merged into one number. */}
       {book && book.action !== "failed" && (
         <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
           <span className="text-dim">
-            {book.action === "published"
-              ? "New recipe, recorded on RecipeBook."
-              : `Crafted from an existing recipe — ${book.paidToAuthor} to its author.`}
+            {book.action === "unclaimed" &&
+              "Nobody owns this recipe yet. Claim it and you earn when others craft with it."}
+            {book.action === "published" &&
+              `Yours — recorded on RecipeBook under ${short(book.author ?? "")}.`}
+            {book.action === "crafted" &&
+              `Crafted from an existing recipe — ${book.paidToAuthor} to its author.`}
           </span>
+
+          {book.action === "unclaimed" &&
+            (wallet.address ? (
+              <button
+                type="button"
+                onClick={claim}
+                disabled={claiming}
+                className="border border-amber/50 px-2.5 py-1 text-xs text-amber transition-opacity hover:opacity-80 disabled:opacity-40"
+              >
+                {claiming ? "signing…" : "Claim this recipe"}
+              </button>
+            ) : (
+              <span className="label !text-faint">
+                connect a wallet above to claim it
+              </span>
+            ))}
           {book.transaction && book.chain && (
             <a
               href={
@@ -326,6 +405,10 @@ export default function Bench({ sample }: { sample: Sample }) {
             </a>
           )}
         </p>
+      )}
+
+      {claimError && (
+        <p className="mt-2 text-sm text-ember">{claimError}</p>
       )}
 
       {error && (
