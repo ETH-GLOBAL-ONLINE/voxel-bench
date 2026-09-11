@@ -417,3 +417,34 @@ A 28-minute render launched with `nohup … &` from a tool call looked dead when
 checked twenty minutes in, and had in fact finished on time. A second render was
 started on the assumption it had died. Use the harness's own background mode for
 anything long, and check for the output file rather than for the process.
+
+## The ledger meets the site
+
+### An id is what a recipe says, not what it is called
+
+`RecipeBook` was always documented as keying on content, and the only code using
+it hashed the name. Content is the one that gives the property the comment
+claims: the same recipe is the same id whoever writes it, so a second publisher
+cannot take the first one's authorship, and a rename does not mint a new one.
+
+Only the agent computes it, in JavaScript. Python's standard library has
+`sha3_256`, which is not keccak256 — different padding, different hash — and
+adding a dependency to a crafter that is deliberately stdlib-only is a worse
+trade than computing the id in one place. Two languages agreeing on how to print
+a float is a coin toss anyway: `1.0` against `1` is a different hash.
+
+### Logs cannot be asked for since the beginning
+
+`eth_getLogs` from block zero is refused on Arc — a query is capped at ten
+thousand blocks and the chain is sixty-one million deep. The deployment block
+comes from the Ignition journal, and the scan walks backwards from the head in
+windows the node accepts, stopping once it has enough. A ledger with four
+recipes costs one request rather than six thousand.
+
+### Two meanings of one word, in one file
+
+`ledger` was already the function building the list of payments the browser
+shows, and settling against `RecipeBook` produced a second thing that wanted the
+same name. Renamed: `quotes()` for the prices, `book` for what the contract
+recorded. The word also collides with a sponsor's name, which is reason enough
+on its own to spend it carefully.

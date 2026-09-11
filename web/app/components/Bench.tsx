@@ -26,6 +26,19 @@ type Sample = {
   studs: number[];
 };
 type Published = { assetId: string; moderation: string; insert: string };
+
+// What the craft did to RecipeBook: registered a recipe nobody had, or settled
+// against one that already has an owner and paid them.
+type Book = {
+  id: string;
+  action: "published" | "crafted" | "failed";
+  author?: string;
+  chain?: string;
+  transaction?: string;
+  crafts?: number;
+  paidToAuthor?: string;
+  error?: string;
+};
 type Ledger = {
   payments: Payment[];
   payTo?: string | null;
@@ -60,6 +73,7 @@ export default function Bench({ sample }: { sample: Sample }) {
   // Kept whole rather than merged into the result, because it is worth watching
   // while the craft runs and worth reading after it finishes.
   const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [book, setBook] = useState<Book | null>(null);
   const [publishLedger, setPublishLedger] = useState<Ledger | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pubTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +98,7 @@ export default function Bench({ sample }: { sample: Sample }) {
     setPublishError(null);
     setLedger(null);
     setPublishLedger(null);
+    setBook(null);
     setElapsed(0);
     setStage("sending it to the bench");
 
@@ -125,6 +140,7 @@ export default function Bench({ sample }: { sample: Sample }) {
         if (data.status === "done") {
           setStage(null);
           setResult(data.result);
+          if (data.book) setBook(data.book);
           return;
         }
         if (data.status === "failed") {
@@ -284,6 +300,32 @@ export default function Bench({ sample }: { sample: Sample }) {
           discovery={ledger.discovery}
           parent={ledger.parent}
         />
+      )}
+
+      {/* Paying for the work and paying the author are different things, so
+          they are reported separately rather than merged into one number. */}
+      {book && book.action !== "failed" && (
+        <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
+          <span className="text-dim">
+            {book.action === "published"
+              ? "New recipe, recorded on RecipeBook."
+              : `Crafted from an existing recipe — ${book.paidToAuthor} to its author.`}
+          </span>
+          {book.transaction && book.chain && (
+            <a
+              href={
+                book.chain.startsWith("Arc")
+                  ? `https://testnet.arcscan.app/tx/${book.transaction}`
+                  : `https://hashscan.io/testnet/transaction/${book.transaction}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-xs text-faint underline decoration-bench-600 underline-offset-2 hover:text-dim"
+            >
+              {book.transaction.slice(0, 14)}…
+            </a>
+          )}
+        </p>
       )}
 
       {error && (
