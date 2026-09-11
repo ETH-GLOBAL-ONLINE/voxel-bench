@@ -156,15 +156,11 @@ point is that the buyer can check the price without trusting the seller *or* us.
 **The track asks for:** autonomous agents that transact on Arc, holding wallets
 and making USDC payments with legible decision logic and settlement flows.
 
-**What we assumed, and what was true.** The plan said "USDC instead of HBAR" and
-took for granted that paying in USDC on Hedera would count. It does not: both
-Circle tracks are about Arc. Checked before building rather than after.
-
-**What Arc turned out to be.** USDC is the native gas token at 18 decimals, and
-also an ERC-20 at a fixed address at 6. That means our three contracts run there
-unchanged — nothing in them names an asset, they split and forward whatever
-value they are handed — and the author's share is suddenly denominated in
-dollars:
+**Why Arc.** USDC is its native gas token, so a craft fee, an author's share and
+a transaction fee are all the same unit, and that unit is dollars. Our three
+contracts run there as they are — nothing in them names an asset, they split and
+forward whatever value they are handed — so the author's share simply arrives
+denominated in currency:
 
 ```
 Arc Testnet
