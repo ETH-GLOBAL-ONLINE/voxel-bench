@@ -133,6 +133,26 @@ publish  hedera:testnet  1000000   0.0.10432254
 `contracts/scripts/ens/05-move-chain.mjs` moves one either way. Nothing is
 redeployed and nothing restarts — the agent finds it on its next run.
 
+### Recipes have owners, and owners get paid
+
+Every craft is recorded against `RecipeBook`. A recipe nobody has seen is
+published and gains an owner; one that already has an owner is crafted against,
+and the split pays them 90%.
+
+A recipe's id is the hash of its content, not its name, so the same recipe is
+the same recipe whoever writes it and renaming one does not make it new. Only
+the agent computes it, in JavaScript: Python has no keccak in its standard
+library, and two languages agreeing on how to print a float is a coin toss.
+
+The marketplace card reads that back from the chain — id, owner, craft count,
+earnings — and carries the contract address so an author can check it against a
+node rather than against us.
+
+Verified with an owner who is not us: a fresh account published a recipe, we
+crafted against it, `SplitVault` credited them 0.9 of 1 USDC, and they withdrew
+it. The one place that needed gas was their `publish`, which is the friction a
+signature-based claim would remove.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
@@ -144,7 +164,20 @@ breaking.
 
 ## What is left
 
-### 1. The recipe marketplace · Track B · next
+### 1. A recipe can be owned by the person who wrote it · next
+
+Today `publish` credits `msg.sender`, so a recipe created on the site belongs to
+whoever ran the transaction — us. For it to belong to a user, either they sign a
+transaction, which means holding gas and tokens, or they sign a message and we
+relay it.
+
+The second is the only one that keeps the property the rest of the project is
+built on: nobody needs gas to use this. `RecipeBook` gains a `publishFor` that
+recovers an EIP-712 signature and credits the signer. The agent and the paywall
+do not change.
+
+**Done looks like** connecting a wallet once, crafting without signing anything,
+and the recipe appearing under your address in the marketplace.
 
 The interface to `RecipeBook`: real recipes, their authors, how often each was
 crafted and what it earned, read from the chain rather than mocked. The card in

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
+import Marketplace from "./components/Marketplace";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/sakura_garden.report.json";
@@ -57,8 +58,8 @@ const STAGES = [
   },
   {
     tag: "next",
-    t: "Objects that do something, and a marketplace",
-    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. Objects ship with Luau, and recipes get published so other people can craft with yours.",
+    t: "Objects that do something",
+    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. Recipes already get published and their authors already get paid; what is missing is the Luau that makes an object act.",
     tone: "text-amber border-amber/40 bg-amber/10",
   },
   {
@@ -134,8 +135,9 @@ export default async function Home() {
           own wallet. You install nothing.
         </p>
         <p className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects work today. Objects that do something, a marketplace of
-          recipes, and a playable game are where this goes.
+          Objects work today, and their recipes have owners who earn from
+          them. Objects that do something, and a playable game, are where this
+          goes.
         </p>
 
         <div className="mt-9 flex flex-wrap gap-3">
@@ -338,22 +340,7 @@ export default async function Home() {
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-            <div className="slot p-5">
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-sm">market_stall</p>
-                <span className="label !text-sap">crafted 41×</span>
-              </div>
-              <div className="mt-4 flex items-baseline justify-between border-t border-bench-700 pt-4">
-                <span className="text-sm text-dim">recipe by @author</span>
-                <span className="font-mono text-amber">0.002 USDC / craft</span>
-              </div>
-              {/* The contracts are live; this card is not reading from them yet.
-                  Saying so is cheaper than being caught implying otherwise. */}
-              <p className="label mt-4">
-                illustrative — the contracts are deployed, this card does not
-                read from them yet
-              </p>
-            </div>
+            <Marketplace />
             <p className="max-w-md self-center text-sm leading-relaxed text-faint">
               Your game&rsquo;s revenue never touches any of this. Roblox
               prohibits blockchain integrations and off-platform monetisation, so

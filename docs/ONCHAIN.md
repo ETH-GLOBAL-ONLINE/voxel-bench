@@ -56,6 +56,30 @@ Rejected — it works, but it makes us the only party who can see the truth, whi
 is precisely the trust we are asking a stranger to extend before writing a
 recipe for us.
 
+**Where it stands.** Every craft on the site is recorded: a recipe nobody has
+seen is published and gains an owner, one that already has an owner is crafted
+against and the split pays them. The marketplace reads that back from the chain
+and shows the contract address, so the claim above can be checked rather than
+believed.
+
+A recipe's id is the hash of its content rather than its name. The same recipe
+is the same id whoever writes it, so a second publisher cannot take the first
+one's authorship, and renaming a recipe does not make it new.
+
+Tested with an owner who is not us. A fresh account published a recipe, we
+crafted against it, and `SplitVault` credited them 0.9 of 1 USDC, which they
+withdrew themselves:
+
+```
+authorOf -> 0xc25055Fa…          not our address
+vault: author 0.9 | platform 1.1
+author withdrew 0.89922956 USDC
+```
+
+The one step that needed gas was their `publish`. That is the remaining
+friction, and the fix is in `STATUS.md`: a signature they give for free and we
+relay, so ownership is theirs without them holding anything.
+
 ### 2.3 An agent with a wallet needs a limit it cannot argue with
 
 The crafter spends money autonomously. That is the point of the architecture and

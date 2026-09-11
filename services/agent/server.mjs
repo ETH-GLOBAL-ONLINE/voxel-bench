@@ -21,6 +21,7 @@ import { randomBytes } from "node:crypto";
 import express from "express";
 
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
+import { published, settle } from "./recipes.mjs";
 
 loadEnv();
 
@@ -57,10 +58,10 @@ function set(id, fields) {
   if (job) Object.assign(job, fields, { elapsed: since(job.startedAt) });
 }
 
-// The payment ledger the browser renders. Every stage is listed before it is
-// paid for, so someone watching sees what is coming rather than only what
-// already happened — a price you learn afterwards is not a price.
-function ledger(stages) {
+// The prices the browser renders. Every stage is listed before it is paid for,
+// so someone watching sees what is coming rather than only what already
+// happened — a price you learn afterwards is not a price.
+function quotes(stages) {
   return stages.map((s) => ({
     stage: s.stage,
     description: s.description,
@@ -113,9 +114,17 @@ async function runCraft(id, prompt) {
     set(id, { stage: "crafting it in Blender" });
     const built = await payFor(id, "craft", { recipe });
 
+    // Record it against RecipeBook: a recipe nobody has seen is published, one
+    // that already has an author is crafted against and the split pays them.
+    // This is money changing hands, so it is reported separately from the work
+    // and a failure here does not fail a craft that already happened.
+    set(id, { stage: "recording it on RecipeBook" });
+    const book = await settle(recipe);
+
     set(id, {
       status: "done",
       stage: null,
+      book,
       result: {
         name: built.name,
         recipe,
@@ -178,7 +187,7 @@ function start(kind, offer, stages) {
     // showing were resolved from names or taken from the service's own word.
     discovery: offer.source,
     parent: offer.parent ?? null,
-    payments: ledger(stages),
+    payments: quotes(stages),
   });
   return id;
 }
@@ -227,6 +236,17 @@ app.post("/publish", async (req, res) => {
 
   runPublish(id, String(name), String(apiKey), String(userId));
   res.json({ job: id });
+});
+
+// What RecipeBook holds: every published recipe, its author, how often it was
+// crafted and what that earned. Read from the chain rather than from us, which
+// is the argument the marketplace rests on.
+app.get("/recipes", async (req, res) => {
+  try {
+    res.json(await published({ ledgerName: req.query.chain }));
+  } catch (err) {
+    res.status(502).json({ error: message(err) });
+  }
 });
 
 app.get("/craft/:job", (req, res) => {
