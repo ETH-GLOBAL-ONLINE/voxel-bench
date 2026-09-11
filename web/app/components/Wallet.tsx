@@ -35,7 +35,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import PrivyWalletProvider from "./PrivyWallet";
+import dynamic from "next/dynamic";
 import {
   WalletContext,
   short,
@@ -43,12 +43,48 @@ import {
   useWallet,
   type Announced,
   type Ethereum,
+  type WalletState,
 } from "./walletCore";
 
 export { short, useWallet };
 
 // Inlined at build time, so a deployment without it simply keeps extensions.
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
+// Privy, in the browser only. It cannot work on a server, and compiling its
+// dependencies for the server as well as for the browser ran the deployment's
+// build out of memory. The page still renders on the server in full; Privy
+// arrives a moment later and reports who is signed in.
+const PrivyIsland = dynamic(() => import("./PrivyWallet"), { ssr: false });
+
+// What the page shows until Privy has loaded: nobody signed in, as on a first
+// visit. Sign in is on screen from the start but does nothing until the island
+// arrives, which takes a fraction of a second after the page appears.
+const SIGNED_OUT: WalletState = {
+  kind: "privy",
+  address: null,
+  wallets: [],
+  available: true,
+  connect: async () => {},
+  disconnect: async () => {},
+  signTypedData: async () => null,
+};
+
+function PrivyWalletProvider({
+  appId,
+  children,
+}: {
+  appId: string;
+  children: ReactNode;
+}) {
+  const [state, setState] = useState<WalletState>(SIGNED_OUT);
+  return (
+    <WalletContext.Provider value={state}>
+      {children}
+      <PrivyIsland appId={appId} onChange={setState} />
+    </WalletContext.Provider>
+  );
+}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   return PRIVY_APP_ID ? (

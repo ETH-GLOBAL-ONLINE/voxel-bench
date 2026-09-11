@@ -1,6 +1,6 @@
 "use client";
 
-// Signing in with an email or a Google account, through Privy.
+// Signing in with an email, a Google or an X account, through Privy.
 //
 // The people this is for are building Roblox games, and most of them have never
 // installed a wallet. Asking for one first is a filter the product does not
@@ -9,13 +9,17 @@
 // signature, not where it came from. Someone who already has a wallet can still
 // bring it; it is one of the options in the same dialog.
 //
-// Nothing past this file changes. The claim, the agent and the contract are the
-// same for every kind of wallet.
+// This file is loaded in the browser only (see Wallet.tsx). Privy works only in
+// a browser anyway, and its dependencies — WalletConnect, Solana, Coinbase and
+// more — are large enough that compiling them for the server as well ran the
+// deployment's build out of memory. So this is an island: it renders nothing,
+// and reports the visitor's wallet to the page, which renders on the server
+// without it.
 
 import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { defineChain } from "viem";
-import { WalletContext, signOn, type Ethereum } from "./walletCore";
+import { signOn, type Ethereum, type WalletState } from "./walletCore";
 
 // The two chains the contracts live on. The wallet has to be able to switch to
 // either, because a claim is signed on whichever chain the recipe is recorded.
@@ -39,12 +43,12 @@ const hedera = defineChain({
   },
 });
 
-export default function PrivyWalletProvider({
+export default function PrivyIsland({
   appId,
-  children,
+  onChange,
 }: {
   appId: string;
-  children: ReactNode;
+  onChange: (state: WalletState) => void;
 }) {
   return (
     <PrivyProvider
@@ -61,13 +65,13 @@ export default function PrivyWalletProvider({
         supportedChains: [arc, hedera],
       }}
     >
-      <Bridge>{children}</Bridge>
+      <Bridge onChange={onChange} />
     </PrivyProvider>
   );
 }
 
 /** Turns Privy's view of the visitor into the one the rest of the page reads. */
-function Bridge({ children }: { children: ReactNode }) {
+function Bridge({ onChange }: { onChange: (state: WalletState) => void }) {
   const { ready, authenticated, login, logout } = usePrivy();
   const { wallets } = useWallets();
 
@@ -118,13 +122,11 @@ function Bridge({ children }: { children: ReactNode }) {
     [wallet],
   );
 
-  const value = useMemo(
+  const state = useMemo<WalletState>(
     () => ({
-      kind: "privy" as const,
+      kind: "privy",
       address: wallet?.address ?? null,
       wallets: [],
-      // Offered before Privy has finished loading: the dialog opens as soon as
-      // it can, and telling someone there is no wallet would be untrue.
       available: true,
       connect,
       disconnect,
@@ -133,5 +135,9 @@ function Bridge({ children }: { children: ReactNode }) {
     [wallet, connect, disconnect, signTypedData],
   );
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+  useEffect(() => {
+    onChange(state);
+  }, [state, onChange]);
+
+  return null;
 }
