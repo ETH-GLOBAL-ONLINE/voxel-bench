@@ -151,57 +151,61 @@ database, or a signed manifest we publish. Rejected for the same reason as 2.2 �
 it works, and it makes us the only party who can say what a service costs. The
 point is that the buyer can check the price without trusting the seller *or* us.
 
-### 3.2b Why not Ledger
+### 3.3 Circle / Arc — Agentic Economy on Arc (priority 3)
 
-Ledger's AI Agents track was our second priority until we tried to reach it. It
-is out, and the reasoning is worth keeping because the numbers alone would have
-justified the swap anyway.
+**The track asks for:** autonomous agents that transact on Arc, holding wallets
+and making USDC payments with legible decision logic and settlement flows.
 
-**Their tooling needs hardware we do not have.** `wallet-cli ring init` — which
-the track names specifically — lists "a Ledger on USB" as a prerequisite in its
-own README. Ledger confirmed during the event that no devices would be provided
-and pointed at the Speculos emulator instead.
+**Why Arc.** USDC is its native gas token, so a craft fee, an author's share and
+a transaction fee are all the same unit, and that unit is dollars. Our three
+contracts run there as they are — nothing in them names an asset, they split and
+forward whatever value they are handed — so the author's share simply arrives
+denominated in currency:
 
-**But Speculos does not reach the part that matters.** `ring init` only
-constructs node-hid and webusb transports, so an emulated device is not
-something it can talk to. The SDK does ship `@ledgerhq/speculos-transport` and
-its trustchain tests use `createSpeculosDevice`, so the capability exists — it
-is the CLI that does not expose it. Reaching the Key Ring would mean driving the
-SDK directly and reimplementing what the CLI does, which the track's own wording
-("in particular on the Ledger Key Ring CLI") may not accept.
+```
+Arc Testnet
+  crafting, paying 1 USDC...
+  author earned    0.9 USDC
+  author's share   9000 bps
+  RecipeBook holds 0 USDC
+```
 
-**And ENS is simply the better prize.** $4,500 paying four places against
-$3,500 paying three, with no hardware and a known path. With a maximum of three
-partner prizes, ENS wins on the numbers even if the hardware had been solved.
+Same bytecode, same addresses, same split as on Hedera.
 
-The counter-argument, for honesty: that same friction thins the field, and a
-smaller pool among fewer entrants can be better odds. We chose against it on
-time: "make Speculos talk to a CLI that does not support it" is research of
-unknown length, while ENS subnames is a task of known size.
+**What we had to build.** The public x402 facilitator serves nine networks and
+Arc is not one, so `services/facilitator` is ours: the same three endpoints over
+`@x402/evm`, whose exact scheme declares `eip155:*`. It runs on its own account,
+deliberately not the agent's — sharing one still works and hides the
+arrangement, since the receipt would show the agent submitting its own payment.
 
-### 3.3 Circle / Arc — Agentic Economy, and Launch on Arc (priority 3)
+```
+transaction from   0x1a307ae7…   the facilitator
+agent              paid the price and no gas
+service            received the price
+```
 
-**The track asks for:** autonomous agents holding wallets and making USDC
-payments with clear decision logic and settlement flows; and separately, USDC
-payment integrations deployment-ready on Arc mainnet.
+**Where it meets ENS.** Each service names its own chain in `x402:network`, so
+moving one between chains is a record change. `craft.voxelbench.eth` settles in
+USDC on Arc while its two siblings settle in HBAR on Hedera — one agent, one
+identity, two rails, decided by a name rather than by code.
 
-**What we build:** crafting fees and author royalties denominated and settled in
-USDC. The decision logic is legible rather than emergent — the agent pays a
-published price per service, and its allowance is enforced onchain.
+That is also the answer to "clear decision logic". The agent does not choose a
+chain by heuristic. It reads where a service says it is paid, checks the 402
+against that, and settles.
 
-**Honest status:** this is the third priority and the first to be cut. It is
-listed because the settlement layer genuinely wants a stablecoin, not to collect
-another logo.
+### 3.4 What we are not chasing, and why
 
-### 3.4 What is held in reserve
-
-Nothing, now. The three above are the three we are entering.
-
-### 3.5 What we are not chasing, and why
-
-1inch, Uniswap and Chainlink. There is no honest fit: we are not building a DeFi
+**1inch, Uniswap, Chainlink.** No honest fit: we are not building a DeFi
 position, a swap or an oracle-driven workflow. Forcing an integration to collect
 a logo is visible to judges and costs the credibility of the ones that are real.
+
+**Ledger's AI Agents track**, which was priority two until we tried to reach it.
+Its tooling wants a physical device on USB, the emulator does not reach the CLI
+the track names, and no devices were available. ENS pays more, across more
+places, with a known path — so the swap held on the numbers even setting the
+hardware aside.
+
+Nothing is held in reserve. The three above are the three we are entering.
 
 ---
 

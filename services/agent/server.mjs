@@ -20,7 +20,7 @@ import { randomBytes } from "node:crypto";
 
 import express from "express";
 
-import { createAgent, loadEnv, PAYWALL, tinybar } from "./pay.mjs";
+import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
 
 loadEnv();
 
@@ -65,9 +65,10 @@ function ledger(stages) {
     stage: s.stage,
     description: s.description,
     amount: s.price,
+    network: s.network,
     // Without a name there is no quote until the 402 arrives, and a price the
     // page does not know yet should read as unknown rather than as zero.
-    label: s.price ? tinybar(s.price) : "quoted on request",
+    label: money(s.price, s.network) ?? "quoted on request",
     status: "quoted",
     seconds: null,
     transaction: null,
@@ -264,5 +265,5 @@ app.get("/health", async (_req, res) => {
 app.listen(PORT, "127.0.0.1", () => {
   console.log(`agent    :${PORT}  ->  ${PAYWALL()}  ->  ${CRAFTER}`);
   console.log(`wallet   ${agent.accountId}`);
-  console.log("receipts https://hashscan.io/testnet/transaction/…");
+  console.log("receipts hashscan.io for Hedera, arcscan.app for Arc");
 });

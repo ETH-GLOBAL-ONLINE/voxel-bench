@@ -1,13 +1,10 @@
 {
-  "name": "voxel-bench-agent",
+  "name": "voxel-bench-facilitator",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@hiero-ledger/sdk": "^2.60.0",
     "@x402/core": "^2.25.0",
     "@x402/evm": "^2.25.0",
-    "@x402/fetch": "^2.25.0",
-    "@x402/hedera": "^2.25.0",
     "express": "^5.2.1",
     "viem": "^2.56.3"
   }

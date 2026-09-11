@@ -14,6 +14,7 @@ export type Payment = {
   stage: string;
   description?: string;
   amount: string;
+  network?: string | null;
   label: string;
   status: "quoted" | "paying" | "paid" | "unpaid";
   seconds: number | null;
@@ -49,8 +50,18 @@ export default function Payments({
   const resolved = discovery === "ens" && Boolean(parent);
   const label = (stage: string) => (resolved ? `${stage}.${parent}` : stage);
 
-  const total = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const settled = payments.filter((p) => p.status === "paid").length;
+
+  // Stages can settle on different chains, and two chains do not share a unit.
+  // One total across both would be a number that means nothing, so it is only
+  // shown when there is one chain to add up.
+  const chains = new Set(payments.map((p) => p.network ?? "hedera:testnet"));
+  const total =
+    chains.size === 1
+      ? payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
+      : null;
+  const unit = payments[0]?.label?.split(" ")[1] ?? "HBAR";
+  const scale = [...chains][0]?.startsWith("eip155:") ? 1e6 : 1e8;
 
   return (
     <div className="slot mt-4 p-4">
@@ -93,7 +104,7 @@ export default function Payments({
             >
               {label(p.stage)}
             </span>
-            <span className="w-24 font-mono text-xs text-amber">{p.label}</span>
+            <span className="w-28 font-mono text-xs text-amber">{p.label}</span>
             <span
               className={`w-20 text-xs ${
                 p.status === "paid" ? "text-sap" : "text-faint"
@@ -120,9 +131,11 @@ export default function Payments({
       </ol>
 
       <p className="label mt-3 !text-faint">
-        {(total / 1e8).toFixed(4)} HBAR for the whole craft. The agent signs a
-        partial transfer and the facilitator co-signs and covers the gas, so it
-        needs an account but never needs gas.
+        {total === null
+          ? "Settled across two chains, so there is no single total."
+          : `${(total / scale).toFixed(4)} ${unit} for the whole craft.`}{" "}
+        The agent signs a partial transfer and the facilitator co-signs and
+        covers the gas, so it needs an account but never needs gas.
       </p>
     </div>
   );

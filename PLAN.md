@@ -163,7 +163,7 @@ colour so the two panels read as one room.
 | **One orchestrator agent, not a swarm** | Multi-agent negotiation is decoration here. What makes the project interesting is that the *tools charge*, and that works identically with one agent. Less code, same story, more reliable demo. |
 | **One chain (Hedera), not three** | Five days buys one integration done well or five done badly. Arc/Circle is the stretch, not the plan. |
 | **Users bring their own Roblox API key** | The asset lands in *their* account. Clean ownership, no single point of moderation failure, and no judge can point at "every asset in the world lives in one account". |
-| **Small model for recipe generation** | Turning a prompt into constrained JSON is a cheap task. Putting a frontier model there destroys the unit economics, and unit economics *are* the business model. Everything goes behind one `llm.complete()` interface so the provider is swappable. |
+| **Small model for recipe generation** | Turning a prompt into constrained JSON is a cheap task. Putting a frontier model there destroys the unit economics, and unit economics *are* the business model. Everything goes behind one `llm.complete()` interface so the provider is swappable — Gemini today, Groq configured beside it, and OpenRouter next, which turns the choice of model into a parameter rather than a dependency. |
 | **Recipes measured in studs, not metres** | 1 stud is about 0.28 m and a character is ~5 studs tall. One unit system end to end, no hidden conversions. |
 | **Named Voxel Bench** | `forge`, `anvil`, `cast` and `chisel` are Foundry's tools and every Ethereum dev types them daily. `Blockbench` is an existing 3D editor serving exactly this audience. "Craft" outside Minecraft reads as arts-and-crafts. "Voxel" is unambiguously 3D; "bench" is the workbench. |
 
@@ -186,14 +186,13 @@ Maximum 3 partner prizes per submission.
 | Priority | Track | Why we fit |
 |---|---|---|
 | **1** | **Hedera — AI & Agentic Payments** ($6k, up to 3 teams @ $2k) | Asks literally for x402-gated services that agents discover and pay for without API keys. That is our architecture verbatim. |
-| **2** | **ENS — Best Use of ENSv2** ($4.5k, pays 4) | The track encourages agent identity outright, and each stage of our pipeline is an addressable agent with a different authority. Replaced Ledger, whose tooling needs hardware we do not have — reasoning in `docs/ONCHAIN.md` 3.2b. |
-| **3** | **Circle / Arc — Agentic Economy** ($1.7k) + Launch on Arc ($3.5k) | USDC subscription and agent-held wallets. The wiring exists; what is left is a faucet and a token association. |
+| **2** | **ENS — Best Use of ENSv2** ($4.5k, pays 4) | The track encourages agent identity outright, and each stage of our pipeline is an addressable agent with a different authority — including which chain it is paid on. |
+| **3** | **Circle / Arc — Agentic Economy on Arc** ($3.5k, pays more with an Arc Mainnet deployment) | The contracts run on Arc unchanged and the split is denominated in dollars. One stage settles there today, chosen by an ENS record rather than by code. |
 
 Not chasing: 1inch, Uniswap, Chainlink. No honest fit, and forcing one to
 collect a logo is visible to judges. Ledger was priority 2 until its tooling
-turned out to require a physical device; `docs/ONCHAIN.md` 3.2b has the
-reasoning, which is worth keeping since the question came up repeatedly for
-other teams too.
+turned out to require a physical device; `docs/ONCHAIN.md` 3.4 has the short
+version.
 
 ### The pitch angle worth keeping
 

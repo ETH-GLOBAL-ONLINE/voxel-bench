@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-9e98df8262e32557f8601f4e4435e831b6eaa2b0",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "src/RecipeBook.sol": "project/src/RecipeBook.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/src/RecipeBook.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.24;\r\n\r\ninterface ISplitVault {\r\n    function credit(address account) external payable;\r\n}\r\n\r\n/// @title RecipeBook\r\n/// @notice Who wrote which recipe, how often it has been crafted, and where\r\n/// the fee goes when it is.\r\n///\r\n/// The words here are the words on the site and in the docs — recipe, author,\r\n/// craft, crafter — so that reading the contract and using the product feel\r\n/// like the same thing.\r\n///\r\n/// The contract does not set prices. What a craft costs is quoted by the\r\n/// service that performs it, over x402, and the caller sends that amount here\r\n/// to settle. This contract's job is only to divide it and record that it\r\n/// happened, which is what an author needs in order to stop taking our word\r\n/// for the count.\r\ncontract RecipeBook {\r\n    struct Recipe {\r\n        address author;\r\n        uint64 crafts;\r\n        uint128 earned; // lifetime, for the author's share only\r\n    }\r\n\r\n    /// @dev A recipe id is the hash of its content, so the same recipe is the\r\n    /// same id no matter who publishes it, and republishing an existing one\r\n    /// cannot steal its authorship.\r\n    mapping(bytes32 => Recipe) public recipes;\r\n\r\n    ISplitVault public immutable vault;\r\n    address public owner;\r\n\r\n    /// @notice The platform's share of a craft, in basis points. The author\r\n    /// takes the remainder — most of it, which is the arrangement the whole\r\n    /// pitch rests on, so it is capped rather than left to trust.\r\n    uint16 public platformBps;\r\n    uint16 public constant MAX_PLATFORM_BPS = 3000; // 30%\r\n\r\n    event RecipePublished(bytes32 indexed recipeId, address indexed author);\r\n    event Crafted(\r\n        bytes32 indexed recipeId,\r\n        address indexed crafter,\r\n        address indexed author,\r\n        uint256 paid,\r\n        uint256 toAuthor\r\n    );\r\n    event PlatformBpsChanged(uint16 bps);\r\n    event OwnerChanged(address indexed owner);\r\n\r\n    error AlreadyPublished();\r\n    error UnknownRecipe();\r\n    error NothingSent();\r\n    error ShareTooHigh();\r\n    error NotOwner();\r\n    error ZeroAddress();\r\n\r\n    modifier onlyOwner() {\r\n        if (msg.sender != owner) revert NotOwner();\r\n        _;\r\n    }\r\n\r\n    constructor(address vault_, uint16 platformBps_) {\r\n        if (vault_ == address(0)) revert ZeroAddress();\r\n        if (platformBps_ > MAX_PLATFORM_BPS) revert ShareTooHigh();\r\n        vault = ISplitVault(vault_);\r\n        owner = msg.sender;\r\n        platformBps = platformBps_;\r\n    }\r\n\r\n    /// @notice Claim authorship of a recipe. First publisher wins, and since\r\n    /// the id is the hash of the content, that is the person who wrote it.\r\n    function publish(bytes32 recipeId) external {\r\n        if (recipes[recipeId].author != address(0)) revert AlreadyPublished();\r\n        recipes[recipeId].author = msg.sender;\r\n        emit RecipePublished(recipeId, msg.sender);\r\n    }\r\n\r\n    /// @notice Settle a craft: split the fee, credit both sides, count it.\r\n    /// @dev Value is forwarded to the vault rather than held here, so this\r\n    /// contract never has a balance worth attacking.\r\n    function craft(bytes32 recipeId) external payable {\r\n        if (msg.value == 0) revert NothingSent();\r\n\r\n        Recipe storage recipe = recipes[recipeId];\r\n        address author = recipe.author;\r\n        if (author == address(0)) revert UnknownRecipe();\r\n\r\n        uint256 toPlatform = (msg.value * platformBps) / 10_000;\r\n        uint256 toAuthor = msg.value - toPlatform;\r\n\r\n        recipe.crafts += 1;\r\n        recipe.earned += uint128(toAuthor);\r\n\r\n        vault.credit{value: toAuthor}(author);\r\n        if (toPlatform > 0) {\r\n            vault.credit{value: toPlatform}(owner);\r\n        }\r\n\r\n        emit Crafted(recipeId, msg.sender, author, msg.value, toAuthor);\r\n    }\r\n\r\n    /// @notice What a craft of this recipe would pay out, before it happens.\r\n    /// Lets the site show the author's cut next to the price rather than\r\n    /// asking anyone to take it on faith.\r\n    function quote(uint256 amount)\r\n        external\r\n        view\r\n        returns (uint256 toAuthor, uint256 toPlatform)\r\n    {\r\n        toPlatform = (amount * platformBps) / 10_000;\r\n        toAuthor = amount - toPlatform;\r\n    }\r\n\r\n    function authorOf(bytes32 recipeId) external view returns (address) {\r\n        return recipes[recipeId].author;\r\n    }\r\n\r\n    function setPlatformBps(uint16 bps) external onlyOwner {\r\n        if (bps > MAX_PLATFORM_BPS) revert ShareTooHigh();\r\n        platformBps = bps;\r\n        emit PlatformBpsChanged(bps);\r\n    }\r\n\r\n    function setOwner(address newOwner) external onlyOwner {\r\n        if (newOwner == address(0)) revert ZeroAddress();\r\n        owner = newOwner;\r\n        emit OwnerChanged(newOwner);\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}
