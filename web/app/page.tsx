@@ -4,9 +4,9 @@ import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
-import sampleReport from "../public/samples/market_stall.report.json";
+import sampleReport from "../public/samples/sakura_garden.report.json";
 
-const SAMPLE = "market_stall";
+const SAMPLE = "sakura_garden";
 
 type Report = {
   name: string;

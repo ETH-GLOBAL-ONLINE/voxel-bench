@@ -29,6 +29,7 @@ cd web && npm run dev                  # the site; Next prints the port
 | Native Roblox parts | exact studs, exact colours, no mesh upload |
 | Publish to Roblox | `.rbxmx` accepted by Open Cloud, moderation approved in ~3s |
 | The site | prompt, progress, preview, orbit, publish |
+| The sample it shows | `sakura_garden` — 4,408 ingredients, 87,084 triangles, 70 studs across |
 | Connect a Roblox account | the key stays in the browser, never on our disk |
 | Deployed | https://voxel-bench-psi.vercel.app |
 

@@ -1,0 +1,17 @@
+{
+  "name": "sakura_garden",
+  "fbx": "samples/sakura_garden.fbx",
+  "glb": "samples/sakura_garden.glb",
+  "preview": "samples/sakura_garden_preview.png",
+  "tris": 87084,
+  "verts": 52358,
+  "ingredients": 4408,
+  "dims_studs": [
+    70.4,
+    70.4,
+    17.76
+  ],
+  "bytes_fbx": 6210044,
+  "bytes_glb": 5257656,
+  "parts": 4408
+}

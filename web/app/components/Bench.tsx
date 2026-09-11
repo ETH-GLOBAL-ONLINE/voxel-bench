@@ -302,11 +302,24 @@ export default function Bench({ sample }: { sample: Sample }) {
         </ul>
       ) : null}
 
+{/* Until something has been crafted the panel shows the sample, and the
+          sample is hand-authored rather than model output. Saying so is not a
+          disclaimer — it is the claim: the same format, converter and Roblox
+          parts serve six ingredients and four thousand. */}
       <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-        <p className="text-dim">
-          {result ? "Crafted just now: " : "The last thing it crafted: "}
-          <code className="font-mono text-sm text-amber">{shown.name}</code>
-        </p>
+        {result ? (
+          <p className="text-dim">
+            Crafted just now:{" "}
+            <code className="font-mono text-sm text-amber">{shown.name}</code>
+          </p>
+        ) : (
+          <p className="max-w-xl text-dim">
+            <span className="text-ink">Where this is going.</span>{" "}
+            {shown.ingredients.toLocaleString()} ingredients, hand-authored in
+            the same recipe format a prompt produces. Same primitives, same
+            converter, same Roblox parts.
+          </p>
+        )}
         <p className="label">the grey figure is 5 studs — one Roblox character</p>
       </div>
 
