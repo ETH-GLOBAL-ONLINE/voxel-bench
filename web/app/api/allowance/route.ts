@@ -1,28 +1,19 @@
-// What the agent may still spend in this window.
+// What the agent may still spend, read from the chain by the site itself.
 //
-// The cap is one of the three reasons this project is onchain, and until now it
-// was the only one a visitor could not see. A limit nobody can check is the
-// same shape as a promise, which is the thing it exists to not be.
+// The cap is one of the three reasons this project is onchain, and it was the
+// only one a visitor could not see. Reading it here rather than through the
+// agent means it is visible on a deployment, which is where it matters: a limit
+// nobody can check has the same shape as a promise.
 
-import { bench, reason } from "../bench";
+import { acrossChains, capOn } from "../chain";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
-  const target = bench();
-  if (!target) return Response.json({ disabled: true });
-
   try {
-    const res = await fetch(new URL("/allowance", target.base), {
-      cache: "no-store",
-      signal: AbortSignal.timeout(20000),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return Response.json({ error: reason(data, "could not read the cap") }, { status: res.status });
-    }
-    return Response.json(data);
+    return Response.json({ caps: await acrossChains(capOn) });
   } catch {
-    return Response.json({ error: "could not reach the chain" }, { status: 503 });
+    return Response.json({ caps: [], error: "could not reach the chain" }, { status: 503 });
   }
 }

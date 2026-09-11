@@ -422,8 +422,10 @@ export default function Bench({ sample }: { sample: Sample }) {
 
       {result?.notes?.length ? (
         <ul className="mt-4 space-y-1">
-          {result.notes.map((n) => (
-            <li key={n} className="text-sm text-faint">
+          {/* Keyed by position: two ingredients can earn the same note, and
+              the text is then not unique. */}
+          {result.notes.map((n, i) => (
+            <li key={`${i}-${n}`} className="text-sm text-faint">
               note: {n}
             </li>
           ))}

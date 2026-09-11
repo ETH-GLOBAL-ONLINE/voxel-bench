@@ -17,11 +17,11 @@ type Row = {
   author: string;
   crafts: number;
   earned: string;
+  chain?: string;
 };
 
 type Book = {
-  chain?: string;
-  book?: string;
+  chains?: { chain: string; book: string; explorer: string }[];
   recipes: Row[];
   reason?: string;
 };
@@ -65,28 +65,32 @@ export default function Marketplace() {
     <div className="slot p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <p className="label">
-          {book.recipes.length} published on {book.chain}
+          {book.recipes.length} published across{" "}
+          {book.chains?.length ?? 1} chains
         </p>
-        {book.book && (
-          <a
-            href={`https://testnet.arcscan.app/address/${book.book}`}
-            target="_blank"
-            rel="noreferrer"
-            className="label !text-faint underline decoration-bench-600 underline-offset-2 hover:!text-dim"
-          >
-            {short(book.book)}
-          </a>
-        )}
+        <span className="flex flex-wrap gap-x-2">
+          {book.chains?.map((c) => (
+            <a
+              key={c.book}
+              href={c.explorer}
+              target="_blank"
+              rel="noreferrer"
+              className="label !text-faint underline decoration-bench-600 underline-offset-2 hover:!text-dim"
+            >
+              {short(c.book)}
+            </a>
+          ))}
+        </span>
       </div>
 
       <ol className="space-y-px">
+        {/* Keyed by chain too: the same recipe can be published on both. */}
         {book.recipes.map((row) => (
-          <li key={row.id} className="bg-bench-950 px-3 py-2.5">
+          <li key={`${row.chain}-${row.id}`} className="bg-bench-950 px-3 py-2.5">
             <div className="flex flex-wrap items-center justify-between gap-x-3">
               <span className="font-mono text-xs text-dim">{short(row.id)}</span>
-              <span className="label !text-sap">
-                crafted {row.crafts}×
-              </span>
+              <span className="label !text-faint">{row.chain}</span>
+              <span className="label !text-sap">crafted {row.crafts}×</span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
               <span className="text-xs text-faint">
