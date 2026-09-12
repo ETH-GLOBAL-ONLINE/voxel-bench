@@ -36,18 +36,23 @@ async function loadReport(): Promise<Report> {
 const STEPS = [
   {
     n: "01",
-    t: "Describe it",
-    d: "One sentence. The model turns it into a recipe — a list of ingredients with sizes, measured in studs, Roblox's own unit.",
+    t: "Give your agent a budget",
+    d: "Sign in with an email, Google, X or a wallet, and sign a limit in USDC. No gas, no transaction. The agent pays every stage from it and can never take more.",
   },
   {
     n: "02",
-    t: "The bench crafts it",
-    d: "Headless Blender builds the ingredients and renders a preview. Seven seconds. You see it before anything is published, and before you pay to publish.",
+    t: "Describe it",
+    d: "One sentence. The model writes a recipe — ingredients with sizes in studs, Roblox's own unit — and headless Blender builds it and renders a preview in seconds.",
   },
   {
     n: "03",
+    t: "Claim it",
+    d: "Sign once more and the recipe is yours on RecipeBook. Whenever someone else crafts it, you earn 90%.",
+  },
+  {
+    n: "04",
     t: "It lands in Roblox",
-    d: "Approve, and it uploads through Open Cloud into your own account. You get an assetId and drop it into your game.",
+    d: "Publish, and it uploads through Open Cloud into your own account, with its render as the icon. Or build an obby from your recipes and play it in Studio.",
   },
 ];
 
@@ -59,16 +64,16 @@ const STAGES = [
     tone: "text-sap border-sap/40 bg-sap/10",
   },
   {
-    tag: "next",
-    t: "Objects that do something",
-    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. Recipes already get published and their authors already get paid; what is missing is the Luau that makes an object act.",
-    tone: "text-amber border-amber/40 bg-amber/10",
+    tag: "live",
+    t: "A whole game, one genre at a time",
+    d: "An obby is a recipe of recipes. Pick pieces from your backpack and the marketplace and they become a course you play in Studio — a spawn, hazards that kill, platforms that move, a timed finish — with every piece's author paid.",
+    tone: "text-sap border-sap/40 bg-sap/10",
   },
   {
-    tag: "then",
-    t: "A whole game, one genre at a time",
-    d: "An obby is a sequence of platforms, hazards, checkpoints and a finish — which is spatial arrangement of objects. An obby is a recipe of recipes. Same metaphor, bigger scale.",
-    tone: "text-dim border-bench-600 bg-bench-800",
+    tag: "next",
+    t: "Objects that do something",
+    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. The obby already carries its own script; single objects are next.",
+    tone: "text-amber border-amber/40 bg-amber/10",
   },
 ];
 
@@ -80,8 +85,8 @@ export default async function Home() {
     <div className="min-h-screen">
       <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
         <p className="label !text-amber">
-          Prototype · the crafter runs on a real machine, not here · the agent
-          pays for each stage on Hedera and Arc testnets
+          Prototype · the crafter runs on a real machine, not here · your
+          agent pays each stage from your budget, on Hedera and Arc testnets
         </p>
       </div>
 
@@ -128,13 +133,13 @@ export default async function Home() {
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
           Describe what you need. An agent builds it in Blender, uploads it
-          straight to your own Roblox account, and pays for each step from its
-          own wallet. You install nothing.
+          straight to your own Roblox account, and pays for each step from a
+          budget you give it with one signature. You install nothing.
         </p>
         <p className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects work today, and their recipes have owners who earn from
-          them. Objects that do something, and a playable game, are where this
-          goes.
+          Objects and playable obbies work today, and every recipe has an owner
+          who earns when someone else crafts it. Objects that act on their own
+          are next.
         </p>
 
         <div className="mt-9 flex flex-wrap gap-3">
@@ -154,9 +159,9 @@ export default async function Home() {
 
         <dl className="mt-16 grid max-w-2xl grid-cols-2 gap-px border border-bench-700 bg-bench-700 sm:grid-cols-4">
           {[
-            ["7s", "to craft"],
-            ["398", "triangles"],
-            ["75 KB", "fbx"],
+            ["~7s", "to craft in Blender"],
+            ["0.006", "USDC a craft"],
+            ["0", "gas for you"],
             ["0", "installs"],
           ].map(([v, k]) => (
             <div key={k} className="bg-bench-900 px-4 py-3.5">
@@ -175,7 +180,7 @@ export default async function Home() {
             No Blender. No Roblox Studio. A browser.
           </p>
 
-          <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
+          <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <li key={s.n} className="bg-bench-850 p-6">
                 <span className="font-mono text-sm text-amber">{s.n}</span>
@@ -194,7 +199,8 @@ export default async function Home() {
             <div>
               <h2 className="text-2xl font-bold tracking-tight">The bench</h2>
               <p className="mt-2 text-dim">
-                Describe an object. Drag the result to orbit it.
+                Give your agent a budget, then describe an object or build an
+                obby. Drag the result to orbit it.
               </p>
             </div>
             <BenchStatus />
@@ -272,11 +278,12 @@ export default async function Home() {
               </p>
             </div>
             <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">The agent&rsquo;s spending cap is not a prompt</h3>
+              <h3 className="font-semibold">The agent&rsquo;s limits are not a prompt</h3>
               <p className="mt-2 text-sm leading-relaxed text-dim">
-                The crafter holds its own wallet and pays per step. Its limit
-                lives onchain, where the model cannot talk it out of anything —
-                a prepaid card, not your credit card.
+                You give your agent a budget by signing a USDC permit, and the
+                token refuses it anything past that. The platform&rsquo;s own
+                cap is a contract too. Neither is a setting the model could be
+                talked past — a prepaid card, not your credit card.
               </p>
             </div>
           </div>
@@ -287,11 +294,11 @@ export default async function Home() {
               <p className="label mb-4">What actually happens on a craft</p>
               <ol className="space-y-2.5 font-mono text-sm">
                 {[
-                  ["1", "the agent pays the recipe service", "x402"],
-                  ["2", "the agent pays the craft service", "x402"],
-                  ["3", "you approve the preview"],
-                  ["4", "the agent pays the publish service", "x402"],
-                  ["5", "the fee splits to the recipe author", "SplitVault"],
+                  ["1", "you pay your agent, from your budget", "USDC · Arc"],
+                  ["2", "the agent pays the recipe service", "x402 · Hedera"],
+                  ["3", "the agent pays the craft service", "Nanopayments · Arc"],
+                  ["4", "a recipe with an author pays them 90%", "RecipeBook"],
+                  ["5", "publishing, when you ask, is paid the same way", "x402 · Hedera"],
                 ].map(([n, text, tag]) => (
                   <li key={n} className="flex flex-wrap items-baseline gap-x-3">
                     <span className="text-faint">{n}</span>
