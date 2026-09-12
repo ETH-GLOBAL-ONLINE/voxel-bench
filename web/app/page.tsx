@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import Image from "next/image";
 import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
@@ -122,7 +123,39 @@ export default async function Home() {
       </header>
 
       {/* ── hero ──────────────────────────────────────────────────────── */}
-      <section id="top" className="mx-auto max-w-6xl px-5 pt-20 pb-16">
+      {/* Full-bleed art behind the hero: the scene sits on the right, and a
+          scrim in the page's own ground darkens the left so the text reads
+          over it. A second fade at the bottom hands over to the next section. */}
+      <section
+        id="top"
+        className="relative isolate overflow-hidden border-b border-bench-700 lg:min-h-[40rem]"
+      >
+        <Image
+          src="/hero/voxel-bench-hero.webp"
+          alt=""
+          aria-hidden
+          fill
+          priority
+          sizes="100vw"
+          className="-z-20 object-cover object-[72%_center]"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "linear-gradient(90deg, var(--color-bench-950) 0%, color-mix(in srgb, var(--color-bench-950) 88%, transparent) 36%, color-mix(in srgb, var(--color-bench-950) 25%, transparent) 70%, transparent 100%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 -z-10 h-32"
+          style={{
+            background: "linear-gradient(0deg, var(--color-bench-950) 0%, transparent 100%)",
+          }}
+        />
+
+        <div className="mx-auto max-w-6xl px-5 pt-20 pb-16">
         <p className="label mb-5">
           Agent-run Roblox studio · ETHOnline 2026
         </p>
@@ -170,6 +203,7 @@ export default async function Home() {
             </div>
           ))}
         </dl>
+        </div>
       </section>
 
       {/* ── how it works ──────────────────────────────────────────────── */}
