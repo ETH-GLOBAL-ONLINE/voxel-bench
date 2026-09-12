@@ -892,13 +892,23 @@ export default function Bench({ sample }: { sample: Sample }) {
               moderation {published.moderation?.toLowerCase()}
             </span>
           </div>
+          {/* The agent has already published it: the first thing to offer is
+              where it now is, so nobody opens Studio to publish it again. */}
           <p className="mt-3 text-sm text-dim">
-            It is in your Roblox inventory. Open Studio and find it under
-            Toolbox, Inventory, My Models.
+            Done — it is published to your Roblox account. Find it in the
+            Creator Dashboard under Creations → Development Items → Models.
           </p>
+          <a
+            href="https://create.roblox.com/dashboard/creations"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block bg-amber px-4 py-2 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
+          >
+            Open the Creator Dashboard ↗
+          </a>
           {published.icon && (
             <p
-              className={`mt-2 text-xs ${published.icon.set ? "text-sap" : "text-ember"}`}
+              className={`mt-3 text-xs ${published.icon.set ? "text-sap" : "text-ember"}`}
             >
               {published.icon.set
                 ? `Its icon is the render, uploaded as image ${published.icon.imageAssetId}.`
@@ -907,14 +917,15 @@ export default function Bench({ sample }: { sample: Sample }) {
           )}
           <details className="mt-3">
             <summary className="cursor-pointer text-xs text-faint hover:text-dim">
-              or insert it with one line
+              or use it in Studio
             </summary>
+            <p className="mt-2 text-xs text-faint">
+              It is in your inventory: Toolbox → Inventory → My Models. Or paste
+              this into the command bar at the bottom of Studio:
+            </p>
             <code className="mt-2 block overflow-x-auto border border-bench-700 bg-bench-950 px-3 py-2 font-mono text-xs text-dim">
               {published.insert}
             </code>
-            <p className="mt-2 text-xs text-faint">
-              Paste that into the command bar at the bottom of Studio.
-            </p>
           </details>
         </div>
       )}
