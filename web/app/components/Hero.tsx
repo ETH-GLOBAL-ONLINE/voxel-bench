@@ -24,9 +24,9 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 type Stat = { value: number; decimals: number; prefix?: string; suffix?: string; label: string };
 
 const STATS: Stat[] = [
-  { value: 7, decimals: 0, prefix: "~", suffix: "s", label: "to craft in Blender" },
+  { value: 7, decimals: 0, prefix: "~", suffix: "s", label: "to craft" },
   { value: 0.006, decimals: 3, label: "USDC a craft" },
-  { value: 0, decimals: 0, label: "gas for you" },
+  { value: 0, decimals: 0, label: "gas" },
   { value: 0, decimals: 0, label: "installs" },
 ];
 
@@ -240,14 +240,12 @@ export default function Hero() {
           </span>
         </h1>
         <p data-hero-copy data-hero-hide className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
-          Describe what you need. An agent builds it in Blender, uploads it
-          straight to your own Roblox account, and pays for each step from a
-          budget you give it with one signature. You install nothing.
+          Describe what you need. An agent builds a 3D model and uploads it to
+          your Roblox account, paying each step from a budget you sign once.
         </p>
         <p data-hero-copy data-hero-hide className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects and playable obbies work today, and every recipe has an owner
-          who earns when someone else crafts it. Objects that act on their own
-          are next.
+          Objects and obbies work today. Every recipe earns its owner when
+          someone else crafts it.
         </p>
 
         <div data-hero-ctas data-hero-hide className="mt-9 flex flex-wrap gap-3">
