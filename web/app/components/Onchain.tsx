@@ -297,18 +297,11 @@ export default function Onchain() {
             ))}
           </ol>
         </div>
-
-        <p className="mt-12 max-w-3xl border-l-2 border-amber pl-5 text-sm leading-relaxed text-dim">
-          <span className="text-ink">Each stage is a separate paid service</span>,
-          so no secrets are shared between them. The craft service cannot
-          publish; the publish service never sees your prompt. Compromising one
-          does not hand over the others — that is the real argument for paying
-          rather than sharing an API key.
-        </p>
       </div>
 
       {/* ── three contracts ──────────────────────────────────────────── */}
-      <div data-contracts className="mt-16">
+      {/* Well clear of the path, so the two read as separate things. */}
+      <div data-contracts style={{ marginTop: "7rem" }}>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <p className="label">Three contracts</p>
           <p className="label !normal-case !tracking-normal">
