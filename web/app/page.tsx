@@ -204,7 +204,12 @@ export default async function Home() {
           {/* The shelf gets the full width; the note on revenue follows it. */}
           <div className="mt-16">
             <Marketplace />
-            <p className="mt-6 text-sm leading-relaxed text-faint">
+            {/* The page's last word before the footer, centred, with room
+                under it. */}
+            <p
+              className="mt-8 text-center text-sm leading-relaxed text-faint"
+              style={{ paddingBottom: "3rem" }}
+            >
               Your game&rsquo;s revenue never touches any of this. Roblox
               prohibits blockchain integrations and off-platform monetisation, so
               what your game earns stays in Robux and stays yours. We charge for
