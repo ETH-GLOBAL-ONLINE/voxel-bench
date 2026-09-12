@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import Image from "next/image";
 import Bench from "./components/Bench";
 import Hero from "./components/Hero";
 import Marquee from "./components/Marquee";
@@ -89,9 +90,14 @@ export default async function Home() {
       <header className="sticky top-0 z-50 border-b border-bench-700 bg-bench-950/90 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-8 px-5 py-4">
           <a href="#top" className="flex items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center border border-amber/50 bg-amber/10 text-[13px] font-bold text-amber">
-              V
-            </span>
+            <Image
+              src="/logo/voxel-bench-logo.png"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              className="h-8 w-8"
+            />
             <span className="text-[13px] font-bold tracking-[0.2em] uppercase">
               Voxel Bench
             </span>
@@ -122,9 +128,11 @@ export default async function Home() {
       {/* ── hero ──────────────────────────────────────────────────────── */}
       <Hero />
 
-      {/* Everything after the hero, opaque and above it, so it covers the
-          pinned hero as the page scrolls. */}
-      <div className="relative z-10 bg-bench-950">
+      {/* Everything after the hero, opaque, so it covers the pinned hero as
+          the page scrolls. It covers by coming later in the page, not by a
+          z-index: one here would make it a layer of its own and trap the
+          guide's highlighted element under the guide's dim. */}
+      <div className="relative bg-bench-950">
       <Marquee />
 
       {/* ── how it works ──────────────────────────────────────────────── */}

@@ -8,7 +8,25 @@ import SmoothScroll from "./components/SmoothScroll";
 // for longer than three seconds, whatever happens.
 const HERO_PENDING = `(function(){try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){var d=document.documentElement;d.classList.add('hero-pending');setTimeout(function(){d.classList.remove('hero-pending')},3000);}}catch(e){}})();`;
 
+// The icons and the card shown when the link is shared live in app/ as
+// favicon.ico, icon.png, apple-icon.png and opengraph-image.png, which Next
+// picks up by name. The base makes the card's address absolute.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://voxel-bench-psi.vercel.app"),
+  openGraph: {
+    title: "Voxel Bench — craft your Roblox game, one object at a time",
+    description:
+      "An agent builds what you describe in Blender, publishes it to your Roblox account, and pays each stage from a budget you give it.",
+    url: "/",
+    siteName: "Voxel Bench",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Voxel Bench — craft your Roblox game, one object at a time",
+    description:
+      "An agent builds what you describe in Blender, publishes it to your Roblox account, and pays each stage from a budget you give it.",
+  },
   title: "Voxel Bench — craft your Roblox game, one object at a time",
   description:
     "Describe what you need. An agent builds it in Blender, uploads it to your own Roblox account, and pays for each step from a budget you give it. Recipes are reusable, their authors earn onchain on every craft, and they combine into playable obbies.",
