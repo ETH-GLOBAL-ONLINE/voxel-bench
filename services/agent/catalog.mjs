@@ -116,3 +116,19 @@ export async function saveCollection({ collector, recipeId: id, chain, transacti
     return { saved: false, error: err?.message ?? String(err) };
   }
 }
+
+/** Whether `collector` already got this recipe from the marketplace. */
+export async function hasCollected(collector, id) {
+  if (!catalogEnabled() || !collector) return false;
+  try {
+    const res = await fetch(
+      `${base()}/rest/v1/collections?select=id&collector=eq.${collector.toLowerCase()}` +
+        `&recipe_id=eq.${id.toLowerCase()}&limit=1`,
+      { headers: headers() },
+    );
+    if (!res.ok) return false;
+    return (await res.json()).length > 0;
+  } catch {
+    return false;
+  }
+}

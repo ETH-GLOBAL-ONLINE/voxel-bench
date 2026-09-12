@@ -25,7 +25,7 @@ import express from "express";
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
 import { claimTypedData, published, recipeId, settle } from "./recipes.mjs";
 import { allCaps, draw } from "./allowance.mjs";
-import { fetchRecipe, saveCollection, saveRecipe } from "./catalog.mjs";
+import { fetchRecipe, hasCollected, saveCollection, saveRecipe } from "./catalog.mjs";
 
 loadEnv();
 
@@ -301,6 +301,13 @@ app.post("/craft", async (req, res) => {
     }
     recipe = await fetchRecipe(wanted);
     if (!recipe) return res.status(404).json({ error: "That recipe is not in the catalog." });
+
+    // Got once is enough. A second get would pay the author again for a copy
+    // already in the backpack, and count a craft that added nothing. Refused
+    // here, before anything is spent, whoever calls this.
+    if (collector && (await hasCollected(collector, wanted))) {
+      return res.status(409).json({ error: "That recipe is already in your backpack." });
+    }
   } else if (prompt.length < 3) {
     return res.status(400).json({ error: "Say a little more about what you want." });
   }

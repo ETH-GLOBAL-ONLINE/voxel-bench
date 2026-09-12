@@ -5,7 +5,8 @@
 // that cannot be read is named in the answer rather than shown as an empty
 // shelf.
 
-import { readCatalog } from "../catalog";
+import { isAddress } from "viem";
+import { readCatalog, readCollected } from "../catalog";
 import { LEDGERS, publishedOn, type LedgerName } from "../chain";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,16 @@ export const dynamic = "force-dynamic";
 // one. Marked so the shelf can tell its stock from what people made.
 const PLATFORM = "0xfe3caad68785d76b70cec542518d2a003ea90034";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const asked = new URL(req.url).searchParams.get("address") ?? "";
   const names = Object.keys(LEDGERS) as LedgerName[];
-  const settled = await Promise.allSettled(names.map((name) => publishedOn(name, 200)));
+
+  const [settled, got] = await Promise.all([
+    Promise.allSettled(names.map((name) => publishedOn(name, 200))),
+    // What the visitor already got, so the shelf does not offer it again.
+    isAddress(asked) ? readCollected(asked) : Promise.resolve([]),
+  ]);
+  const collected = new Set(got.map((c) => c.id.toLowerCase()));
 
   const unreadable = names
     .filter((_, i) => settled[i].status === "rejected")
@@ -43,6 +51,7 @@ export async function GET() {
     .map((r) => ({
       ...r,
       platform: r.author.toLowerCase() === PLATFORM,
+      collected: collected.has(r.id),
       name: catalog.get(r.id)?.name ?? null,
       preview: catalog.get(r.id)?.preview ?? null,
       ingredients: catalog.get(r.id)?.ingredients ?? null,
