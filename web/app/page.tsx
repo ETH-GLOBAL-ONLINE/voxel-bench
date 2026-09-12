@@ -201,21 +201,10 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-5 pt-4 pb-20">
           <Onchain />
 
-          {/* The shelf gets the full width; the note on revenue follows it. */}
-          <div className="mt-16">
+          {/* The shelf gets the full width, and room under it before the
+              footer. */}
+          <div className="mt-16" style={{ paddingBottom: "3rem" }}>
             <Marketplace />
-            {/* The page's last word before the footer, centred, with room
-                under it. */}
-            <p
-              className="mt-8 text-center text-sm leading-relaxed text-faint"
-              style={{ paddingBottom: "3rem" }}
-            >
-              Your game&rsquo;s revenue never touches any of this. Roblox
-              prohibits blockchain integrations and off-platform monetisation, so
-              what your game earns stays in Robux and stays yours. We charge for
-              crafting, the way a print shop bills for printing and not for what
-              you sell.
-            </p>
           </div>
         </div>
       </section>
