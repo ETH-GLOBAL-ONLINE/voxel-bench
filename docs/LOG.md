@@ -1042,9 +1042,21 @@ the carried-over count continuing, 0.0027 → 0.0036 USDC.
 ### A fall off the course is a fall
 
 The course used to sit eight studs over the ground. Stepping off it, a player
-landed on the ground and was killed there, which read as a stumble. It now
-starts twenty-two studs up — about four characters — and the runtime counts a
-fall from five studs below the lowest piece rather than one, so the drop is
-seen and ends in mid-air, with the ground and the scenery standing on it well
-below. Laid out in a dry run with eight shelf pieces: the course between 21
-and 30 studs, hazards at 18.5, the fall counting below 16.
+landed on the ground and was killed there, which read as a stumble. It is now
+laid out twenty-two studs up, and the runtime makes sure that survives the
+import: Studio drops a model where it is let go, resting on whatever is under
+it, so on load the script measures the ground under the lowest piece and lifts
+the whole course until there are twenty studs of air. Under it goes a black
+floor, six hundred studs across, that kills on touch like a hazard. The fall is
+seen, ends in the void, and the run resumes at the checkpoint.
+
+Killing on touch rather than by height is deliberate. The server sees a
+falling character a few frames late, and at falling speed that is the whole
+drop: a height check, even every frame, fired at the ground. A touched part
+is reliable. The height check stays as the backstop for a course placed over
+nothing.
+
+Measured in Studio on a ten-piece course: dropped into the place it sat at
+0–9 studs; on Play it stood at 20–29 with the void floor at 0; a character
+pushed off the start and one pushed off mid-course both died on the floor
+within 0.6 s and respawned on the start pad.

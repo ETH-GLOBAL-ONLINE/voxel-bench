@@ -703,16 +703,23 @@ export default function Bench({ sample }: { sample: Sample }) {
         </p>
       )}
 
+      {/* Folded: an obby earns a note per piece and per cone, which buried
+          the result. The count says there is something to open. */}
       {result?.notes?.length ? (
-        <ul className="mt-4 space-y-1">
-          {/* Keyed by position: two ingredients can earn the same note, and
-              the text is then not unique. */}
-          {result.notes.map((n, i) => (
-            <li key={`${i}-${n}`} className="text-sm text-faint">
-              note: {n}
-            </li>
-          ))}
-        </ul>
+        <details className="mt-4">
+          <summary className="label cursor-pointer select-none !text-faint transition-colors hover:!text-dim">
+            {result.notes.length === 1 ? "1 note" : `${result.notes.length} notes`} on this craft
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {/* Keyed by position: two ingredients can earn the same note, and
+                the text is then not unique. */}
+            {result.notes.map((n, i) => (
+              <li key={`${i}-${n}`} className="text-sm text-faint">
+                note: {n}
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
 {/* Until something has been crafted the panel shows the sample, and the

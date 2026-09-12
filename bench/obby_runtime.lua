@@ -45,6 +45,65 @@ local function partsOf(model)
 	return parts
 end
 
+-- The course was laid out well above the ground, but Studio drops a model
+-- where it is let go, resting on whatever is under it, so that height does
+-- not survive the import. Put the drop back: if the ground is nearer than
+-- CLEARANCE below the lowest piece of the course itself — scenery stands on
+-- the ground by design and does not count — raise the whole model until it
+-- is not. Done first, before anything remembers where a piece is.
+local CLEARANCE = 20 -- studs of air under the lowest piece
+-- The box of the pieces themselves, taken before the void floor joins them.
+local boxCF, boxSize
+-- The floor under the course, which ends a fall the way a hazard does.
+local voidFloor
+do
+	local lowest, under = math.huge, nil
+	for _, role in { "Start", "Path", "Checkpoint", "Kill", "Mover", "Finish" } do
+		for _, model in byRole[role] or {} do
+			local cf, size = model:GetBoundingBox()
+			local bottom = cf.Position.Y - size.Y / 2
+			if bottom < lowest then
+				lowest, under = bottom, cf.Position
+			end
+		end
+	end
+	if under then
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { course }
+		-- From a stud above the lowest piece: dropped onto the ground, the
+		-- piece rests inside the ground's surface, and a ray that starts
+		-- inside a part never sees it.
+		local from = Vector3.new(under.X, lowest + 1, under.Z)
+		local hit = workspace:Raycast(from, Vector3.new(0, -(CLEARANCE + 2), 0), params)
+		if hit then
+			local short = CLEARANCE - (lowest - hit.Position.Y)
+			if short > 0 then
+				course:PivotTo(course:GetPivot() + Vector3.new(0, short, 0))
+			end
+			boxCF, boxSize = course:GetBoundingBox()
+			-- What is under the course reads as a void: a black floor over
+			-- the ground, wide enough that the edge is out of sight from the
+			-- course. Scenery stands on it. A character that lands on it has
+			-- fallen off the course, and it kills on touch like a hazard:
+			-- touch is reliable where a height check is not, since the server
+			-- sees a falling character a few frames late, which at falling
+			-- speed is the whole drop.
+			local void = Instance.new("Part")
+			void.Name = "Void"
+			void.Anchored = true
+			void.CanCollide = true
+			void.CastShadow = false
+			void.Material = Enum.Material.SmoothPlastic
+			void.Color = Color3.new(0, 0, 0)
+			void.Size = Vector3.new(600, 1, 600)
+			void.CFrame = CFrame.new(under.X, hit.Position.Y - 0.45, under.Z)
+			void.Parent = course
+			voidFloor = void
+		end
+	end
+end
+
 -- The course runs along the model's X; movers swing along its Z.
 local pivot = course:GetPivot()
 local forward = pivot.RightVector
@@ -114,6 +173,15 @@ for _, model in byRole.Kill or {} do
 			end
 		end)
 	end
+end
+
+if voidFloor then
+	voidFloor.Touched:Connect(function(hit)
+		local _, humanoid = fromHit(hit)
+		if humanoid then
+			humanoid.Health = 0
+		end
+	end)
 end
 
 for _, model in byRole.Checkpoint or {} do
@@ -206,9 +274,9 @@ end
 
 -- Falling below the lowest piece you can stand on, anywhere over the course,
 -- counts as falling off it. Only for characters already placed on it, so
--- someone walking past on the ground elsewhere is left alone. The course is
--- laid out high enough that this happens in mid-air: a character's height
--- below the lowest piece, so the fall is seen, and long before the ground.
+-- someone walking past on the ground elsewhere is left alone. The void floor
+-- under the course is what usually ends a fall; this is the backstop for a
+-- course placed over nothing at all.
 local FALL = 5 -- studs below the lowest piece before the fall counts
 local lowest = math.huge
 for _, role in { "Start", "Path", "Checkpoint", "Mover", "Finish" } do
@@ -218,20 +286,22 @@ for _, role in { "Start", "Path", "Checkpoint", "Mover", "Finish" } do
 	end
 end
 
-local boxCF, boxSize = course:GetBoundingBox()
+if not boxCF then
+	boxCF, boxSize = course:GetBoundingBox()
+end
 if lowest < math.huge then
-	task.spawn(function()
-		while true do
-			task.wait(0.2)
-			for _, player in Players:GetPlayers() do
-				local character = player.Character
-				local root = character and character:FindFirstChild("HumanoidRootPart")
-				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-				if root and humanoid and arrived[character] and humanoid.Health > 0 and root.Position.Y < lowest - FALL then
-					local rel = boxCF:PointToObjectSpace(root.Position)
-					if math.abs(rel.X) < boxSize.X / 2 + 12 and math.abs(rel.Z) < boxSize.Z / 2 + 12 then
-						humanoid.Health = 0
-					end
+	-- Every frame rather than every so often: a falling character covers
+	-- fifteen studs in a fifth of a second, which was enough to reach the
+	-- ground before the fall was noticed.
+	RunService.Heartbeat:Connect(function()
+		for _, player in Players:GetPlayers() do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if root and humanoid and arrived[character] and humanoid.Health > 0 and root.Position.Y < lowest - FALL then
+				local rel = boxCF:PointToObjectSpace(root.Position)
+				if math.abs(rel.X) < boxSize.X / 2 + 12 and math.abs(rel.Z) < boxSize.Z / 2 + 12 then
+					humanoid.Health = 0
 				end
 			end
 		end
