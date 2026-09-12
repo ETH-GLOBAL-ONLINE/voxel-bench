@@ -92,7 +92,9 @@ contract ProtocolHandler is Test {
     function craft(uint256 idSeed, uint256 authorSeed, uint96 amountSeed) public {
         uint256 i = _ensurePublished(idSeed, authorSeed);
         uint256 amount = bound(uint256(amountSeed), 1, 10 ether);
-        address payer = actor(authorSeed + 1);
+        // Reduce before adding so an adversarial uint256 max seed cannot
+        // overflow the handler itself during a long invariant campaign.
+        address payer = actor((authorSeed % keys.length) + 1);
         vm.deal(payer, amount);
 
         uint256 toPlatform = (amount * book.platformBps()) / 10_000;

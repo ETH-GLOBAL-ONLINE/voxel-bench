@@ -41,3 +41,5 @@ SR-01 PoC: 2 passed, including attacker royalty capture on the old source route
 ```
 
 These are historical baseline results only. Rerun the current branch before presenting a green result.
+
+The explicit historical `FAIL` output for SR-E01 and SR-E02 is preserved in `evidence/historical-strict-discovery.log`.

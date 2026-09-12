@@ -187,8 +187,9 @@ contract ProtocolLawStatelessTest is Test {
     }
 
     function test_republishAndOwnerTransitionAreBounded() public {
+        bytes memory crafterSignature = _signature(book, CRAFTER_KEY, RECIPE, crafter);
         vm.expectRevert(RecipeBook.AlreadyPublished.selector);
-        book.publishFor(RECIPE, crafter, _signature(book, CRAFTER_KEY, RECIPE, crafter));
+        book.publishFor(RECIPE, crafter, crafterSignature);
 
         vm.prank(address(0xBAD));
         vm.expectRevert(RecipeBook.NotOwner.selector);

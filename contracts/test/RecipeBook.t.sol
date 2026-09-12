@@ -58,17 +58,20 @@ contract RecipeBookTest is Test {
     }
 
     function test_attacker_cannot_publish_with_wrong_signature() public {
+        bytes memory attackerSignature = _signature(RECIPE, attacker);
         vm.prank(attacker);
         vm.expectRevert(RecipeBook.InvalidSignature.selector);
-        book.publishFor(RECIPE, author, _signature(RECIPE, attacker));
+        book.publishFor(RECIPE, author, attackerSignature);
     }
 
     function test_republishing_cannot_steal_authorship() public {
         _publishAsAuthor(RECIPE);
 
+        address secondClaimant = vm.addr(0xB0B);
+        bytes memory claimantSignature = _signature(RECIPE, secondClaimant);
         vm.prank(crafter);
         vm.expectRevert(RecipeBook.AlreadyPublished.selector);
-        book.publishFor(RECIPE, crafter, _signature(RECIPE, crafter));
+        book.publishFor(RECIPE, secondClaimant, claimantSignature);
     }
 
     function test_craft_splits_and_counts() public {
@@ -212,8 +215,7 @@ contract RecipeBookTest is Test {
     }
 
     function test_publishFor_cannot_take_an_existing_recipe() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _publishAsAuthor(RECIPE);
 
         address signer = vm.addr(AUTHOR_KEY);
         bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
