@@ -9,36 +9,70 @@ contract RecipeBookTest is Test {
     SplitVault vault;
     RecipeBook book;
 
-    address author = address(0xA47);
+    uint256 authorKey = 0xA47;
+    address author;
     address crafter = address(0xC24);
+    address attacker = address(0xBAD);
     address platform;
 
     bytes32 constant RECIPE = keccak256("market_stall");
 
     function setUp() public {
         platform = address(this);
+        author = vm.addr(authorKey);
         vault = new SplitVault();
         book = new RecipeBook(address(vault), 1000); // 10% platform
     }
 
+    function _signature(bytes32 recipe, address signer)
+        internal
+        view
+        returns (bytes memory)
+    {
+        uint256 key = signer == author ? authorKey : 0xB0B;
+        bytes32 digest = book.publishDigest(recipe, signer);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest);
+        return abi.encodePacked(r, s, v);
+    }
+
+    function _publishAsAuthor(bytes32 recipe) internal {
+        book.publishFor(recipe, author, _signature(recipe, author));
+    }
+
     function test_publish_records_the_author() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _publishAsAuthor(RECIPE);
         assertEq(book.authorOf(RECIPE), author);
     }
 
-    function test_republishing_cannot_steal_authorship() public {
-        vm.prank(author);
-        book.publish(RECIPE);
-
-        vm.prank(crafter);
-        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+    function test_direct_publish_is_disabled() public {
+        vm.prank(attacker);
+        vm.expectRevert(RecipeBook.DirectPublishDisabled.selector);
         book.publish(RECIPE);
     }
 
+    function test_relayer_cannot_steal_signed_authorship() public {
+        vm.prank(attacker);
+        book.publishFor(RECIPE, author, _signature(RECIPE, author));
+
+        assertEq(book.authorOf(RECIPE), author);
+    }
+
+    function test_attacker_cannot_publish_with_wrong_signature() public {
+        vm.prank(attacker);
+        vm.expectRevert(RecipeBook.InvalidSignature.selector);
+        book.publishFor(RECIPE, author, _signature(RECIPE, attacker));
+    }
+
+    function test_republishing_cannot_steal_authorship() public {
+        _publishAsAuthor(RECIPE);
+
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+        book.publishFor(RECIPE, crafter, _signature(RECIPE, crafter));
+    }
+
     function test_craft_splits_and_counts() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _publishAsAuthor(RECIPE);
 
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
@@ -62,8 +96,7 @@ contract RecipeBookTest is Test {
     }
 
     function test_the_contract_never_holds_the_money() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _publishAsAuthor(RECIPE);
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
         book.craft{value: 1 ether}(RECIPE);
@@ -73,8 +106,7 @@ contract RecipeBookTest is Test {
     }
 
     function test_author_withdraws_what_they_earned() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _publishAsAuthor(RECIPE);
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
         book.craft{value: 1 ether}(RECIPE);
@@ -105,8 +137,9 @@ contract RecipeBookTest is Test {
         bps = uint16(bound(bps, 0, book.MAX_PLATFORM_BPS()));
 
         RecipeBook b = new RecipeBook(address(vault), bps);
-        vm.prank(author);
-        b.publish(RECIPE);
+        bytes32 digest = b.publishDigest(RECIPE, author);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(authorKey, digest);
+        b.publishFor(RECIPE, author, abi.encodePacked(r, s, v));
 
         vm.deal(crafter, paid);
         vm.prank(crafter);
