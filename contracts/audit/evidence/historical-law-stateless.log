@@ -1,0 +1,15 @@
+No files changed, compilation skipped
+
+Ran 11 tests for test/ProtocolFuzzTest.t.sol:ProtocolLawStatelessTest
+[PASS] testFuzz_creditUpdatesAccountAndLiability(address,uint96) (runs: 256)
+[PASS] testFuzz_failedAllowanceDrawDoesNotChangeState(uint96,uint96) (runs: 256)
+[PASS] testFuzz_quoteEqualsExecution(uint96,uint16) (runs: 256)
+[PASS] testFuzz_remainingMatchesCapAndLiquidity(uint96,uint96) (runs: 256)
+[PASS] test_allowanceOwnerBoundariesAndAgentRotation()
+[PASS] test_allowanceRejectsOutsiderAndOverCap()
+[PASS] test_failedWithdrawalIsAtomic()
+[PASS] test_publishForCannotSubstituteSigner()
+[PASS] test_reentrantWithdrawalCannotSpendLiabilityTwice()
+[PASS] test_republishAndOwnerTransitionAreBounded()
+[PASS] test_unknownOrZeroPaymentDoesNotChangeState()
+Suite result: ok. 11 passed; 0 failed; 0 skipped

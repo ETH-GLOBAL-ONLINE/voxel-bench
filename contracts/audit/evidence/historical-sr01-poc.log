@@ -1,0 +1,10 @@
+Compiling 1 files with Solc 0.8.29
+Solc 0.8.29 finished in 1.17s
+Compiler run successful!
+
+Ran 2 tests for test/SR01RecipeAuthorshipPoC.t.sol:SR01RecipeAuthorshipPoCTest
+[PASS] testControl_SignedPublishForCreditsSignerEvenWhenRelayedByAttacker() (gas: 264395)
+[PASS] testPoC_AttackerCanFrontRunDirectPublishAndReceiveFutureRoyalties() (gas: 311196)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 21.97ms (11.98ms CPU time)
+
+Ran 1 test suite in 35.03ms (21.97ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)

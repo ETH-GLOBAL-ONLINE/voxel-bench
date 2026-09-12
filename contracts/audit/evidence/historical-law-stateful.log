@@ -1,0 +1,14 @@
+No files changed, compilation skipped
+
+Ran 1 test for test/ProtocolFuzzTest.t.sol:ProtocolFuzzTest
+[PASS] invariant_AllowanceAgentIsHandler
+[PASS] invariant_AllowanceLiquidityBoundHolds
+[PASS] invariant_AllowanceRemainingFormula
+[PASS] invariant_BookNeverRetainsValue
+[PASS] invariant_BookOwnerMatchesHandlerModel
+[PASS] invariant_RecipeAccountingMatchesGhostState
+[PASS] invariant_TrackedVaultLiabilitiesMatchGhostFlow
+[PASS] invariant_VaultIsSolvent
+ProtocolFuzzTest invariants (runs: 100, calls: 10000, reverts: 0)
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped

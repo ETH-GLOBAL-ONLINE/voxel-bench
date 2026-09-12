@@ -1,0 +1,11 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+remappings = ["forge-std/=node_modules/forge-std/src/"]
+solc_version = "0.8.29"
+
+[invariant]
+runs = 100
+depth = 10000
+fail_on_revert = true

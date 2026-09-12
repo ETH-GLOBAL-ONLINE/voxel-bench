@@ -1,0 +1,45 @@
+# Normalized excerpt from historical STRICT discovery output
+# Source: Drive artifact `logs-medium-strict.txt`
+# Run date: 11 September 2026
+# Scope note: this snapshot predates the current branch's DirectPublishDisabled change.
+
+No files changed, compilation skipped
+
+Ran 2 tests for test/ProtocolStrictDiscovery.t.sol:ProtocolStrictDiscoveryTest
+[FAIL: assertion failed: 0x0000000000000000000000000000000000000Bad != 0x0000000000000000000000000000000000000000] testStrict_AuthorshipNeedsProvenance() (gas: 59069)
+Traces:
+  [59069] ProtocolStrictDiscoveryTest::testStrict_AuthorshipNeedsProvenance()
+    ├─ VM::prank(0x0000000000000000000000000000000000000Bad)
+    ├─ RecipeBook::publish(0x3991f69d0e712983817175c1b42124f65cb9ad36689ec2c204985f50ac9868fe)
+    │  ├─ emit RecipePublished(
+    │  │     recipeId: 0x3991f69d0e712983817175c1b42124f65cb9ad36689ec2c204985f50ac9868fe,
+    │  │     author: 0x0000000000000000000000000000000000000Bad
+    │  │  )
+    │  └─ ← Stop
+    ├─ RecipeBook::authorOf(0x3991f69d0e712983817175c1b42124f65cb9ad36689ec2c204985f50ac9868fe)
+    │  └─ ← 0x0000000000000000000000000000000000000Bad
+    └─ VM::assertEq(0x0000000000000000000000000000000000000Bad, address(0))
+       └─ ← Revert: assertion failed
+
+[FAIL: assertion failed: 2000000000000000000 > 1000000000000000000] testStrict_FixedWindowIsNotRollingBound() (gas: 124432)
+Traces:
+  [124432] ProtocolStrictDiscoveryTest::testStrict_FixedWindowIsNotRollingBound()
+    ├─ Allowance::draw(1 ether)
+    ├─ VM::warp(86401)
+    ├─ Allowance::draw(1 ether)
+    └─ VM::assertLe(2 ether, 1 ether)
+       └─ ← Revert: assertion failed
+
+Suite result: FAILED. 0 passed; 2 failed; 0 skipped; finished in 9.35ms (12.58ms CPU time)
+
+Ran 1 test suite in 34.79ms (9.35ms CPU time): 0 tests passed, 2 failed, 0 skipped (2 total tests)
+
+Failing tests:
+Encountered 2 failing tests in test/ProtocolStrictDiscovery.t.sol:ProtocolStrictDiscoveryTest
+[FAIL: assertion failed: 0x0000000000000000000000000000000000000Bad != 0x0000000000000000000000000000000000000000] testStrict_AuthorshipNeedsProvenance() (gas: 59069)
+[FAIL: assertion failed: 2000000000000000000 > 1000000000000000000] testStrict_FixedWindowIsNotRollingBound() (gas: 124432)
+
+Interpretation:
+- SR-E01 is the original direct-publish authorship capture. The current branch blocks this old call with `DirectPublishDisabled`.
+- SR-E02 shows that a fixed allowance window does not enforce a rolling 24-hour cap. It is a product-model issue unless the product promises a rolling cap.
+- The current branch still has a separate signed first-claim provenance gap; see `historical-sr01-poc.log` and `../SR-01-attack-trace.md`.
