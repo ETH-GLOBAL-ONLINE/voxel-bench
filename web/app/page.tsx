@@ -5,7 +5,7 @@ import Bench from "./components/Bench";
 import Hero from "./components/Hero";
 import Marquee from "./components/Marquee";
 import Reveal from "./components/Reveal";
-import Onchain from "./components/Onchain";
+import Onchain, { OnchainReasons } from "./components/Onchain";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
 import { HeaderWallet } from "./components/Wallet";
@@ -61,27 +61,6 @@ const STEPS = [
   },
 ];
 
-const STAGES = [
-  {
-    tag: "live",
-    t: "Objects",
-    d: "A prompt becomes a crate, a lamp post, a market stall — crafted, previewed and uploaded to your Roblox account.",
-    tone: "text-sap border-sap/40 bg-sap/10",
-  },
-  {
-    tag: "live",
-    t: "A whole game, one genre at a time",
-    d: "An obby is a recipe of recipes. Pick pieces from your backpack and the marketplace and they become a course you play in Studio — a spawn, hazards that kill, platforms that move, a timed finish — with every piece's author paid.",
-    tone: "text-sap border-sap/40 bg-sap/10",
-  },
-  {
-    tag: "next",
-    t: "Objects that do something",
-    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. The obby already carries its own script; single objects are next.",
-    tone: "text-amber border-amber/40 bg-amber/10",
-  },
-];
-
 export default async function Home() {
   const report = await loadReport();
   const dims = report.dims_studs;
@@ -107,7 +86,6 @@ export default async function Home() {
             {[
               ["How it works", "#how"],
               ["The bench", "#bench"],
-              ["Where it goes", "#stages"],
               ["Why onchain", "#onchain"],
             ].map(([label, href]) => (
               <a
@@ -141,7 +119,7 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-5 py-20">
           <h2 className="text-2xl font-bold tracking-tight">How it works</h2>
           <p className="mt-2 max-w-lg text-dim">
-            No Blender. No Roblox Studio. A browser.
+            From a sentence to your Roblox account.
           </p>
 
           <Reveal deep>
@@ -184,13 +162,14 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── stages ────────────────────────────────────────────────────── */}
+      {/* ── why onchain ───────────────────────────────────────────────── */}
+      {/* The reasons open the section over a wall of lit blocks, kept faint
+          and faded into the page's colour at both ends so the text reads over
+          it and the part below carries on without a seam. */}
       <section
-        id="stages"
-        className="relative overflow-hidden border-t border-bench-700 bg-bench-900"
+        id="onchain"
+        className="relative overflow-hidden border-t border-bench-700 bg-bench-950"
       >
-        {/* A wall of lit blocks, kept faint and faded into the section's own
-            colour at the top and bottom so the text reads over it. */}
         <Image
           src="/bg/voxel-wall.webp"
           alt=""
@@ -204,62 +183,54 @@ export default async function Home() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, #1b1816 0%, rgb(27 24 22 / 0.35) 30%, rgb(27 24 22 / 0.35) 70%, #1b1816 100%)",
+              "linear-gradient(to bottom, #131110 0%, rgb(19 17 16 / 0.35) 30%, rgb(19 17 16 / 0.35) 70%, #131110 100%)",
           }}
         />
-        <div className="relative mx-auto max-w-6xl px-5 py-20">
-          <h2 className="text-2xl font-bold tracking-tight">
-            From an object to a game
-          </h2>
-
-          <blockquote className="mt-6 max-w-2xl border-l-2 border-amber pl-5 text-lg leading-relaxed">
-            You can build a playable Roblox game from this platform, within the
-            genres we support, and refine it in Studio.
-          </blockquote>
-          <p className="mt-3 max-w-2xl text-sm text-faint">
-            Not &ldquo;any game&rdquo;. That would be a lie, and anyone who knows
-            Roblox would spot it immediately. A bounded claim we can demonstrate
-            beats a big one we cannot.
-          </p>
-
-          <Reveal deep>
-          <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
-            {STAGES.map((s) => (
-              <li key={s.t} className="bg-bench-850 p-6">
-                <span
-                  className={`inline-block border px-2 py-0.5 font-mono text-[10px] tracking-[0.18em] uppercase ${s.tone}`}
-                >
-                  {s.tag}
-                </span>
-                <h3 className="mt-4 font-semibold">{s.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-dim">{s.d}</p>
-              </li>
-            ))}
-          </ol>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── why onchain ───────────────────────────────────────────────── */}
-      <section id="onchain" className="border-t border-bench-700">
-        <div className="mx-auto max-w-6xl px-5 py-20">
+        <div className="relative mx-auto max-w-6xl px-5 pt-20 pb-16">
           <h2 className="text-2xl font-bold tracking-tight">Why it&rsquo;s paid onchain</h2>
           <p className="mt-2 max-w-lg text-dim">
             Three reasons, none of them decorative.
           </p>
 
+          <OnchainReasons />
+        </div>
+      </section>
+
+      {/* What happens on a craft, the contracts and the shelf. */}
+      <section>
+        <div className="mx-auto max-w-6xl px-5 pt-4 pb-20">
           <Onchain />
 
-          {/* The shelf gets the full width; the note on revenue follows it. */}
-          <div className="mt-16">
+          {/* The shelf gets the full width, and room under it before the
+              sponsors. */}
+          <div className="mt-16" style={{ paddingBottom: "3rem" }}>
             <Marketplace />
-            <p className="mt-6 text-sm leading-relaxed text-faint">
-              Your game&rsquo;s revenue never touches any of this. Roblox
-              prohibits blockchain integrations and off-platform monetisation, so
-              what your game earns stays in Robux and stays yours. We charge for
-              crafting, the way a print shop bills for printing and not for what
-              you sell.
-            </p>
+          </div>
+
+          {/* What it runs on: small, quiet marks, each linking to its own
+              site. */}
+          <div className="flex flex-col items-center gap-3">
+            <p className="label !text-faint">Built with</p>
+            <ul className="sponsors">
+              {[
+                ["Arc", "/sponsors/arc.webp", "https://www.arc.network"],
+                ["ENS", "/sponsors/ens.webp", "https://ens.domains"],
+                ["Hedera", "/sponsors/hedera.webp", "https://hedera.com"],
+              ].map(([name, src, href]) => (
+                <li key={name}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={name}
+                    aria-label={name}
+                    className="sponsor"
+                  >
+                    <Image src={src} alt="" width={40} height={40} />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
@@ -268,6 +239,17 @@ export default async function Home() {
         <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-6 gap-y-2 text-center">
           <p className="label">Voxel Bench · ETHOnline 2026</p>
           <p className="label !text-faint">built from scratch</p>
+          <a
+            href="https://github.com/ETH-GLOBAL-ONLINE/voxel-bench"
+            target="_blank"
+            rel="noreferrer"
+            className="label flex items-center gap-1.5 !text-faint transition-colors hover:!text-amber"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden>
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Source on GitHub
+          </a>
         </div>
       </footer>
       </div>

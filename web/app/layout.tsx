@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Voxel Bench — craft your Roblox game, one object at a time",
     description:
-      "An agent builds what you describe in Blender, publishes it to your Roblox account, and pays each stage from a budget you give it.",
+      "An agent builds the 3D model you describe and uploads it to your Roblox account, paying its own way within a budget you set.",
     url: "/",
     siteName: "Voxel Bench",
     type: "website",
@@ -25,11 +25,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Voxel Bench — craft your Roblox game, one object at a time",
     description:
-      "An agent builds what you describe in Blender, publishes it to your Roblox account, and pays each stage from a budget you give it.",
+      "An agent builds the 3D model you describe and uploads it to your Roblox account, paying its own way within a budget you set.",
   },
   title: "Voxel Bench — craft your Roblox game, one object at a time",
   description:
-    "Describe what you need. An agent builds it in Blender, uploads it to your own Roblox account, and pays for each step from a budget you give it. Recipes are reusable, their authors earn onchain on every craft, and they combine into playable obbies.",
+    "Describe what you need. An agent builds a 3D model and uploads it to your Roblox account, paying its own way within a budget you set. Objects and obbies work today, and when someone crafts your recipe, you earn 90%.",
 };
 
 export default function RootLayout({

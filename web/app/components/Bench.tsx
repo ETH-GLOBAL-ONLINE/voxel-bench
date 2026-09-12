@@ -728,9 +728,8 @@ export default function Bench({ sample }: { sample: Sample }) {
         ) : (
           <p className="max-w-xl text-dim">
             <span className="text-ink">Where this is going.</span>{" "}
-            {shown.ingredients.toLocaleString()} ingredients, hand-authored in
-            the same recipe format a prompt produces. Same primitives, same
-            converter, same Roblox parts.
+            {shown.ingredients.toLocaleString()} ingredients, in the same recipe
+            format a prompt writes.
           </p>
         )}
         <p className="label">the grey figure is 5 studs — one Roblox character</p>
