@@ -38,7 +38,13 @@ from recipe import (  # noqa: E402
     MAX_COMPOSITE_INGREDIENTS, MAX_INGREDIENTS, RecipeError, extents, validate)
 
 sys.path.insert(0, os.path.join(ROOT, "services"))
-from roblox_upload import UploadError, upload_model, wait_for_asset  # noqa: E402
+from roblox_upload import (  # noqa: E402
+    UploadError,
+    set_icon,
+    upload_image,
+    upload_model,
+    wait_for_asset,
+)
 
 load_env()
 
@@ -327,18 +333,54 @@ def stage_publish(req: PublishStage):
     if not os.path.isfile(path):
         raise HTTPException(404, "nothing crafted by that name")
 
+    title = req.name.replace("_", " ").title()
     try:
-        operation = upload_model(path, req.name.replace("_", " ").title(),
-                                 "Crafted with Voxel Bench",
+        operation = upload_model(path, title, "Crafted with Voxel Bench",
                                  api_key=key, creator={"userId": user})
         asset = wait_for_asset(operation, api_key=key)
     except UploadError as exc:
         raise HTTPException(502, str(exc)) from None
 
+    asset_id = asset.get("assetId")
     return {
-        "assetId": asset.get("assetId"),
+        "assetId": asset_id,
         "moderation": (asset.get("moderationResult") or {}).get("moderationState"),
+        "icon": _set_render_as_icon(req.name, title, asset_id, key, user),
     }
+
+
+def _set_render_as_icon(name, title, asset_id, key, user):
+    """Upload the render as its own image and make it the model's icon.
+
+    Publishing is paid for, so what lands in the account should be finished:
+    without this the model sits in the inventory with no picture until Roblox
+    makes one. Moderation of the image is Roblox's clock, not ours. Anything
+    that goes wrong here is reported and does not undo the upload.
+    """
+    icon = {"set": False, "imageAssetId": None, "kind": None, "error": None}
+    preview = os.path.join(OUT, name + "_preview.png")
+    if not asset_id or not os.path.isfile(preview):
+        icon["error"] = "no render to use"
+        return icon
+    try:
+        operation, kind = upload_image(preview, title + " — render", api_key=key,
+                                       creator={"userId": user},
+                                       description="Render of " + title)
+        image = wait_for_asset(operation, api_key=key)
+        image_id = image.get("assetId")
+        icon.update(imageAssetId=image_id, kind=kind)
+        if not image_id:
+            icon["error"] = "the image upload returned no asset id"
+            return icon
+        done = set_icon(asset_id, image_id, key)
+        # The update may come back as an operation still running.
+        pending = (done or {}).get("path", "") if isinstance(done, dict) else ""
+        if "operations/" in pending and not done.get("done"):
+            wait_for_asset(pending.split("/")[-1], api_key=key)
+        icon["set"] = True
+    except UploadError as exc:
+        icon["error"] = str(exc)[:300]
+    return icon
 
 
 @app.get("/health")

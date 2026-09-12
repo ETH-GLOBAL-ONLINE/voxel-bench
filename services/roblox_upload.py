@@ -51,8 +51,8 @@ def _multipart(fields, file_field, filename, file_bytes, content_type):
     return crlf.join(body), "multipart/form-data; boundary=" + boundary
 
 
-def _request(url, api_key, data=None, content_type=None):
-    req = urllib.request.Request(url, data=data)
+def _request(url, api_key, data=None, content_type=None, method=None):
+    req = urllib.request.Request(url, data=data, method=method)
     req.add_header("x-api-key", api_key)
     if content_type:
         req.add_header("Content-Type", content_type)
@@ -102,6 +102,72 @@ def upload_model(path, display_name, description="", api_key=None, creator=None)
     if not op:
         raise UploadError("no operation id in response: %s" % started)
     return op
+
+
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+
+
+def upload_image(path, display_name, api_key, creator, description=""):
+    """The render, as an image asset of its own — an icon has to be one.
+
+    Open Cloud has offered this type as "Image" and as "Decal"; a decal is an
+    image wrapped in something else, so Image is asked for first and Decal only
+    if Image is refused. Returns the operation id and the type that took.
+    """
+    ext = os.path.splitext(path)[1].lower()
+    if ext not in IMAGE_TYPES:
+        raise UploadError("unsupported image format %r" % ext)
+    with open(path, "rb") as fh:
+        blob = fh.read()
+
+    refused = None
+    for kind in ("Image", "Decal"):
+        request_json = json.dumps({
+            "assetType": kind,
+            "displayName": display_name[:50],
+            "description": description or display_name,
+            "creationContext": {"creator": creator},
+        })
+        body, ctype = _multipart({"request": request_json}, "fileContent",
+                                 os.path.basename(path), blob, IMAGE_TYPES[ext])
+        try:
+            started = _request(ASSETS_URL, api_key, body, ctype)
+        except UploadError as exc:
+            refused = exc
+            continue
+        op = started.get("path", "").split("/")[-1] or started.get("operationId")
+        if not op:
+            raise UploadError("no operation id in response: %s" % started)
+        return op, kind
+    raise refused
+
+
+def _request_only(fields):
+    """A multipart body with JSON parts and no file, for metadata updates."""
+    boundary = "----voxel%s" % int(time.time() * 1000)
+    body = []
+    for name, value in fields.items():
+        body.append(("--" + boundary).encode())
+        body.append(('Content-Disposition: form-data; name="%s"' % name).encode())
+        body.append(b"Content-Type: application/json")
+        body.append(b"")
+        body.append(value.encode("utf-8"))
+    body.append(("--" + boundary + "--").encode())
+    body.append(b"")
+    return b"\r\n".join(body), "multipart/form-data; boundary=" + boundary
+
+
+def set_icon(asset_id, image_id, api_key):
+    """Make an uploaded image the asset's icon. Metadata only: no file goes with it.
+
+    The icon has to be an image asset and square, which the render is.
+    """
+    body, ctype = _request_only({"request": json.dumps({
+        "assetId": str(asset_id),
+        "icon": "assets/%s" % image_id,
+    })})
+    return _request("%s/%s?updateMask=icon" % (ASSETS_URL, asset_id), api_key,
+                    body, ctype, method="PATCH")
 
 
 def wait_for_asset(operation_id, api_key=None, timeout=180, interval=2.0):
