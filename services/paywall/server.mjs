@@ -26,6 +26,7 @@ import { paymentMiddleware } from "@x402/express";
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactHederaScheme } from "@x402/hedera/exact/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { BatchFacilitatorClient, GatewayEvmScheme } from "@circle-fin/x402-batching/server";
 
 import { loadEnv } from "../env.mjs";
 
@@ -62,6 +63,18 @@ const ARC_PAY_TO = process.env.ARC_PAY_TO;
 // Read off the contract: name "USDC", version "2".
 const ARC_USDC_DOMAIN = { name: "USDC", version: "2" };
 
+// How the Arc side settles.
+//
+//   gateway  Circle Gateway (Nanopayments): the payer signs an authorization
+//            against its Gateway balance, and Circle settles many payments in
+//            one transaction. Sub-cent stages are what it exists for.
+//   own      our facilitator: a plain EIP-3009 transfer straight from the
+//            payer's wallet, settled one by one. Kept as the fallback for the
+//            day Gateway is not answering: VOXEL_ARC_SETTLEMENT=own.
+const ARC_SETTLEMENT = process.env.VOXEL_ARC_SETTLEMENT === "own" ? "own" : "gateway";
+const GATEWAY_URL =
+  process.env.CIRCLE_GATEWAY_URL ?? "https://gateway-api-testnet.circle.com";
+
 if (!PAY_TO) {
   console.error("HEDERA_SERVICE_ACCOUNT_ID is required — it is who gets paid.");
   process.exit(1);
@@ -79,7 +92,13 @@ const PRICES = {
 // Which chain each asset settles on, and who receives it there.
 const RAILS = {
   hbar: { network: NETWORK, payTo: () => PAY_TO, extra: undefined },
-  usdc: { network: ARC_NETWORK, payTo: () => ARC_PAY_TO, extra: ARC_USDC_DOMAIN },
+  // Through Gateway the signing domain is Gateway's, and the scheme fills it
+  // in from what Gateway advertises; the token's own domain is only for ours.
+  usdc: {
+    network: ARC_NETWORK,
+    payTo: () => ARC_PAY_TO,
+    extra: ARC_SETTLEMENT === "own" ? ARC_USDC_DOMAIN : undefined,
+  },
 };
 
 const DESCRIPTIONS = {
@@ -90,10 +109,15 @@ const DESCRIPTIONS = {
 
 const resourceServer = new x402ResourceServer([
   new HTTPFacilitatorClient({ url: FACILITATOR }),
-  new HTTPFacilitatorClient({ url: ARC_FACILITATOR }),
+  ARC_SETTLEMENT === "gateway"
+    ? new BatchFacilitatorClient({ url: GATEWAY_URL })
+    : new HTTPFacilitatorClient({ url: ARC_FACILITATOR }),
 ])
   .register("hedera:*", new ExactHederaScheme({}))
-  .register(ARC_NETWORK, new ExactEvmScheme());
+  .register(
+    ARC_NETWORK,
+    ARC_SETTLEMENT === "gateway" ? new GatewayEvmScheme() : new ExactEvmScheme(),
+  );
 
 const app = express();
 app.use(express.json({ limit: "4mb" }));
@@ -197,7 +221,11 @@ app.listen(PORT, "127.0.0.1", () => {
   console.log(`paywall  :${PORT}  ->  ${CRAFTER}`);
   console.log(`hbar     ${PAY_TO} on ${NETWORK}  via ${FACILITATOR}`);
   if (ARC_PAY_TO) {
-    console.log(`usdc     ${ARC_PAY_TO} on ${ARC_NETWORK}  via ${ARC_FACILITATOR}`);
+    console.log(
+      `usdc     ${ARC_PAY_TO} on ${ARC_NETWORK}  via ${
+        ARC_SETTLEMENT === "gateway" ? `Circle Gateway (${GATEWAY_URL})` : ARC_FACILITATOR
+      }`,
+    );
   } else {
     console.log("usdc     not offered — set ARC_PAY_TO to an account on Arc");
   }

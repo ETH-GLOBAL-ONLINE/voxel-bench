@@ -226,6 +226,17 @@ export default function Payments({
                   {p.transaction}
                 </a>
               )}
+              {/* Paid through Circle Gateway: the receipt is Gateway's transfer
+                  id, settled onchain later in a batch, so there is no
+                  transaction of its own to link to yet. */}
+              {!p.explorer && p.transaction && p.status === "paid" && (
+                <span
+                  className="ml-auto truncate font-mono text-xs text-sap"
+                  title={p.transaction}
+                >
+                  via Circle Gateway · {p.transaction.slice(0, 8)}…
+                </span>
+              )}
             </div>
             {isOpen(p) && (
               <div className="border-t border-bench-800">
@@ -263,8 +274,10 @@ export default function Payments({
         {total === null
           ? "Settled across two chains, so there is no single total."
           : `${(total / scale).toFixed(4)} ${unit} for this job.`}{" "}
-        The agent signs a partial transfer and the facilitator co-signs and
-        covers the gas, so it needs an account but never needs gas.
+        On Hedera the agent signs a partial transfer and the facilitator
+        co-signs and covers the gas; on Arc it signs against its Circle Gateway
+        balance and Circle settles the payments in batches. Either way it never
+        needs gas.
       </p>
     </div>
   );

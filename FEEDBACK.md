@@ -180,6 +180,26 @@ chain including one it has never heard of.
 Worth saying out loud in the Arc quickstart. "Bring your own facilitator" reads
 as a large undertaking until you notice the package already contains it.
 
+### Circle Gateway as the x402 facilitator on Arc
+
+The craft stage settles through Gateway's facilitator — Nanopayments, a batched
+flavour of `exact` against a balance held in Gateway — and it was quick to
+adopt:
+
+- `@circle-fin/x402-batching` sits beside `@x402/core` without upgrading
+  anything, and one composite scheme lets an agent pay both Gateway and plain
+  `exact` offers.
+- A 1 USDC deposit was spendable 13 seconds after it landed.
+- Its supported list lives at `/v1/x402/supported`, not at `/supported` where
+  the x402 facilitators we had used keep it.
+- A settlement returns Gateway's transfer id rather than a transaction hash; the
+  hash comes later, with the batch. Anything that links receipts to an explorer
+  has to know that.
+
+One suggestion: name Gateway as the x402 facilitator for Arc in the Arc docs,
+next to the public facilitator's list. That list is where builders look first,
+and Arc is not on it.
+
 ### Two signer converters read a field viem does not have
 
 `toFacilitatorEvmSigner` and `toClientEvmSigner` both do `client.address`. A

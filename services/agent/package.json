@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@circle-fin/x402-batching": "^3.4.0",
     "@hiero-ledger/sdk": "^2.60.0",
     "@x402/core": "^2.25.0",
     "@x402/evm": "^2.25.0",

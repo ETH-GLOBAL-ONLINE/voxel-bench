@@ -48,8 +48,10 @@ For the video and the judges.
 - **Circle / Arc**: each person gives their agent a budget in USDC on Arc with an
   EIP-2612 permit — one signature, no gas — and the USDC contract enforces it.
   Crafts settle in native USDC on Arc, so the 90/10 split is
-  in dollars. There was no x402 facilitator for Arc, so we wrote one on
-  `@x402/evm`. Which chain a service settles on is just a record on its ENS
+  in dollars. The craft stage is paid through Circle Gateway (Nanopayments):
+  the agent signs against its Gateway balance and Circle settles in batches,
+  which is what sub-cent, per-stage payments need. Our own facilitator on
+  `@x402/evm` stays as the fallback. Which chain a service settles on is just a record on its ENS
   name.
 - **Safety, which applies to all three**: two brakes, both onchain. Yours is the
   USDC permit: the agent can never take more than you signed for. The

@@ -112,8 +112,11 @@ node services/facilitator/server.mjs   # the gas,      :4404
 cd web && npm run dev                  # the site
 ```
 
-The facilitator is only needed for the Arc side. The public one at `x402.org`
-covers Hedera and does not cover Arc, so that half runs on ours.
+On Arc the craft stage is paid through Circle Gateway (Nanopayments): the agent
+keeps a USDC balance in Gateway and signs against it, and Circle settles the
+payments in batches. The public facilitator at `x402.org` covers Hedera and not
+Arc; ours, above, is the fallback for the Arc side when Gateway is not answering
+(`VOXEL_ARC_SETTLEMENT=own` in `.env`).
 
 Or from a terminal, without the site:
 

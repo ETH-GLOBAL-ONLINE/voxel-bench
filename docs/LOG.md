@@ -924,3 +924,37 @@ on it.
 
 From the Creator Hub, trying the course in Studio played it: spawn, hazards,
 finish.
+
+## The craft stage paid through Circle Nanopayments
+
+### Two ways to settle on Arc, Gateway first
+
+The craft stage on Arc settles through Circle Gateway's facilitator —
+Nanopayments: `exact` with `GatewayWalletBatched`, where the payer signs an
+authorization against a balance held in Gateway and Circle settles many payments
+in one transaction. Sub-cent stages are what it is for, and ours cost 0.005
+USDC. Our own facilitator stays behind it as the fallback: a direct EIP-3009
+transfer from the payer's wallet, which needs no balance deposited anywhere and
+keeps the bench charging if Gateway is unavailable.
+
+`@circle-fin/x402-batching` drops into what we had. The paywall's Arc route now
+uses Gateway's facilitator client and scheme; the agent registers one composite
+scheme that answers a Gateway offer with a batched authorization and any other
+with the plain EIP-3009 transfer it used before. The ENS price check is
+unchanged: amount, asset, network and payee are the same numbers.
+`VOXEL_ARC_SETTLEMENT=own` puts the Arc route back on our facilitator, for a day
+Gateway is not answering.
+
+Measured on Arc testnet:
+
+| | |
+|---|---|
+| deposit into Gateway | 1.00 USDC, onchain in 4 s, spendable 13 s later |
+| a marketplace get, end to end | 16.6 s |
+| the craft stage | 402 → check against `craft.voxelbench.eth` → signed against Gateway → accepted as transfer `76a3ab1b…`, 7 s |
+| the transfer, asked afterwards | `received`, 0.005 USDC from the agent to the craft service, waiting for its batch |
+| the agent's Gateway balance | 1.000 → 0.995 |
+
+The receipt changes shape: a Gateway payment comes back as Gateway's transfer
+id, settled onchain in a later batch, so the ledger shows it as "via Circle
+Gateway" rather than linking a transaction that does not exist yet.
