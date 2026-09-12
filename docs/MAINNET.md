@@ -23,7 +23,7 @@ deployment took no changes at all:
 
 | | Hedera testnet | Arc testnet |
 |---|---|---|
-| `RecipeBook` | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` | `0xe0C3Bd1b…` — same bytecode |
+| `RecipeBook` | `0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41` | `0xC456D809…` — same bytecode |
 | `SplitVault` | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` | `0x870771ec…` — same |
 | a craft of 1 | 0.9 HBAR to the author | **0.9 USDC to the author** |
 
@@ -121,18 +121,18 @@ multichain deployment stays one deployment.
 
 ---
 
-### 7. Authorship is attested, not first come
+### 7. Authorship is attested, not first come — done
 
-Today the first address to claim a recipe owns it, which assumes nobody else has
-seen its id (SR-01 in `docs/CONTRACT_AUDIT.md`). On a public chain, with a
-public catalog, that does not hold. The fix is a claim carrying two signatures:
-the author, as now, and the agent that crafted the recipe for them, attesting
-that this address asked for this content. An observer can sign for themselves
-but cannot obtain the attestation for work they did not request.
+The first address to claim a recipe used to own it, which assumed nobody else
+had seen its id (SR-01 in `docs/CONTRACT_AUDIT.md`). On a public chain, with a
+public catalog, that does not hold. Now an author is recorded only through the
+agent that crafted the recipe: `RecipeBook` has an attester, the agent relays a
+claim only for the person it crafted for, and an observer can sign for
+themselves but cannot get the relay. The books were deployed again on both
+testnets against the existing vaults, and the earlier recipes carried over.
 
-It changes `RecipeBook`, so it means a new deployment and re-publishing the
-recipes that have owners under the new contract, attested by the agent. The
-application keeps the exposure closed until then.
+On mainnet the arrangement is the same. What changes is the attester key, which
+the owner rotates with `setAttester` when the agent's key does.
 
 ### 8. People bring their own money
 

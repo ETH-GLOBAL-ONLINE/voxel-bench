@@ -35,14 +35,20 @@ cd web && npm run dev                  # the site; Next prints the port
 
 ### The economy
 
-Three contracts on Hedera testnet, 29 tests including three fuzz, each verified
-against the live chain rather than only locally.
+Three contracts on Hedera and Arc testnets, 64 tests including fuzz and
+stateful invariants, each verified against the live chain rather than only
+locally.
 
 | Contract | Hedera testnet | Arc testnet |
 |---|---|---|
-| `RecipeBook` | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` | `0xe0C3Bd1b9dD6ee6606C6780dc1979855556bb396` |
+| `RecipeBook` | `0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41` | `0xC456D809Fb6B71a1901c4E5957c0F70b034783BA` |
 | `SplitVault` | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` | `0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721` |
 | `Allowance` | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` | — |
+
+`RecipeBook` is on its third deployment: it gained `publishFor` after the
+first, and an attester after the audit's SR-01 (`docs/CONTRACT_AUDIT.md`). The
+vaults are the originals, each new book shares the old one's, and the earlier
+books' recipes were carried over and the migration sealed.
 
 Three crafts settled with the 90/10 split exact and `RecipeBook` holding
 nothing. The agent drew 0.05 HBAR from `Allowance` and was refused 10.

@@ -9,36 +9,114 @@ contract RecipeBookTest is Test {
     SplitVault vault;
     RecipeBook book;
 
-    address author = address(0xA47);
-    address crafter = address(0xC24);
+    // The test contract deploys the book, so it is the owner, the attester
+    // and the platform, which is how the real deployment is arranged too.
     address platform;
+    address crafter = address(0xC24);
+
+    uint256 constant AUTHOR_KEY = 0xA11CE;
+    address author;
 
     bytes32 constant RECIPE = keccak256("market_stall");
 
+    event RecipePublished(bytes32 indexed recipeId, address indexed author);
+    event MigrationSealed();
+
     function setUp() public {
         platform = address(this);
+        author = vm.addr(AUTHOR_KEY);
         vault = new SplitVault();
         book = new RecipeBook(address(vault), 1000); // 10% platform
     }
 
-    function test_publish_records_the_author() public {
-        vm.prank(author);
+    function _sign(RecipeBook target, uint256 key, bytes32 recipeId, address who)
+        internal
+        view
+        returns (bytes memory)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, target.publishDigest(recipeId, who));
+        return abi.encodePacked(r, s, v);
+    }
+
+    /// The author signs, and the attester — this contract — relays.
+    function _own(bytes32 recipeId) internal {
+        book.publishFor(recipeId, author, _sign(book, AUTHOR_KEY, recipeId, author));
+    }
+
+    // ── who may record an author ───────────────────────────────────────────
+
+    function test_the_platform_publishes_its_own_stock() public {
         book.publish(RECIPE);
-        assertEq(book.authorOf(RECIPE), author);
+        assertEq(book.authorOf(RECIPE), platform);
+    }
+
+    function test_nobody_else_publishes_directly() public {
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.NotAttester.selector);
+        book.publish(RECIPE);
+        assertEq(book.authorOf(RECIPE), address(0));
     }
 
     function test_republishing_cannot_steal_authorship() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _own(RECIPE);
 
-        vm.prank(crafter);
         vm.expectRevert(RecipeBook.AlreadyPublished.selector);
         book.publish(RECIPE);
+
+        uint256 otherKey = 0xB0B;
+        address other = vm.addr(otherKey);
+        // Signed first: the digest is a call too, and the expected revert
+        // applies to the next one.
+        bytes memory otherSig = _sign(book, otherKey, RECIPE, other);
+        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+        book.publishFor(RECIPE, other, otherSig);
+
+        assertEq(book.authorOf(RECIPE), author);
     }
 
-    function test_craft_splits_and_counts() public {
-        vm.prank(author);
+    function test_publishFor_is_relayed_only_by_the_attester() public {
+        bytes memory signature = _sign(book, AUTHOR_KEY, RECIPE, author);
+
+        // A perfectly valid claim, in the wrong hands.
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.NotAttester.selector);
+        book.publishFor(RECIPE, author, signature);
+        assertEq(book.authorOf(RECIPE), address(0));
+
+        // The same claim, relayed by the attester.
+        book.publishFor(RECIPE, author, signature);
+        assertEq(book.authorOf(RECIPE), author);
+    }
+
+    function test_only_the_owner_appoints_the_attester() public {
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.NotOwner.selector);
+        book.setAttester(crafter);
+
+        vm.expectRevert(RecipeBook.ZeroAddress.selector);
+        book.setAttester(address(0));
+
+        assertEq(book.attester(), platform);
+    }
+
+    function test_a_new_attester_takes_over() public {
+        book.setAttester(crafter);
+        assertEq(book.attester(), crafter);
+
+        // The old key records nothing any more.
+        vm.expectRevert(RecipeBook.NotAttester.selector);
         book.publish(RECIPE);
+
+        bytes memory signature = _sign(book, AUTHOR_KEY, RECIPE, author);
+        vm.prank(crafter);
+        book.publishFor(RECIPE, author, signature);
+        assertEq(book.authorOf(RECIPE), author);
+    }
+
+    // ── crafting and the split ─────────────────────────────────────────────
+
+    function test_craft_splits_and_counts() public {
+        _own(RECIPE);
 
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
@@ -62,8 +140,7 @@ contract RecipeBookTest is Test {
     }
 
     function test_the_contract_never_holds_the_money() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _own(RECIPE);
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
         book.craft{value: 1 ether}(RECIPE);
@@ -73,8 +150,7 @@ contract RecipeBookTest is Test {
     }
 
     function test_author_withdraws_what_they_earned() public {
-        vm.prank(author);
-        book.publish(RECIPE);
+        _own(RECIPE);
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
         book.craft{value: 1 ether}(RECIPE);
@@ -105,8 +181,7 @@ contract RecipeBookTest is Test {
         bps = uint16(bound(bps, 0, book.MAX_PLATFORM_BPS()));
 
         RecipeBook b = new RecipeBook(address(vault), bps);
-        vm.prank(author);
-        b.publish(RECIPE);
+        b.publishFor(RECIPE, author, _sign(b, AUTHOR_KEY, RECIPE, author));
 
         vm.deal(crafter, paid);
         vm.prank(crafter);
@@ -115,11 +190,11 @@ contract RecipeBookTest is Test {
         assertEq(vault.balanceOf(author) + vault.balanceOf(platform), paid);
     }
 
-    // ── publishing on someone else's behalf ──────────────────────────────
+    // ── the signature ──────────────────────────────────────────────────────
 
-    uint256 constant AUTHOR_KEY = 0xA11CE;
-
-    function _digest(bytes32 recipeId, address who) internal view returns (bytes32) {
+    /// The digest the contract exposes is the EIP-712 digest, built by hand
+    /// here so that a drift in the domain would show up.
+    function test_publishDigest_is_the_eip712_digest() public view {
         bytes32 domain = keccak256(
             abi.encode(
                 keccak256(
@@ -131,80 +206,161 @@ contract RecipeBookTest is Test {
                 address(book)
             )
         );
-        return keccak256(
+        bytes32 expected = keccak256(
             abi.encodePacked(
                 hex"1901",
                 domain,
-                keccak256(abi.encode(book.PUBLISH_TYPEHASH(), recipeId, who))
+                keccak256(abi.encode(book.PUBLISH_TYPEHASH(), RECIPE, author))
             )
         );
+        assertEq(book.publishDigest(RECIPE, author), expected);
     }
 
-    function _sign(uint256 key, bytes32 recipeId, address who)
-        internal
-        view
-        returns (bytes memory)
-    {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, _digest(recipeId, who));
-        return abi.encodePacked(r, s, v);
-    }
-
-    function test_publishFor_credits_the_signer_not_the_sender() public {
-        address signer = vm.addr(AUTHOR_KEY);
-        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
-
-        // Anyone may relay, and relaying gains them nothing.
-        vm.prank(crafter);
-        book.publishFor(RECIPE, signer, signature);
-
-        assertEq(book.authorOf(RECIPE), signer);
+    function test_publishFor_credits_the_signer_not_the_relayer() public {
+        book.publishFor(RECIPE, author, _sign(book, AUTHOR_KEY, RECIPE, author));
+        assertEq(book.authorOf(RECIPE), author);
+        assertTrue(book.authorOf(RECIPE) != platform);
     }
 
     function test_publishFor_refuses_a_substituted_author() public {
-        address signer = vm.addr(AUTHOR_KEY);
-        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
+        bytes memory signature = _sign(book, AUTHOR_KEY, RECIPE, author);
 
-        // The relayer swaps in their own address. The signature no longer
-        // recovers to it, which is the whole protection.
+        // The relayer swaps in another address. The signature no longer
+        // recovers to it, so even the attester cannot misname an author.
         vm.expectRevert(RecipeBook.InvalidSignature.selector);
         book.publishFor(RECIPE, crafter, signature);
     }
 
     function test_publishFor_refuses_a_signature_for_another_recipe() public {
-        address signer = vm.addr(AUTHOR_KEY);
-        bytes memory signature = _sign(AUTHOR_KEY, keccak256("something_else"), signer);
+        bytes memory signature = _sign(book, AUTHOR_KEY, keccak256("something_else"), author);
 
         vm.expectRevert(RecipeBook.InvalidSignature.selector);
-        book.publishFor(RECIPE, signer, signature);
-    }
-
-    function test_publishFor_cannot_take_an_existing_recipe() public {
-        vm.prank(author);
-        book.publish(RECIPE);
-
-        address signer = vm.addr(AUTHOR_KEY);
-        bytes memory signature = _sign(AUTHOR_KEY, RECIPE, signer);
-
-        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
-        book.publishFor(RECIPE, signer, signature);
-        assertEq(book.authorOf(RECIPE), author);
+        book.publishFor(RECIPE, author, signature);
     }
 
     function test_publishFor_refuses_a_malformed_signature() public {
-        address signer = vm.addr(AUTHOR_KEY);
-
         vm.expectRevert(RecipeBook.InvalidSignature.selector);
-        book.publishFor(RECIPE, signer, hex"1234");
+        book.publishFor(RECIPE, author, hex"1234");
     }
 
     function test_a_relayed_author_is_paid_like_any_other() public {
-        address signer = vm.addr(AUTHOR_KEY);
-        book.publishFor(RECIPE, signer, _sign(AUTHOR_KEY, RECIPE, signer));
+        _own(RECIPE);
 
         vm.deal(crafter, 1 ether);
         vm.prank(crafter);
         book.craft{ value: 1 ether }(RECIPE);
 
-        assertEq(vault.balanceOf(signer), 0.9 ether);
+        assertEq(vault.balanceOf(author), 0.9 ether);
+    }
+
+    // ── carrying an earlier book over ──────────────────────────────────────
+
+    bytes32 constant OLD_A = keccak256("pine_tree");
+    bytes32 constant OLD_B = keccak256("mailbox");
+
+    function _migration()
+        internal
+        view
+        returns (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned)
+    {
+        ids = new bytes32[](2);
+        authors = new address[](2);
+        crafts = new uint64[](2);
+        earned = new uint128[](2);
+        ids[0] = OLD_A;
+        authors[0] = author;
+        crafts[0] = 3;
+        earned[0] = 2.7 ether;
+        ids[1] = OLD_B;
+        authors[1] = platform;
+        crafts[1] = 0;
+        earned[1] = 0;
+    }
+
+    function test_migration_carries_recipes_over() public {
+        (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned) =
+            _migration();
+
+        vm.expectEmit(true, true, false, true, address(book));
+        emit RecipePublished(OLD_A, author);
+        vm.expectEmit(true, true, false, true, address(book));
+        emit RecipePublished(OLD_B, platform);
+        book.migrate(ids, authors, crafts, earned);
+
+        (address a, uint64 c, uint128 e) = book.recipes(OLD_A);
+        assertEq(a, author);
+        assertEq(c, 3);
+        assertEq(e, 2.7 ether);
+        assertEq(book.authorOf(OLD_B), platform);
+
+        // Life goes on from the carried-over count.
+        vm.deal(crafter, 1 ether);
+        vm.prank(crafter);
+        book.craft{value: 1 ether}(OLD_A);
+        (, c, e) = book.recipes(OLD_A);
+        assertEq(c, 4);
+        assertEq(e, 3.6 ether);
+        // The vault only ever sees the new craft: earlier earnings were
+        // credited there by the old book already.
+        assertEq(vault.balanceOf(author), 0.9 ether);
+    }
+
+    function test_migration_is_the_owners_alone() public {
+        (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned) =
+            _migration();
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.NotOwner.selector);
+        book.migrate(ids, authors, crafts, earned);
+        assertEq(book.authorOf(OLD_A), address(0));
+    }
+
+    function test_migration_refuses_mismatched_lists() public {
+        (bytes32[] memory ids, address[] memory authors,, uint128[] memory earned) = _migration();
+        uint64[] memory crafts = new uint64[](1);
+        vm.expectRevert(RecipeBook.LengthMismatch.selector);
+        book.migrate(ids, authors, crafts, earned);
+    }
+
+    function test_migration_refuses_a_zero_author() public {
+        (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned) =
+            _migration();
+        authors[1] = address(0);
+        vm.expectRevert(RecipeBook.ZeroAddress.selector);
+        book.migrate(ids, authors, crafts, earned);
+    }
+
+    function test_migration_cannot_overwrite_an_author() public {
+        (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned) =
+            _migration();
+        book.migrate(ids, authors, crafts, earned);
+
+        // Running it again, with different authors, changes nothing.
+        authors[0] = crafter;
+        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+        book.migrate(ids, authors, crafts, earned);
+        assertEq(book.authorOf(OLD_A), author);
+    }
+
+    function test_sealing_ends_the_migration_for_good() public {
+        (bytes32[] memory ids, address[] memory authors, uint64[] memory crafts, uint128[] memory earned) =
+            _migration();
+
+        vm.prank(crafter);
+        vm.expectRevert(RecipeBook.NotOwner.selector);
+        book.sealMigration();
+
+        vm.expectEmit(false, false, false, true, address(book));
+        emit MigrationSealed();
+        book.sealMigration();
+        assertTrue(book.migrationSealed());
+
+        vm.expectRevert(RecipeBook.Sealed.selector);
+        book.migrate(ids, authors, crafts, earned);
+        vm.expectRevert(RecipeBook.Sealed.selector);
+        book.sealMigration();
+
+        // Claims still work, of course: sealing closes the side door only.
+        _own(RECIPE);
+        assertEq(book.authorOf(RECIPE), author);
     }
 }

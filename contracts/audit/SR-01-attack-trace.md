@@ -1,0 +1,69 @@
+# SR-01: trace захвата авторства
+
+> **Status (English):** closed. The "after" flow below is now what the contract does, with the platform's word carried by the relayer rather than by a second signature: `publish` and `publishFor` revert with `NotAttester` from anyone but the attester, and the attester relays a claim only for the person it crafted the recipe for. `FrontRunPublishFor.t.sol` now shows the capture failing. See `SR-01-authorship-capture.md`.
+
+**Идентификатор:** SR-01 — first-claim authorship capture
+**Затронутая логика:** `RecipeBook.publishFor`
+**Условие риска:** `recipeId` становится виден до того, как настоящему автору выдано доверенное подтверждение происхождения.
+
+## До полного исправления
+
+```mermaid
+sequenceDiagram
+    participant M as Маша — создатель
+    participant S as Сайт / API
+    participant V as Вася — наблюдатель
+    participant R as RecipeBook
+
+    M->>S: Создаёт рецепт
+    S-->>M: Возвращает recipeId X
+    Note over S,V: ID X становится виден до регистрации автора
+    V->>V: Подписывает «я автор X» своим кошельком
+    V->>R: publishFor(X, Вася, подпись Васи)
+    R->>R: Подпись принадлежит Васе — проверка проходит
+    R-->>V: authorOf(X) = Вася
+    M->>M: Подписывает «я автор X» своим кошельком
+    M->>R: publishFor(X, Маша, подпись Маши)
+    R-->>M: revert AlreadyPublished
+```
+
+### Что происходит в контракте
+
+1. Маша создаёт содержимое рецепта. Сайт вычисляет или получает его уникальный `recipeId` — назовём его `X`.
+2. До регистрации авторства `X` становится доступен другому пользователю: например, в данных сайта, API или ожидающей транзакции.
+3. Вася не подделывает подпись Маши. Он подписывает заявление об авторстве `X` **своим** кошельком.
+4. Вася вызывает `publishFor(X, адрес_Васи, подпись_Васи)`.
+5. Текущая проверка подписи отвечает только на вопрос «действительно ли Вася подписал это заявление?». Ответ — да.
+6. Контракт сохраняет Васю как автора. Последующее требование Маши отклоняется, потому что ID уже занят.
+
+Если затем кто-то крафтит этот рецепт с оплатой 1 ETH при 10% комиссии платформы, 0.9 ETH кредитуется Васе, хотя рецепт сделала Маша.
+
+## После полного исправления: подтверждение платформы
+
+```mermaid
+sequenceDiagram
+    participant M as Маша — создатель
+    participant S as Сайт / доверенный сервис
+    participant V as Вася — наблюдатель
+    participant R as RecipeBook
+
+    M->>S: Создаёт рецепт и подтверждает кошелёк
+    S->>S: Сохраняет X, contentHash и адрес Маши
+    S-->>M: Подписанное разрешение платформы для X и Маши
+    V->>R: Claim X с подписью Васи
+    R-->>V: revert InvalidPlatformAttestation
+    M->>R: Claim X с разрешением платформы
+    R->>R: Подпись доверенной платформы корректна
+    R-->>M: authorOf(X) = Маша
+```
+
+Полный фикс меняет проверку: контракт принимает claim только с подписью доверенного адреса платформы, привязанной к `recipeId`, хэшу содержимого и адресу автора. Вася может увидеть ID, но не может выпустить подпись платформы для себя.
+
+## Как воспроизводится в тестах
+
+| Файл | Роль |
+|---|---|
+| [`../test/FrontRunPublishFor.t.sol`](../test/FrontRunPublishFor.t.sol) | Воспроизводит уязвимый порядок: сначала валидный claim Васи, затем отклонённый claim Маши. Этот тест должен проходить, поскольку он демонстрирует текущий риск. |
+| [`../test/SR01RecipeAuthorshipRegression.t.sol`](../test/SR01RecipeAuthorshipRegression.t.sol) | Проверяет частичное исправление: старый прямой `publish` отключён, а подпись Маши нельзя привязать к адресу Васи. |
+
+Этот trace отражает логику функции, а не скорость сети: результат зависит только от того, чей claim обработан первым.

@@ -26,6 +26,7 @@ import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
 import { claimTypedData, lookup, published, recipeId, settle } from "./recipes.mjs";
 import { allCaps, draw } from "./allowance.mjs";
 import { fetchRecipe, hasCollected, saveCollection, saveRecipe } from "./catalog.mjs";
+import { openCrafted } from "./crafted.mjs";
 import { composeObby } from "./obby.mjs";
 import {
   applyPermit,
@@ -47,6 +48,10 @@ const CRAFTER = process.env.CRAFTER_URL ?? "http://127.0.0.1:8000";
 // Where the crafter leaves its files. The agent runs on the same machine, which
 // is how it can file a craft's preview in the catalog without asking for it.
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "out");
+
+// Who crafted what, so that a recipe is claimed by the person who made it and
+// by nobody else. Private to this machine; see crafted.mjs.
+const crafted = openCrafted(resolve(OUT, "crafted.json"));
 
 let agent;
 try {
@@ -278,6 +283,22 @@ async function runCraft(
             : `RecipeBook could not be reached: ${book.error ?? "unknown error"}`,
       txLink(book.chain, book.transaction),
     );
+
+    // A new recipe is written down against whoever paid for it, privately, so
+    // that only they can claim it (SR-01): the signature on a claim proves a
+    // wallet, and this is what proves the work. A recipe that already has an
+    // author needs no note.
+    if (book.action !== "crafted" && (!existing || pieces)) {
+      const crafter = payer ?? collector ?? null;
+      crafted.record({ id: book.id, name: built.name, recipe, crafter, chain: book.chain });
+      log(
+        id,
+        "book",
+        crafter
+          ? `noted as crafted by ${short(crafter)}: only that address can claim it`
+          : "noted as crafted with nobody signed in, so nobody can claim it",
+      );
+    }
 
     // A new recipe is not filed in the catalog yet. Unowned, its id is up for
     // grabs to whoever sees it first (SR-01), and the catalog is public. It is
@@ -723,37 +744,93 @@ app.post("/budget/credit", async (req, res) => {
   }
 });
 
+// A claim is relayed for whoever crafted the recipe here and for nobody else,
+// whatever the signature says (SR-01). Knowing an id is not having done the
+// work, and a signature only proves a wallet.
+function refusal(id, author) {
+  if (crafted.get(id)?.claimed) {
+    return { status: 409, error: "This recipe has already been claimed." };
+  }
+  if (!crafted.mayClaim(id, author)) {
+    return { status: 403, error: "Only the person who crafted this recipe can claim it." };
+  }
+  return null;
+}
+
 app.get("/claim/:id", (req, res) => {
   const { id } = req.params;
   const author = String(req.query.author ?? "");
   if (!/^0x[a-f0-9]{64}$/i.test(id)) {
     return res.status(400).json({ error: "bad recipe id" });
   }
-  if (!/^0x[a-fA-F0-9]{40}$/.test(author)) {
+  if (!isAddress(author)) {
     return res.status(400).json({ error: "bad author address" });
   }
+  const refused = refusal(id, author);
+  if (refused) return res.status(refused.status).json({ error: refused.error });
   res.json(claimTypedData(id, author));
 });
 
-// Relay a claim. The signature says who owns it; we only pay the gas.
+// Relay a claim. The signature says who owns it; we only pay the gas. The
+// recipe comes with the request, or by its id from the agent's own note of the
+// craft, so a page never has to hold the content of something unclaimed.
 app.post("/claim", async (req, res) => {
-  const { recipe, author, signature } = req.body ?? {};
-  if (!recipe || !author || !signature) {
-    return res.status(400).json({ error: "recipe, author and signature are required" });
+  const { recipe: given, recipeId: wanted, author, signature } = req.body ?? {};
+  if ((!given && !wanted) || !author || !signature) {
+    return res.status(400).json({ error: "a recipe or its id, the author and a signature are required" });
   }
+  if (!isAddress(author)) return res.status(400).json({ error: "bad author address" });
+
+  const id = (given ? recipeId(given) : String(wanted)).toLowerCase();
+  if (!/^0x[a-f0-9]{64}$/.test(id)) return res.status(400).json({ error: "bad recipe id" });
+
+  const refused = refusal(id, author);
+  if (refused) return res.status(refused.status).json({ error: refused.error });
+
+  const note = crafted.get(id);
+  const recipe = given ?? note.recipe;
   const result = await settle(recipe, { author, signature });
 
   // Owned now, so it can go in the catalog: the backpack shows it by name, and
   // its id is no longer something a stranger could claim first.
   if (result.action === "published") {
+    crafted.markClaimed(id, { author, transaction: result.transaction });
     result.catalog = await saveRecipe({
       id: result.id,
       recipe,
-      preview: resolve(OUT, `${recipe.name}_preview.png`),
+      preview: resolve(OUT, `${note?.name ?? recipe.name}_preview.png`),
     });
   }
 
   res.status(result.action === "failed" ? 502 : 200).json(result);
+});
+
+// What `address` crafted and has not claimed, from the agent's own note,
+// checked against the chain: a recipe that got an author some other way is
+// dropped, and the note is corrected. Never the recipe itself — the page asks
+// to claim by id.
+app.get("/unclaimed", async (req, res) => {
+  const address = String(req.query.address ?? "");
+  if (!isAddress(address)) return res.status(400).json({ error: "bad address" });
+
+  const mine = crafted.unclaimedOf(address).slice(0, 24);
+  const onChain = await Promise.all(mine.map((e) => lookup(e.id).catch(() => null)));
+
+  const items = [];
+  mine.forEach((entry, i) => {
+    if (onChain[i]?.author) {
+      crafted.markClaimed(entry.id, { author: onChain[i].author });
+      return;
+    }
+    items.push({
+      id: entry.id,
+      name: entry.name,
+      chain: entry.chain,
+      at: entry.at,
+      ingredients: entry.recipe?.ingredients?.length ?? null,
+    });
+  });
+  res.json({ address, items });
 });
 
 // What RecipeBook holds: every published recipe, its author, how often it was

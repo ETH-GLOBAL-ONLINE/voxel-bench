@@ -18,21 +18,25 @@ someone has four minutes with them.
 
 | Contract | Job | Address (Hedera testnet) |
 |---|---|---|
-| `RecipeBook` | who wrote which recipe, how often it was crafted, how the fee divides | `0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E` |
+| `RecipeBook` | who wrote which recipe, how often it was crafted, how the fee divides | `0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41` |
 | `SplitVault` | what each author has earned until they withdraw it | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` |
 | `Allowance` | the crafting agent's spending money, and the ceiling on it | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` |
 
 The same contracts are on Arc testnet at different addresses — `docs/STATUS.md`
-has both columns. `RecipeBook` gained `publishFor` after the first deployment,
-which is why the addresses changed and why the two chains no longer match.
+has both columns. `RecipeBook` has been deployed three times: it gained
+`publishFor` after the first, and an attester after SR-01 below. `SplitVault`
+and `Allowance` are the originals, and each new book shares the old one's
+vault.
 
-**The flow.** The first address to claim a recipe owns it, through `publish`
-or, signed and relayed, through `publishFor`. The id is the hash of the
-content, so a second claim of the same id is refused. What that does not do is
-prove the first claimant wrote it: see SR-01 below. Someone crafting with a
-recipe calls `craft(recipeId)` with a payment; `RecipeBook` splits it, forwards
-both parts to `SplitVault` and counts the craft. The author withdraws when they
-like.
+**The flow.** The agent that crafts is the book's attester, and the only
+address that can record an author. The platform's own recipes it publishes
+under itself, with `publish`. A person's recipe they claim by signing a
+message, free, and the agent relays it with `publishFor`: the signature says
+this person wants this recipe, the relay says the agent crafted it for them,
+and only both together record an author. The id is the hash of the content, so
+a second claim of the same id is refused. Someone crafting with a recipe calls
+`craft(recipeId)` with a payment; `RecipeBook` splits it, forwards both parts
+to `SplitVault` and counts the craft. The author withdraws when they like.
 
 Separately, the agent that runs the crafting draws its spending money from
 `Allowance`, which refuses past a cap. It holds no other funds, so the ceiling
@@ -48,7 +52,7 @@ the code should tell you why as well as what.
 ```bash
 cd contracts
 npm install
-npx hardhat test        # 29 tests, three of them fuzz
+npx hardhat test        # 64 tests: unit, fuzz and stateful invariants
 ```
 
 Against the live chain, which needs `HEDERA_PRIVATE_KEY` in `.env` — ask me:
@@ -128,26 +132,46 @@ is to account for.
 
 ## Findings
 
-### SR-01: the first observer of an id can take the recipe
+### SR-01: the first observer of an id could take the recipe — closed
 
-Found by Stefan, with a proof of concept. `publish(recipeId)` gives a recipe to
-whoever calls it first, and nothing proves that caller wrote it. The id is a
-hash of content that can be seen, so anyone who has seen an unclaimed id can
-claim it, and every later craft pays them the author share.
+Found by Stefan, with a proof of concept. `publish(recipeId)` gave a recipe to
+whoever called it first, and nothing proved that caller wrote it. The id is a
+hash of content that can be seen, so anyone who had seen an unclaimed id could
+claim it, and every later craft would have paid them the author share.
 
-The signed route has the same gap. `publishFor` checks that the signature
-matches the author it is handed, and an observer can hand it their own address
-with their own signature; no one else is needed. Removing `publish` alone does
-not close it. `contracts/test/FrontRunPublishFor.t.sol` shows it: the observer
-claims the id, and the real author's valid signature is then refused.
+The signed route had the same gap. `publishFor` checked that the signature
+matched the author it was handed, and an observer could hand it their own
+address with their own signature; no one else was needed. Removing `publish`
+alone would not have closed it: a signature proves a wallet, not the work.
 
-What made it reachable here was the catalog, which listed recipes nobody owned
-yet, contents included. That is closed on the application side:
+**What closed it.** Two layers, one on each side of the chain.
 
-- a new recipe is filed in the catalog only once someone owns it on the chain;
-- the recipes the platform offers are published under its own address, so they
-  have an owner and cannot be claimed first.
+- *The agent vouches only for whoever it crafted for.* Every craft is charged
+  to a signed-in person's budget, so the agent knows who did the work. It
+  writes that down privately (`services/agent/crafted.mjs`, never in the
+  public catalog) and relays a claim only for that person: anyone else is
+  refused whatever they signed. A recipe not claimed on the spot waits under
+  *Unclaimed* in the backpack, where only its crafter can claim it.
+- *The contract records an author only from the agent.* `RecipeBook` has an
+  `attester`, set to the agent, and `publish` and `publishFor` revert with
+  `NotAttester` from any other address. The author's signature is still
+  required, so the agent cannot misname an author either, and the owner can
+  rotate the attester. This is the provenance the finding asked for — the
+  trusted service's word on `(recipeId, author)` — carried by the relayer
+  rather than by a second signature, which keeps the ABI and the person's part
+  of the claim as they were.
 
-The contract-level fix is in `docs/MAINNET.md`: a claim that also carries the
-signature of the agent that performed the craft, so only someone who crafted a
-recipe can be recorded as its author.
+The books were deployed again on both chains against the existing vaults, so
+nothing anyone had earned moved. The old books' recipes were carried over with
+`migrate`, checked one by one against the old books, and the migration was
+sealed for good (`contracts/scripts/migrate-book.mjs`).
+
+**Tests.** `contracts/test/FrontRunPublishFor.t.sol`, which showed the capture
+working, now shows it failing: the observer's self-signed claim and their
+direct `publish` both revert, and the real author's claim, relayed by the
+attester, goes through. The audit's regression, invariant and stateless suites
+are in `contracts/test/`, and its write-up under `contracts/audit/`.
+
+The application-side mitigations from before stay: a new recipe is filed in
+the catalog only once someone owns it on the chain, and the platform's recipes
+are published under its own address.

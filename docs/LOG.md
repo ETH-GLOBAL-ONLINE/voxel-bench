@@ -964,3 +964,77 @@ stage was accepted as a transfer in 8.9 s. With `VOXEL_ARC_SETTLEMENT=own` and
 nothing else changed, the same stage settled as a direct EIP-3009 transfer on
 Arc in 22.6 s, with its own transaction (`0x2280789f…`). Switching back is a
 restart of the paywall; the agent answers either offer without one.
+
+## An author is recorded only through the agent that crafted for them
+
+SR-01, from Stefan's audit, closed on both sides of the chain. A recipe's id is
+the hash of its content, and whoever had seen an unclaimed id could claim it —
+directly with `publish`, or with a self-signed `publishFor`. A signature proves
+a wallet, not the work. The one party that saw who did the work is the agent:
+every craft is charged to a signed-in person's budget.
+
+### The agent vouches only for whoever it crafted for
+
+The agent writes down, privately, who paid for each new craft
+(`services/agent/crafted.mjs`, in `out/crafted.json`, never in the public
+catalog) and relays a claim only for them. Anyone else gets a 403 whatever they
+signed; a second claim of the same recipe gets a 409. A claim can travel by
+recipe id, since the agent has the content, so the backpack gained an
+*Unclaimed* tab: what you crafted and never claimed waits there, checked
+against the chain, with a Claim button — before this a recipe not claimed on
+the spot was lost with the page.
+
+### The contract records an author only from the attester
+
+`RecipeBook` gained an `attester`, the agent. `publish` is the attester's
+alone, for the platform's own stock; `publishFor` still needs the author's
+signature but is relayed only by the attester. Someone who has merely seen an
+id can produce the signature but not the relay. The owner rotates the attester
+with `setAttester`. Nothing else in the contract changed — the comments say
+why, and `publishDigest` from the audit's tests is exposed so a relayer and a
+test hash exactly what the contract does.
+
+The trust this places is stated: the attester's word on `(recipeId, author)`,
+carried by the relayer rather than by a second signature, which keeps the ABI
+and the person's part of the claim as they were.
+
+### Deployed again, with nothing moved
+
+The book was deployed a third time on both chains, against the existing
+vaults — `SplitVault.credit` is open, so two books can share one — and the
+earlier books' recipes carried over with `migrate`: owner-only, refused for an
+existing id, and final once `sealMigration` is called. 1 recipe on Hedera, 58
+on Arc, each checked against the old book before sealing
+(`contracts/scripts/migrate-book.mjs`). Ignition refused both RPCs this time
+(a bare 400 from hashio, an "odd number of digits" from Arc), so the deploy
+went through viem, which the agent uses for every other transaction
+(`contracts/scripts/deploy-book.mjs`; the record is in `contracts/deployments/`).
+
+| | Hedera testnet | Arc testnet |
+|---|---|---|
+| `RecipeBook` | `0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41` from block 40436149 | `0xC456D809Fb6B71a1901c4E5957c0F70b034783BA` from block 61783070 |
+
+### Tests
+
+`npx hardhat test` runs 64 tests, 26 before. `FrontRunPublishFor.t.sol`, the
+audit's discovery test, is kept and turned around: the observer's self-signed
+claim and their direct `publish` revert with `NotAttester`, and the real
+author's claim relayed by the attester goes through. The audit's regression
+suite, its stateful invariants (nine, 256 runs each, with a new one that the
+attester stays put and every author is one the handler published) and its
+stateless laws are adapted and in `contracts/test/`; its write-up is under
+`contracts/audit/`, with a dated run of the current suite in `evidence/`.
+
+Hardhat runs the `.t.sol` files, fuzz and invariants included, so Foundry is
+not needed; `foundry.toml` is there for whoever has it.
+
+### Verified end to end, on the running agent
+
+A fresh account crafted a recipe and it appeared under Unclaimed; a stranger's
+self-signed claim was refused by the agent by id and with the recipe body, and
+the same `publishFor` simulated on the contract reverted from the stranger and
+succeeded from the attester — the contrast is the proof, since Arc's node does
+not decode the reason; the crafter's claim was recorded on the new book, filed
+in the catalog and listed in their backpack; a second claim was refused; and a
+marketplace craft of a migrated recipe paid its author on the shared vault with
+the carried-over count continuing, 0.0027 → 0.0036 USDC.

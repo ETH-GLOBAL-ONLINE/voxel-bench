@@ -9,10 +9,44 @@
 // not have is still listed, by its id.
 
 import { isAddress } from "viem";
+import { bench } from "../bench";
 import { readCatalog, readCollected } from "../catalog";
 import { LEDGERS, ownedBy, type LedgerName } from "../chain";
 
 export const dynamic = "force-dynamic";
+
+type Unclaimed = {
+  id: string;
+  name: string | null;
+  chain: string | null;
+  at: string;
+  ingredients: number | null;
+  preview: string | null;
+};
+
+// What they crafted and have not claimed yet. Only the agent knows this — it
+// is the one that saw who paid for the craft — and it says so only by id and
+// name, never the recipe itself. With the bench off there is nothing to ask.
+async function readUnclaimed(address: string): Promise<Unclaimed[]> {
+  const target = bench();
+  if (!target?.paid) return [];
+  try {
+    const res = await fetch(new URL(`/unclaimed?address=${address}`, target.base), {
+      cache: "no-store",
+      // The agent checks each one against the chain before answering.
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { items?: Omit<Unclaimed, "preview">[] };
+    return (data.items ?? []).map((u) => ({
+      ...u,
+      // The render sits beside the crafter's files, which the site serves.
+      preview: u.name ? `/api/out/${u.name}_preview.png` : null,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address") ?? "";
@@ -35,7 +69,7 @@ export async function GET(req: Request) {
 
   // What they got from the marketplace, as opposed to what they made. The
   // payment for each is on the chain; who it was for is noted by the agent.
-  const got = await readCollected(address);
+  const [got, unclaimed] = await Promise.all([readCollected(address), readUnclaimed(address)]);
 
   const catalog = await readCatalog([
     ...new Set([...owned.map((r) => r.id), ...got.map((c) => c.id)]),
@@ -54,5 +88,5 @@ export async function GET(req: Request) {
     preview: catalog.get(c.id)?.preview ?? null,
   }));
 
-  return Response.json({ address, items, collected, unreadable });
+  return Response.json({ address, items, collected, unclaimed, unreadable });
 }
