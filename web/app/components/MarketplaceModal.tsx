@@ -125,7 +125,8 @@ export default function MarketplaceModal() {
 
   return (
     <>
-      <DockButton label="Marketplace" icon={<MarketIcon />} onClick={() => setOpen(true)} />
+      {/* "Market": the full word overflows the tile. */}
+      <DockButton label="Market" icon={<MarketIcon />} onClick={() => setOpen(true)} />
 
       {open &&
         createPortal(
