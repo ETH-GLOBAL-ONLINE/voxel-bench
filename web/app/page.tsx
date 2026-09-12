@@ -185,8 +185,29 @@ export default async function Home() {
       </section>
 
       {/* ── stages ────────────────────────────────────────────────────── */}
-      <section id="stages" className="border-t border-bench-700 bg-bench-900">
-        <div className="mx-auto max-w-6xl px-5 py-20">
+      <section
+        id="stages"
+        className="relative overflow-hidden border-t border-bench-700 bg-bench-900"
+      >
+        {/* A wall of lit blocks, kept faint and faded into the section's own
+            colour at the top and bottom so the text reads over it. */}
+        <Image
+          src="/bg/voxel-wall.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover"
+          style={{ opacity: 0.45 }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, #1b1816 0%, rgb(27 24 22 / 0.35) 30%, rgb(27 24 22 / 0.35) 70%, #1b1816 100%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl px-5 py-20">
           <h2 className="text-2xl font-bold tracking-tight">
             From an object to a game
           </h2>
