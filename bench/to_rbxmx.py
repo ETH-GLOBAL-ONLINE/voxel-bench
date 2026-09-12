@@ -243,28 +243,78 @@ def primary_index(ingredients):
     return 0
 
 
+# An obby's pieces carry a role. Each piece becomes a model of its own, named
+# for its role, and obby_runtime.lua reads the names to give them behaviour.
+ROLE_MODELS = {
+    "start": "Start",
+    "path": "Path",
+    "checkpoint": "Checkpoint",
+    "kill": "Kill",
+    "move": "Mover",
+    "finish": "Finish",
+    "scenery": "Scenery",
+}
+
+RUNTIME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "obby_runtime.lua")
+
+
+def model_xml(name, children, referent):
+    return f"""		<Item class="Model" referent="{referent}">
+			<Properties>
+				<string name="Name">{xml_escape(name)}</string>
+			</Properties>
+{chr(10).join(children)}
+		</Item>"""
+
+
+def runtime_xml():
+    with open(RUNTIME, "r", encoding="utf-8") as fh:
+        source = fh.read()
+    return f"""		<Item class="Script" referent="RBXRUNTIME">
+			<Properties>
+				<string name="Name">ObbyRuntime</string>
+				<ProtectedString name="Source"><![CDATA[{source}]]></ProtectedString>
+			</Properties>
+		</Item>"""
+
+
 def build(recipe):
     name = recipe.get("name", "recipe")
     ingredients = recipe.get("ingredients", [])
     if not ingredients:
         raise ValueError("recipe has no ingredients")
 
-    parts = []
+    count = 0
+    loose = []
+    groups = {}
     primary = None
     keep = primary_index(ingredients)
     for i, ing in enumerate(ingredients):
+        role = ing.get("role")
+        key = None
+        if role in ROLE_MODELS:
+            key = "%s_%s" % (ROLE_MODELS[role], ing.get("group") or "p%d" % i)
+            groups.setdefault(key, [])
         for part in parts_for(i, ing):
-            referent = "RBX%d" % (len(parts) + 1)
+            count += 1
+            referent = "RBX%d" % count
             if i == keep and primary is None:
                 primary = referent
-            parts.append(part_xml(part, referent))
+            (groups[key] if key else loose).append(part_xml(part, referent))
+
+    children = loose + [model_xml(key, items, "RBXG%d" % n)
+                        for n, (key, items) in enumerate(groups.items(), 1)]
+    # Roles are only worth anything with the script that reads them.
+    if groups:
+        children.append(runtime_xml())
+
     return f"""<roblox version="4">
 	<Item class="Model" referent="RBX0">
 		<Properties>
 			<string name="Name">{xml_escape(name)}</string>
 			<Ref name="PrimaryPart">{primary}</Ref>
 		</Properties>
-{chr(10).join(parts)}
+{chr(10).join(children)}
 	</Item>
 </roblox>
 """
@@ -302,6 +352,10 @@ def main():
         "bytes": os.path.getsize(path),
         "cones_as_pyramids": [i.get("name") for i in ingredients
                               if i.get("shape") == "cone"],
+        # An obby's pieces, by role, and whether the script that runs them went in.
+        "roles": {r: len({i.get("group") for i in ingredients if i.get("role") == r})
+                  for r in ROLE_MODELS if any(i.get("role") == r for i in ingredients)},
+        "runtime": any(i.get("role") in ROLE_MODELS for i in ingredients),
     }
     print("RBXMX_REPORT " + json.dumps(report))
 

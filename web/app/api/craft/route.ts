@@ -16,17 +16,23 @@ export async function POST(req: Request) {
   let prompt: unknown;
   let recipeId: unknown;
   let collector: unknown;
+  let obby: unknown;
   try {
-    ({ prompt, recipeId, collector } = await req.json());
+    ({ prompt, recipeId, collector, obby } = await req.json());
   } catch {
     return Response.json({ error: "expected JSON" }, { status: 400 });
   }
 
   // A recipe from the marketplace is asked for by its id; a new one by a
-  // sentence. The agent checks both.
+  // sentence; an obby by the pieces it is made of. The agent checks all three.
   const fromMarketplace = typeof recipeId === "string" && /^0x[0-9a-fA-F]{64}$/.test(recipeId);
+  const asObby =
+    Array.isArray(obby) &&
+    obby.length >= 2 &&
+    obby.length <= 12 &&
+    obby.every((v) => typeof v === "string" && /^0x[0-9a-fA-F]{64}$/.test(v));
 
-  if (!fromMarketplace && (typeof prompt !== "string" || prompt.trim().length < 3)) {
+  if (!fromMarketplace && !asObby && (typeof prompt !== "string" || prompt.trim().length < 3)) {
     return Response.json(
       { error: "Say a little more about what you want." },
       { status: 400 },
@@ -38,7 +44,9 @@ export async function POST(req: Request) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        fromMarketplace
+        asObby
+          ? { obby, collector: typeof collector === "string" ? collector : undefined }
+          : fromMarketplace
           ? {
               recipeId,
               collector: typeof collector === "string" ? collector : undefined,

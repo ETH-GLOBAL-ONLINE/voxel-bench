@@ -319,6 +319,12 @@ The counterintuitive part is that generating code is *more* reliable than
 generating geometry. A script runs or it doesn't. A mesh can "work" and look
 terrible.
 
+**What we built.** The obby is delivered as a model rather than a place: the
+course and one script, dropped into any place. The script is not generated per
+course — it is one file that reads the roles the pieces carry — so every course
+behaves the same way and there is nothing new to go wrong. Assembling and
+publishing a whole place stays for later.
+
 ### Later
 
 - **Avatar skins.** Better business than props — props are used by the builder,
@@ -353,12 +359,12 @@ If the last items slip, the video is shorter rather than broken.
 | 0:20–1:00 | Prompt, craft, preview, publish. A real `assetId` in a real account | done |
 | 1:00–1:40 | The agent pays per craft. Spending cap lives onchain, not in the prompt | done |
 | 1:40–2:20 | The marketplace: this recipe is someone else's, and they earn from it | the marketplace view |
-| 2:20–2:50 | **The wow: here is an obby built from these recipes. Click it. Play it.** | the obby, first to cut |
+| 2:20–2:50 | **The wow: here is an obby built from these recipes. Click it. Play it.** | done: plays in Studio |
 | 2:50–3:00 | The bounded claim, and what comes next | nothing |
 
-Cut the obby and beats 1 to 4 still make a complete two-and-a-half minute video
-that demonstrates everything the prizes ask for. The obby is the ending we want,
-not the ending we need.
+The obby is built and plays in Studio. It stays last all the same: if the take
+runs long it is the beat to shorten, and beats 1 to 4 still make a complete
+two-and-a-half minute video that demonstrates everything the prizes ask for.
 
 **Requirement, not optional:** the video is narrated by one of us. The rules
 reject AI voiceover, text-to-speech, phone recordings, and anything outside the

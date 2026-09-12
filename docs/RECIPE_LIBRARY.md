@@ -228,6 +228,14 @@ simplest, so they are a good place to calibrate.
 | `arrow_sign` | points the way |
 | `rope_bridge` | planks and rails |
 
+**Names matter here.** The obby builder reads what a piece does from its name:
+`start`; `finish`, `goal` or `podium`; `checkpoint`; `hazard`, `lava` or
+`spike`, which kill; `moving` or `elevator`, which swing from side to side; and
+`platform`, `stepping`, `stone`, `ramp`, `bridge` or `walkway` for something to
+stand on. Anything else stands on the ground beside the course as scenery,
+unless it is broad and low enough to stand on. Keep one of those words in the
+name and a new piece works in a course without any code changing.
+
 ### Theme A — Ninja, Japanese landscape
 
 | Object | Notes |

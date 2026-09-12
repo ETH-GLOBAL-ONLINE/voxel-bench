@@ -34,7 +34,8 @@ sys.path.insert(0, BENCH)
 from describe import describe  # noqa: E402
 from llm import LLMError  # noqa: E402
 from make import find_blender, load_env  # noqa: E402
-from recipe import RecipeError, extents, validate  # noqa: E402
+from recipe import (  # noqa: E402
+    MAX_COMPOSITE_INGREDIENTS, MAX_INGREDIENTS, RecipeError, extents, validate)
 
 sys.path.insert(0, os.path.join(ROOT, "services"))
 from roblox_upload import UploadError, upload_model, wait_for_asset  # noqa: E402
@@ -263,8 +264,13 @@ def stage_recipe(req: RecipeStage):
 @app.post("/stage/craft")
 def stage_craft(req: CraftStage):
     """A recipe in, the rendered files out. Never calls a model."""
+    # A recipe of recipes carries the pieces it was built from, and a handful of
+    # pieces is past the ingredient limit meant for a single object.
+    composite = isinstance(req.recipe, dict) and isinstance(req.recipe.get("parts"), list)
     try:
-        recipe, notes = validate(req.recipe)
+        recipe, notes = validate(
+            req.recipe,
+            max_ingredients=MAX_COMPOSITE_INGREDIENTS if composite else MAX_INGREDIENTS)
     except RecipeError as exc:
         raise HTTPException(422, str(exc)) from None
 

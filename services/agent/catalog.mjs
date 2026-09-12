@@ -91,6 +91,37 @@ export async function fetchRecipe(id) {
 }
 
 /**
+ * Several recipes at once, each checked against its id, in one request. Unlike
+ * fetchRecipe this tells the two failures apart: a catalog that could not be
+ * read throws, and is tried once more first; an id it does not hold is simply
+ * missing from the map.
+ */
+export async function fetchRecipes(ids) {
+  if (!catalogEnabled()) throw new Error("No catalog is configured.");
+  const wanted = [...new Set(ids.map((id) => id.toLowerCase()))];
+  const url = `${base()}/rest/v1/recipes?select=id,recipe&id=in.(${wanted.join(",")})`;
+
+  let rows = null;
+  for (let attempt = 0; attempt < 2 && !rows; attempt++) {
+    try {
+      const res = await fetch(url, { headers: headers(), signal: AbortSignal.timeout(10000) });
+      if (res.ok) rows = await res.json();
+    } catch {
+      // Tried again below, then reported as a catalog that could not be read.
+    }
+    if (!rows && attempt === 0) await new Promise((r) => setTimeout(r, 800));
+  }
+  if (!rows) throw new Error("Could not read the catalog just now. Try again.");
+
+  const found = new Map();
+  for (const row of rows) {
+    const id = String(row.id).toLowerCase();
+    if (row.recipe && recipeId(row.recipe).toLowerCase() === id) found.set(id, row.recipe);
+  }
+  return found;
+}
+
+/**
  * Note that `collector` got a copy of a recipe from the marketplace. The payment
  * to its author is on the chain already; this records who it was for, which the
  * chain cannot while the agent is the one paying. Never throws.
