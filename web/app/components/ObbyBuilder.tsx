@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { useWallet } from "./walletCore";
+import LogoLoader from "./LogoLoader";
 
 type Piece = {
   id: string;
@@ -172,10 +173,7 @@ export default function ObbyBuilder({
         <p className="label mb-2">Pieces</p>
         {error && <p className="text-sm text-ember">{error}</p>}
         {!error && !palette && (
-          <p className="label flex items-center gap-2 !text-sap">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
-            reading your backpack and the shelf…
-          </p>
+          <LogoLoader label="reading your backpack and the shelf…" size={44} />
         )}
         {palette && palette.length === 0 && (
           <p className="text-xs text-faint">No pieces yet. Get some from the Marketplace.</p>

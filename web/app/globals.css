@@ -60,6 +60,151 @@
   }
 }
 
+/* The logo while something slow loads: a float and a breathing glow. */
+@keyframes logo-loader {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 4px rgb(255 174 59 / 0.3));
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+    filter: drop-shadow(0 0 14px rgb(255 174 59 / 0.75));
+  }
+}
+
+.logo-loader {
+  animation: logo-loader 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-loader {
+    animation: none;
+  }
+}
+
+/* The dock floats above the page, but a step of the guide dims it along with
+   everything else — except the step that is about the dock itself. */
+html.tour-active .dock {
+  z-index: 20;
+}
+
+html.tour-dock .dock {
+  z-index: 55;
+}
+
+/* The ticker under the hero: a track holding its list twice, sliding by half
+   its own width so the seam is never seen. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  animation: marquee 42s linear infinite;
+}
+
+.marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}
+
+/* The published recipes, as a ledger that keeps moving: each column holds its
+   list twice and slides by half its height, some up and some down. Hovering
+   stops it so a row can be read. */
+@keyframes ledger-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.ledger-window {
+  height: 17rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent, black 14%, black 86%, transparent);
+}
+
+.ledger-tall {
+  height: 22rem;
+}
+
+/* Three columns on a wide screen, one on a narrow one. */
+.ledger-wide {
+  display: none;
+  gap: 1px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+  .ledger-wide {
+    display: grid;
+  }
+  .ledger-narrow {
+    display: none;
+  }
+}
+
+/* A guide step whose element has scrolled off the screen steps aside, dim and
+   all, and comes back when the element does. !important because the entrance
+   animations would otherwise hold the note at full opacity. */
+.tour-note,
+.tour-dim {
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s;
+}
+
+html.tour-away .tour-note,
+html.tour-away .tour-dim {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+.ledger-col {
+  animation: ledger-up 30s linear infinite;
+}
+
+.ledger-down {
+  animation-direction: reverse;
+}
+
+.ledger-window:hover .ledger-col {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ledger-col {
+    animation: none;
+  }
+  .ledger-copy {
+    display: none;
+  }
+  .ledger-window {
+    overflow-y: auto;
+    mask-image: none;
+  }
+}
+
+/* The hero before its entrance: hidden while the layout's script says motion
+   is on its way, and shown by the hero itself once its animation has set the
+   starting state — or by the script after three seconds, whichever is first. */
+html.hero-pending [data-hero-hide] {
+  visibility: hidden;
+}
+
 /* The guide through the happy path. A lamp switching on over the first tool
    on the bench: the room dims, the one thing to do next glows, and a note
    slides in beside it. One easing for all of it — fast out, soft settle. */

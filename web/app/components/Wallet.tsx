@@ -36,7 +36,6 @@ import {
   type ReactNode,
 } from "react";
 import dynamic from "next/dynamic";
-import Backpack from "./Backpack";
 import {
   WalletContext,
   short,
@@ -225,6 +224,101 @@ function Choices({
   );
 }
 
+/**
+ * The signed-in address, with a small menu behind it: copy the address, or
+ * leave. Closed by pressing anywhere else, or by Escape.
+ */
+function Account({
+  address,
+  leave,
+  onLeave,
+}: {
+  address: string;
+  leave: string;
+  onLeave: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  // Listened for on the document while open: a press anywhere outside closes
+  // it, whether or not the browser moved focus.
+  useEffect(() => {
+    if (!open) return;
+    const onPress = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPress);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPress);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={box} className="relative ml-auto md:ml-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 border border-amber/50 px-3.5 py-1.5 font-mono text-xs text-amber transition-colors hover:bg-amber/10"
+      >
+        <span aria-hidden className="h-1.5 w-1.5 bg-sap" />
+        {short(address)}
+        <svg
+          viewBox="0 0 10 6"
+          aria-hidden
+          className={`h-1.5 w-2.5 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="tour-in absolute top-full right-0 z-50 mt-2 w-52 border border-bench-600 bg-bench-900 p-1 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.8)]"
+        >
+          <p className="label px-3 pt-2 pb-1">Signed in</p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(address);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              } catch {
+                // Clipboard refused: the address is on the button anyway.
+              }
+            }}
+            className="block w-full px-3 py-2 text-left text-xs text-dim transition-colors hover:bg-bench-800 hover:text-ink"
+          >
+            {copied ? "Copied" : "Copy address"}
+          </button>
+          <div className="my-1 h-px bg-bench-700" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onLeave();
+            }}
+            className="block w-full px-3 py-2 text-left text-xs text-ember transition-colors hover:bg-ember/10"
+          >
+            {leave}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** The one in the header, where people look for it first. */
 export function HeaderWallet() {
   const { kind, address, wallets, available, connect, disconnect } = useWallet();
@@ -233,19 +327,11 @@ export function HeaderWallet() {
 
   if (address) {
     return (
-      <span className="ml-auto flex items-center gap-3 md:ml-0">
-        <Backpack />
-        <span className={`${frame} border-amber/50 font-mono text-amber`}>
-          {short(address)}
-        </span>
-        <button
-          type="button"
-          onClick={() => disconnect()}
-          className="text-xs text-faint transition-colors hover:text-ink"
-        >
-          {kind === "privy" ? "Sign out" : "Disconnect"}
-        </button>
-      </span>
+      <Account
+        address={address}
+        leave={kind === "privy" ? "Sign out" : "Disconnect"}
+        onLeave={() => disconnect()}
+      />
     );
   }
 

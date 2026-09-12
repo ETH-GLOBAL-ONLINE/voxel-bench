@@ -139,5 +139,6 @@ export default function Viewer({ src, closer = false }: { src: string; closer?: 
     };
   }, [src, closer]);
 
-  return <div ref={host} className="h-full w-full" />;
+  // The wheel zooms the model here, so the page's smooth scroll stays out.
+  return <div ref={host} data-lenis-prevent className="h-full w-full" />;
 }

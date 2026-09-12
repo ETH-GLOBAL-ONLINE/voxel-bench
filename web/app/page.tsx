@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import Image from "next/image";
 import Bench from "./components/Bench";
+import Hero from "./components/Hero";
+import Marquee from "./components/Marquee";
+import Reveal from "./components/Reveal";
+import Onchain from "./components/Onchain";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
 import { HeaderWallet } from "./components/Wallet";
-import MarketplaceModal from "./components/MarketplaceModal";
+import Dock from "./components/Dock";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/sakura_garden.report.json";
@@ -36,18 +41,23 @@ async function loadReport(): Promise<Report> {
 const STEPS = [
   {
     n: "01",
-    t: "Describe it",
-    d: "One sentence. The model turns it into a recipe — a list of ingredients with sizes, measured in studs, Roblox's own unit.",
+    t: "Give your agent a budget",
+    d: "Sign in with an email, Google, X or a wallet, and sign a limit in USDC. No gas, no transaction. The agent pays every stage from it and can never take more.",
   },
   {
     n: "02",
-    t: "The bench crafts it",
-    d: "Headless Blender builds the ingredients and renders a preview. Seven seconds. You see it before anything is published, and before you pay to publish.",
+    t: "Describe it",
+    d: "One sentence. The model writes a recipe — ingredients with sizes in studs, Roblox's own unit — and headless Blender builds it and renders a preview in seconds.",
   },
   {
     n: "03",
+    t: "Claim it",
+    d: "Sign once more and the recipe is yours on RecipeBook. Whenever someone else crafts it, you earn 90%.",
+  },
+  {
+    n: "04",
     t: "It lands in Roblox",
-    d: "Approve, and it uploads through Open Cloud into your own account. You get an assetId and drop it into your game.",
+    d: "Publish, and it uploads through Open Cloud into your own account, with its render as the icon. Or build an obby from your recipes and play it in Studio.",
   },
 ];
 
@@ -59,16 +69,16 @@ const STAGES = [
     tone: "text-sap border-sap/40 bg-sap/10",
   },
   {
-    tag: "next",
-    t: "Objects that do something",
-    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. Recipes already get published and their authors already get paid; what is missing is the Luau that makes an object act.",
-    tone: "text-amber border-amber/40 bg-amber/10",
+    tag: "live",
+    t: "A whole game, one genre at a time",
+    d: "An obby is a recipe of recipes. Pick pieces from your backpack and the marketplace and they become a course you play in Studio — a spawn, hazards that kill, platforms that move, a timed finish — with every piece's author paid.",
+    tone: "text-sap border-sap/40 bg-sap/10",
   },
   {
-    tag: "then",
-    t: "A whole game, one genre at a time",
-    d: "An obby is a sequence of platforms, hazards, checkpoints and a finish — which is spatial arrangement of objects. An obby is a recipe of recipes. Same metaphor, bigger scale.",
-    tone: "text-dim border-bench-600 bg-bench-800",
+    tag: "next",
+    t: "Objects that do something",
+    d: "A crate that sits there is decoration. A crate that gives you coins when touched is a mechanic. The obby already carries its own script; single objects are next.",
+    tone: "text-amber border-amber/40 bg-amber/10",
   },
 ];
 
@@ -78,19 +88,17 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
-        <p className="label !text-amber">
-          Prototype · the crafter runs on a real machine, not here · the agent
-          pays for each stage on Hedera and Arc testnets
-        </p>
-      </div>
-
       <header className="sticky top-0 z-50 border-b border-bench-700 bg-bench-950/90 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-8 px-5 py-4">
           <a href="#top" className="flex items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center border border-amber/50 bg-amber/10 text-[13px] font-bold text-amber">
-              V
-            </span>
+            <Image
+              src="/logo/voxel-bench-logo.png"
+              alt=""
+              width={32}
+              height={32}
+              priority
+              className="h-8 w-8"
+            />
             <span className="text-[13px] font-bold tracking-[0.2em] uppercase">
               Voxel Bench
             </span>
@@ -111,61 +119,22 @@ export default async function Home() {
               </a>
             ))}
           </div>
-          <MarketplaceModal />
           <HeaderWallet />
         </nav>
       </header>
 
+      {/* Marketplace and Backpack, floating on the right once past the hero. */}
+      <Dock />
+
       {/* ── hero ──────────────────────────────────────────────────────── */}
-      <section id="top" className="mx-auto max-w-6xl px-5 pt-20 pb-16">
-        <p className="label mb-5">
-          Agent-run Roblox studio · ETHOnline 2026
-        </p>
-        <h1 className="max-w-3xl text-4xl leading-[1.08] font-bold tracking-tight sm:text-6xl">
-          Craft your Roblox game,
-          <br />
-          <span className="text-amber">one object at a time.</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
-          Describe what you need. An agent builds it in Blender, uploads it
-          straight to your own Roblox account, and pays for each step from its
-          own wallet. You install nothing.
-        </p>
-        <p className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects work today, and their recipes have owners who earn from
-          them. Objects that do something, and a playable game, are where this
-          goes.
-        </p>
+      <Hero />
 
-        <div className="mt-9 flex flex-wrap gap-3">
-          <a
-            href="#bench"
-            className="bg-amber px-5 py-2.5 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
-          >
-            See what it crafted
-          </a>
-          <a
-            href="#how"
-            className="border border-bench-600 px-5 py-2.5 text-sm text-dim transition-colors hover:text-ink"
-          >
-            How it works
-          </a>
-        </div>
-
-        <dl className="mt-16 grid max-w-2xl grid-cols-2 gap-px border border-bench-700 bg-bench-700 sm:grid-cols-4">
-          {[
-            ["7s", "to craft"],
-            ["398", "triangles"],
-            ["75 KB", "fbx"],
-            ["0", "installs"],
-          ].map(([v, k]) => (
-            <div key={k} className="bg-bench-900 px-4 py-3.5">
-              <dt className="font-mono text-xl text-amber">{v}</dt>
-              <dd className="label mt-1">{k}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      {/* Everything after the hero, opaque, so it covers the pinned hero as
+          the page scrolls. It covers by coming later in the page, not by a
+          z-index: one here would make it a layer of its own and trap the
+          guide's highlighted element under the guide's dim. */}
+      <div className="relative bg-bench-950">
+      <Marquee />
 
       {/* ── how it works ──────────────────────────────────────────────── */}
       <section id="how" className="border-t border-bench-700 bg-bench-900">
@@ -175,7 +144,8 @@ export default async function Home() {
             No Blender. No Roblox Studio. A browser.
           </p>
 
-          <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
+          <Reveal deep>
+          <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <li key={s.n} className="bg-bench-850 p-6">
                 <span className="font-mono text-sm text-amber">{s.n}</span>
@@ -184,6 +154,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -194,7 +165,8 @@ export default async function Home() {
             <div>
               <h2 className="text-2xl font-bold tracking-tight">The bench</h2>
               <p className="mt-2 text-dim">
-                Describe an object. Drag the result to orbit it.
+                Give your agent a budget, then describe an object or build an
+                obby. Drag the result to orbit it.
               </p>
             </div>
             <BenchStatus />
@@ -213,8 +185,29 @@ export default async function Home() {
       </section>
 
       {/* ── stages ────────────────────────────────────────────────────── */}
-      <section id="stages" className="border-t border-bench-700 bg-bench-900">
-        <div className="mx-auto max-w-6xl px-5 py-20">
+      <section
+        id="stages"
+        className="relative overflow-hidden border-t border-bench-700 bg-bench-900"
+      >
+        {/* A wall of lit blocks, kept faint and faded into the section's own
+            colour at the top and bottom so the text reads over it. */}
+        <Image
+          src="/bg/voxel-wall.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover"
+          style={{ opacity: 0.45 }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, #1b1816 0%, rgb(27 24 22 / 0.35) 30%, rgb(27 24 22 / 0.35) 70%, #1b1816 100%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl px-5 py-20">
           <h2 className="text-2xl font-bold tracking-tight">
             From an object to a game
           </h2>
@@ -229,6 +222,7 @@ export default async function Home() {
             beats a big one we cannot.
           </p>
 
+          <Reveal deep>
           <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
             {STAGES.map((s) => (
               <li key={s.t} className="bg-bench-850 p-6">
@@ -242,6 +236,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -253,93 +248,12 @@ export default async function Home() {
             Three reasons, none of them decorative.
           </p>
 
-          <div className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">Two cents in, ninety out</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                A craft should cost cents, and a card cannot process two cents
-                for less than two cents. The harder half is the other
-                direction: paying forty authors ninety cents each, in twenty
-                countries, costs more in fees and onboarding than it moves.
-              </p>
-            </div>
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">Recipe authors get paid without trusting us</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                If forty people craft with your recipe, you earn on each craft.
-                The split is a contract and the ledger is public, so nobody has
-                to take our bookkeeping on faith.
-              </p>
-            </div>
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">The agent&rsquo;s spending cap is not a prompt</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                The crafter holds its own wallet and pays per step. Its limit
-                lives onchain, where the model cannot talk it out of anything —
-                a prepaid card, not your credit card.
-              </p>
-            </div>
-          </div>
-
-          {/* the mechanism, briefly */}
-          <div className="mt-px grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-[1fr_minmax(0,22rem)]">
-            <div className="bg-bench-900 p-6">
-              <p className="label mb-4">What actually happens on a craft</p>
-              <ol className="space-y-2.5 font-mono text-sm">
-                {[
-                  ["1", "the agent pays the recipe service", "x402"],
-                  ["2", "the agent pays the craft service", "x402"],
-                  ["3", "you approve the preview"],
-                  ["4", "the agent pays the publish service", "x402"],
-                  ["5", "the fee splits to the recipe author", "SplitVault"],
-                ].map(([n, text, tag]) => (
-                  <li key={n} className="flex flex-wrap items-baseline gap-x-3">
-                    <span className="text-faint">{n}</span>
-                    <span className="text-dim">{text}</span>
-                    {tag ? (
-                      <span className="border border-bench-600 px-1.5 text-[10px] tracking-wider text-amber uppercase">
-                        {tag}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-5 text-sm leading-relaxed text-faint">
-                Each stage is a separate paid service, so no secrets are shared
-                between them. The craft service cannot publish; the publish
-                service never sees your prompt. Compromising one does not hand
-                over the others — that is the real argument for paying rather
-                than sharing an API key.
-              </p>
-            </div>
-
-            <div className="bg-bench-900 p-6">
-              <p className="label mb-4">Three contracts</p>
-              <dl className="space-y-4">
-                {[
-                  ["RecipeBook", "recipe, author, split terms, craft count"],
-                  ["SplitVault", "what each author has earned, and can withdraw"],
-                  ["Allowance", "the agent's spending cap, and the human signature needed to raise it"],
-                ].map(([name, what]) => (
-                  <div key={name}>
-                    <dt className="font-mono text-sm text-amber">{name}</dt>
-                    <dd className="mt-0.5 text-sm leading-relaxed text-dim">
-                      {what}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-5 text-sm text-faint">
-                Deliberately small. Details in{" "}
-                <code className="font-mono">docs/ONCHAIN.md</code>.
-              </p>
-            </div>
-          </div>
+          <Onchain />
 
           {/* The shelf gets the full width; the note on revenue follows it. */}
-          <div className="mt-10">
+          <div className="mt-16">
             <Marketplace />
-            <p className="mt-6 max-w-2xl text-sm leading-relaxed text-faint">
+            <p className="mt-6 text-sm leading-relaxed text-faint">
               Your game&rsquo;s revenue never touches any of this. Roblox
               prohibits blockchain integrations and off-platform monetisation, so
               what your game earns stays in Robux and stays yours. We charge for
@@ -351,11 +265,12 @@ export default async function Home() {
       </section>
 
       <footer className="border-t border-bench-700 px-5 py-8">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2">
+        <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-6 gap-y-2 text-center">
           <p className="label">Voxel Bench · ETHOnline 2026</p>
-          <p className="label !text-faint">built from scratch · see AI_USAGE.md</p>
+          <p className="label !text-faint">built from scratch</p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
