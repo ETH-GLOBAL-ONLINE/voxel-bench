@@ -11,6 +11,7 @@
 // and a card that shows the ledger's address is a card that can be checked.
 
 import { useEffect, useState } from "react";
+import LogoLoader from "./LogoLoader";
 
 type Row = {
   id: string;
@@ -45,10 +46,7 @@ export default function Marketplace() {
   if (!book) {
     return (
       <div className="slot p-5">
-        <p className="label flex items-center gap-2 !text-sap">
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
-          reading the ledger…
-        </p>
+        <LogoLoader label="reading the ledger…" size={44} />
       </div>
     );
   }

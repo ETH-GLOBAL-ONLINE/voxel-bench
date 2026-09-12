@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { short, useWallet } from "./walletCore";
 import { skipTour, Spotlight, TourBubble, TOUR_EVENTS, TOUR_STEPS, tourOn } from "./Tour";
 import { BackpackIcon, DockButton } from "./DockButton";
+import LogoLoader from "./LogoLoader";
 
 type Item = {
   id: string;
@@ -236,12 +237,7 @@ export default function Backpack() {
                 </p>
               )}
 
-              {!error && !items && (
-                <p className="label flex items-center gap-2 !text-sap">
-                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
-                  reading the chain…
-                </p>
-              )}
+              {!error && !items && <LogoLoader label="reading the chain…" />}
 
               {view === "created" && items && items.length === 0 && unreadable.length === 0 && (
                 <p className="text-sm text-dim">

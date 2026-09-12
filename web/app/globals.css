@@ -60,6 +60,29 @@
   }
 }
 
+/* The logo while something slow loads: a float and a breathing glow. */
+@keyframes logo-loader {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 0 4px rgb(255 174 59 / 0.3));
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+    filter: drop-shadow(0 0 14px rgb(255 174 59 / 0.75));
+  }
+}
+
+.logo-loader {
+  animation: logo-loader 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-loader {
+    animation: none;
+  }
+}
+
 /* The dock floats above the page, but a step of the guide dims it along with
    everything else — except the step that is about the dock itself. */
 html.tour-active .dock {

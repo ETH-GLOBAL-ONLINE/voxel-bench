@@ -6,6 +6,7 @@ import Payments, { type Bill, type LogEntry, type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
 import Wallet, { short, useWallet } from "./Wallet";
 import ObbyBuilder from "./ObbyBuilder";
+import LogoLoader from "./LogoLoader";
 import SpendingCap from "./SpendingCap";
 import Budget, { budgetChanged } from "./Budget";
 import {
@@ -586,7 +587,7 @@ export default function Bench({ sample }: { sample: Sample }) {
 
       {busy && (
         <p className="mt-4 flex items-center gap-2.5 font-mono text-sm text-amber">
-          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber" />
+          <LogoLoader inline />
           {stage}… {elapsed > 0 && `${elapsed}s`}
           <span className="text-faint">
             {mode === "obby"
@@ -844,7 +845,7 @@ export default function Bench({ sample }: { sample: Sample }) {
 
         {publishing && (
           <span className="flex items-center gap-2 font-mono text-sm text-amber">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber" />
+            <LogoLoader inline />
             {publishing}…
           </span>
         )}
