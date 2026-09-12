@@ -15,8 +15,9 @@ export async function POST(req: Request) {
   let name: unknown;
   let apiKey: unknown;
   let userId: unknown;
+  let payer: unknown;
   try {
-    ({ name, apiKey, userId } = await req.json());
+    ({ name, apiKey, userId, payer } = await req.json());
   } catch {
     return Response.json({ error: "expected JSON" }, { status: 400 });
   }
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
         name,
         api_key: typeof apiKey === "string" ? apiKey : undefined,
         user_id: typeof userId === "string" ? userId : undefined,
+        // Whoever is signed in pays for the upload, from their budget.
+        payer: typeof payer === "string" ? payer : undefined,
       }),
       signal: AbortSignal.timeout(15000),
     });

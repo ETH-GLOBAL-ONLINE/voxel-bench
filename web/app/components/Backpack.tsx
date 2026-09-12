@@ -7,9 +7,10 @@
 // it for you, because today the agent pays and the chain sees the agent. Nothing
 // here decides what is whose; the page only shows it.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { short, useWallet } from "./walletCore";
+import { skipTour, Spotlight, TourBubble, TOUR_EVENTS, TOUR_STEPS, tourOn } from "./Tour";
 
 type Item = {
   id: string;
@@ -81,6 +82,42 @@ export default function Backpack() {
     if (open) load();
   }, [open, load]);
 
+  // The guide's fourth step: once something is claimed, point here. Opening
+  // the backpack and closing it again moves the guide on to the obby.
+  const [tour, setTour] = useState(false);
+  const advance = useRef(false);
+  // Whether something was just claimed, which decides what the note promises.
+  const [fresh, setFresh] = useState(true);
+
+  useEffect(() => {
+    const show = (e: Event) => {
+      setFresh((e as CustomEvent<{ claimed?: boolean }>).detail?.claimed !== false);
+      if (tourOn()) setTour(true);
+    };
+    window.addEventListener(TOUR_EVENTS.backpack, show);
+    return () => window.removeEventListener(TOUR_EVENTS.backpack, show);
+  }, []);
+
+  useEffect(() => {
+    if (!open && advance.current) {
+      advance.current = false;
+      window.dispatchEvent(new Event(TOUR_EVENTS.obby));
+    }
+  }, [open]);
+
+  const openIt = () => {
+    if (tour) {
+      setTour(false);
+      advance.current = true;
+    }
+    setOpen(true);
+  };
+
+  const skip = () => {
+    skipTour();
+    setTour(false);
+  };
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -107,13 +144,40 @@ export default function Backpack() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-xs text-dim transition-colors hover:text-ink"
-      >
-        Backpack
-      </button>
+      <span className={`relative inline-block ${tour ? "z-40" : ""}`}>
+        <button
+          type="button"
+          onClick={openIt}
+          className={`text-xs transition-colors hover:text-ink ${
+            tour ? "tour-breathe px-2 py-1 text-amber" : "text-dim"
+          }`}
+        >
+          Backpack
+        </button>
+        {tour && (
+          <>
+            <Spotlight onClose={skip} />
+            <TourBubble
+              step={4}
+              total={TOUR_STEPS}
+              align="right"
+              title="See it in your Backpack."
+              onDismiss={skip}
+              action={{
+                label: "Next: build an obby →",
+                onClick: () => {
+                  setTour(false);
+                  window.dispatchEvent(new Event(TOUR_EVENTS.obby));
+                },
+              }}
+            >
+              {fresh
+                ? "Everything you made or collected, read from the chain. Your new recipe is under Created, with its preview."
+                : "Everything you made or collected, read from the chain. Claim a recipe and it shows up here, under Created."}
+            </TourBubble>
+          </>
+        )}
+      </span>
 
       {/* Rendered into body, not here. The header this button lives in blurs
           what is behind it, and an element with a backdrop filter becomes the
@@ -170,7 +234,12 @@ export default function Backpack() {
                 </p>
               )}
 
-              {!error && !items && <p className="label">reading the chain…</p>}
+              {!error && !items && (
+                <p className="label flex items-center gap-2 !text-sap">
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
+                  reading the chain…
+                </p>
+              )}
 
               {view === "created" && items && items.length === 0 && unreadable.length === 0 && (
                 <p className="text-sm text-dim">

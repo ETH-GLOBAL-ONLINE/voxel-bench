@@ -211,9 +211,9 @@ and `RecipeBook` pays its author; the backpack lists it under Collected.
 Verified with a platform recipe: only the craft stage was paid, the author was
 credited, and the copy appeared in the backpack of the address that asked.
 
-Who collected what is noted by the agent, because today the agent pays and the
-chain sees the agent. It moves onto the chain when each person pays for their
-own crafts.
+Who collected what is noted by the agent, because the chain sees the agent
+crafting. The person's own payment for it — a transfer from their budget in the
+same job — is on the chain beside it.
 
 ### The spending cap is the brake, not a note about one
 
@@ -264,6 +264,22 @@ The same recipe on two chains earning in two currencies, and two owned by
 addresses that are not ours — the ones claimed by accounts holding nothing, by
 signing.
 
+### Each person pays from a budget of their own
+
+Signed in, a visitor gives their agent a budget: a limit in USDC on Arc, set by
+signing an EIP-2612 permit — no gas, no transaction from them. Every job then
+takes what it costs from that budget in one transfer before any work is paid
+for, and a job that fails gives it back. The USDC contract is the brake: past
+the limit the agent is refused, whoever asks. Nobody signed in crafts nothing.
+On testnet a new account is sent 0.10 USDC once, so it can try it.
+
+The agent still pays the services and the authors itself; what changed is whose
+money it is. Who pays what, on which chain: [PAYMENT_FLOW.md](PAYMENT_FLOW.md).
+
+Each stage in the ledger opens into its steps — the 402, the check against the
+name, the signature, the settlement — and a guide walks a first visitor through
+budget, describe, claim, backpack, obby and publish.
+
 ### An obby, built from recipes
 
 "Build an obby" on the bench takes 2 to 12 recipes from your backpack or the
@@ -279,8 +295,8 @@ start, hazards and falling send you back, moving platforms swing and carry you,
 and the finish shows your time. Played through in Studio, start to finish.
 Measured in `LOG.md`.
 
-Not checked yet: publishing a course through Open Cloud. It carries a script,
-and Roblox moderates models with scripts — item 4 below.
+Published through Open Cloud with its script inside and the render set as its
+icon. Opened in Studio from the Creator Hub, it plays.
 
 ### Where it runs
 
@@ -323,12 +339,9 @@ is a mechanic. Generating Luau is the easy part of this project — well
 documented, and unlike geometry it either runs or throws.
 
 The obby already ships one: `bench/obby_runtime.lua`, written into the course
-model by `bench/to_rbxmx.py`. It runs when the model is dropped into Studio.
-
-**Worth checking first:** Roblox moderates models containing scripts, and no
-model with a script has been published through Open Cloud yet. If that takes
-hours rather than seconds, publishing a course stays out of a live demo and the
-course is dropped into Studio from the file instead.
+model by `bench/to_rbxmx.py`. It runs when the model is dropped into Studio, and
+a course with it inside has been published through Open Cloud. What is left is
+scripts on single objects.
 
 ### 5. The video
 

@@ -6,7 +6,12 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-export default function Viewer({ src }: { src: string }) {
+/**
+ * `closer` frames the object twice as close. Worth it for the sample garden,
+ * which is seventy studs across and reads as a speck otherwise; a crafted prop
+ * keeps the frame with room around it.
+ */
+export default function Viewer({ src, closer = false }: { src: string; closer?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,8 +84,10 @@ export default function Viewer({ src }: { src: string }) {
       const reach = Math.max(size.x, size.y, size.z);
       if (!Number.isFinite(reach) || reach <= 0) return;
 
+      // A frame with room to spare, or twice as close when asked: then the
+      // object fills the panel and orbiting shows the rest.
       const distance =
-        (reach / 2 / Math.tan((camera.fov * Math.PI) / 360)) * 1.5;
+        (reach / 2 / Math.tan((camera.fov * Math.PI) / 360)) * (closer ? 0.75 : 1.5);
       camera.position.set(
         middle.x + distance * 0.7,
         middle.y + distance * 0.45,
@@ -130,7 +137,7 @@ export default function Viewer({ src }: { src: string }) {
       renderer.dispose();
       el.removeChild(renderer.domElement);
     };
-  }, [src]);
+  }, [src, closer]);
 
   return <div ref={host} className="h-full w-full" />;
 }

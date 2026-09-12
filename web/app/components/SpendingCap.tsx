@@ -41,8 +41,9 @@ export default function SpendingCap() {
   return (
     <div className="slot mt-4 p-4">
       <p className="label">
-        what the agent may spend in {hours} hours — one cap per chain, because a
-        cap is a number in a currency
+        the platform&apos;s daily cap on its agent — shared by everyone, separate
+        from your budget. What the agent may still spend in {hours} hours, one
+        cap per chain
       </p>
 
       <ul className="mt-3 space-y-3">
@@ -58,7 +59,7 @@ export default function SpendingCap() {
                   {cap.chainName}
                 </span>
                 <span className="font-mono text-xs text-amber">
-                  {cap.remainingLabel} of {cap.capLabel}
+                  {cap.remainingLabel} left today, of {cap.capLabel}
                 </span>
               </div>
               <div

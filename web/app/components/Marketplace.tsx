@@ -45,7 +45,10 @@ export default function Marketplace() {
   if (!book) {
     return (
       <div className="slot p-5">
-        <p className="label">reading the ledger…</p>
+        <p className="label flex items-center gap-2 !text-sap">
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
+          reading the ledger…
+        </p>
       </div>
     );
   }
@@ -83,7 +86,9 @@ export default function Marketplace() {
         </span>
       </div>
 
-      <ol className="space-y-px">
+      {/* A grid rather than a column: the card has the section's full width,
+          and a single column of rows stretched across it reads as empty. */}
+      <ol className="grid gap-px sm:grid-cols-2 lg:grid-cols-3">
         {/* Keyed by chain too: the same recipe can be published on both. */}
         {book.recipes.map((row) => (
           <li key={`${row.chain}-${row.id}`} className="bg-bench-950 px-3 py-2.5">

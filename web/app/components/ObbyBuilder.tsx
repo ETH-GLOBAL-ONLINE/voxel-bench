@@ -171,7 +171,12 @@ export default function ObbyBuilder({
       <div className="mt-4">
         <p className="label mb-2">Pieces</p>
         {error && <p className="text-sm text-ember">{error}</p>}
-        {!error && !palette && <p className="label">reading your backpack and the shelf…</p>}
+        {!error && !palette && (
+          <p className="label flex items-center gap-2 !text-sap">
+            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
+            reading your backpack and the shelf…
+          </p>
+        )}
         {palette && palette.length === 0 && (
           <p className="text-xs text-faint">No pieces yet. Get some from the Marketplace.</p>
         )}
@@ -214,9 +219,15 @@ export default function ObbyBuilder({
         </p>
       )}
 
+      {!address && (
+        <p className="mt-4 text-xs text-faint">
+          Sign in above to craft a course — your agent pays with a budget of your own.
+        </p>
+      )}
+
       <button
         type="button"
-        disabled={busy || course.length < 2}
+        disabled={busy || course.length < 2 || !address}
         onClick={() => onCraft(course.map((piece) => piece.id))}
         className="mt-4 bg-amber px-6 py-2.5 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
