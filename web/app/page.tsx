@@ -202,9 +202,35 @@ export default async function Home() {
           <Onchain />
 
           {/* The shelf gets the full width, and room under it before the
-              footer. */}
+              sponsors. */}
           <div className="mt-16" style={{ paddingBottom: "3rem" }}>
             <Marketplace />
+          </div>
+
+          {/* What it runs on: small, quiet marks, each linking to its own
+              site. */}
+          <div className="flex flex-col items-center gap-3">
+            <p className="label !text-faint">Built with</p>
+            <ul className="sponsors">
+              {[
+                ["Arc", "/sponsors/arc.webp", "https://www.arc.network"],
+                ["ENS", "/sponsors/ens.webp", "https://ens.domains"],
+                ["Hedera", "/sponsors/hedera.webp", "https://hedera.com"],
+              ].map(([name, src, href]) => (
+                <li key={name}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={name}
+                    aria-label={name}
+                    className="sponsor"
+                  >
+                    <Image src={src} alt="" width={40} height={40} />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
