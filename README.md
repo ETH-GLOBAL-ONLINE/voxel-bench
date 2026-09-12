@@ -225,7 +225,9 @@ The backpack reads names and previews from a Supabase catalog. The site needs
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; the agent
 that writes it needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
 The schema is `supabase/migrations/0001_recipes.sql`, and recipes crafted before
-the catalog existed are filed with `node services/agent/backfill-catalog.mjs`.
+the catalog existed are filed with `node services/agent/backfill-catalog.mjs`. Recipes the platform offers are
+published with `node services/agent/publish-stock.mjs`, which reads the list in
+`out/marketplace-review/keep.txt` and sends nothing without `--publish`.
 
 ## Deploying
 

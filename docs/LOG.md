@@ -717,3 +717,64 @@ with a way to try again, next to whatever did load. The marketplace reads the
 same node the same way.
 
 The two recipes came back on the first call after the change, in five seconds.
+
+## A marketplace, and who owns what
+
+### The platform is an author too
+
+The marketplace needed stock, and the recipe library had none of it on the
+chain. The platform now publishes recipes under its own address and is paid
+like any author. A review folder held every candidate render; the ones kept
+were published by a script that only sends with `--publish`, skips anything
+already owned, and publishes a recipe once even when two files hold the same
+content. 47 went onto Arc; two library recipes turned out identical to crafts
+from the bench.
+
+### Getting a recipe skips the model
+
+Get it asks the agent for a recipe by id. The agent reads it from the catalog,
+hashes it to check it is the recipe it claims to be, and pays only the craft
+stage: no model is asked for something that already exists. `RecipeBook` sees
+a recipe with an author and pays them. Tried with the obby start pad: one stage
+paid, the platform credited 0.0009 USDC as author, and the copy listed under
+Collected for the address that asked.
+
+### First to claim is not the same as author
+
+SR-01, from the contract audit: `publish` gives a recipe to whoever claims its
+id first. A test here added that `publishFor` does the same for an observer who
+signs for themselves. The catalog had made that reachable, since it listed
+recipes nobody owned yet. New recipes are now filed only once owned, and the
+platform stock is owned by the platform. The seven rows from before the change
+that nobody owned were removed from the catalog. The contract fix is written up
+in `docs/MAINNET.md`.
+
+### An id is not a recipe
+
+Two entries on the shelf had no name. Both were the same id, on Hedera and on
+Arc, and it was the hash of the word `market_stall`: the live check that proved
+the 90/10 split published an id with no recipe behind it. The chain keeps it,
+and has to, since RecipeBook cannot unpublish anything. The marketplace now
+lists only recipes the catalog can hand to the crafter, because getting one of
+those would have failed.
+
+
+### Your own recipe is not something you collect
+
+The marketplace offered Get it on the visitor's own recipes. Getting one would
+have paid them their own author share, counted a craft nobody else made, and
+listed their own work under Collected. Their recipes are marked Yours instead,
+and the agent refuses to note a collection whose collector is the recipe's
+author, whoever calls it. Crafting your own recipe again is still a sentence at
+the bench away; the recipe is reused.
+
+### A busy node, again
+
+With the marketplace, the backpack and tests all reading Arc, its public node
+refused the marketplace too, which said so rather than showing an empty shelf.
+Chain reads are now kept for twenty seconds on the server, and when the node
+refuses, the last good reading is served: the chain only grows, so an answer
+from seconds ago is still true. A chain never read yet is still reported as
+unreadable. The block number, the one read that failed without a retry, now
+retries like the rest.
+

@@ -4,68 +4,15 @@
 // indexed by author, so each chain answers for itself, with the bench switched
 // off as well as on.
 //
-// What a recipe is — its name, its preview — comes from the catalog, filed
-// under the recipe's id. A row whose content does not hash to that id is
-// ignored, so the catalog can be missing a recipe but cannot put the wrong name
-// on someone's work. A recipe it does not have is still listed, by its id.
+// What a recipe is — its name, its preview — comes from the catalog, which
+// checks every row against the id it is filed under. A recipe the catalog does
+// not have is still listed, by its id.
 
-import { isAddress, keccak256, toHex } from "viem";
+import { isAddress } from "viem";
+import { readCatalog, readCollected } from "../catalog";
 import { LEDGERS, ownedBy, type LedgerName } from "../chain";
 
 export const dynamic = "force-dynamic";
-
-// The agent's hash, reproduced: keys sorted at every depth, no whitespace. Two
-// serialisations that disagree by one space are two different recipes.
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    const keys = Object.keys(record).sort();
-    return `{${keys.map((k) => `${JSON.stringify(k)}:${canonical(record[k])}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-type Filed = { name: string; preview: string | null; ingredients: number | null };
-
-async function readCatalog(ids: string[]): Promise<Map<string, Filed>> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const found = new Map<string, Filed>();
-  if (!url || !key || !ids.length) return found;
-
-  try {
-    const res = await fetch(
-      `${url}/rest/v1/recipes?select=id,name,recipe,preview_path&id=in.(${ids.join(",")})`,
-      { headers: { apikey: key }, cache: "no-store" },
-    );
-    if (!res.ok) return found;
-
-    const rows = (await res.json()) as {
-      id: string;
-      name: string;
-      recipe: { ingredients?: unknown[] };
-      preview_path: string | null;
-    }[];
-
-    for (const row of rows) {
-      // Checked, not trusted.
-      if (keccak256(toHex(canonical(row.recipe))).toLowerCase() !== row.id) continue;
-      found.set(row.id, {
-        name: row.name,
-        preview: row.preview_path
-          ? `${url}/storage/v1/object/public/previews/${row.preview_path}`
-          : null,
-        ingredients: Array.isArray(row.recipe?.ingredients)
-          ? row.recipe.ingredients.length
-          : null,
-      });
-    }
-  } catch {
-    // Without the catalog the backpack still lists what the chain says.
-  }
-  return found;
-}
 
 export async function GET(req: Request) {
   const address = new URL(req.url).searchParams.get("address") ?? "";
@@ -86,7 +33,13 @@ export async function GET(req: Request) {
     .filter((_, i) => settled[i].status === "rejected")
     .map((name) => LEDGERS[name].chain.name);
 
-  const catalog = await readCatalog([...new Set(owned.map((r) => r.id))]);
+  // What they got from the marketplace, as opposed to what they made. The
+  // payment for each is on the chain; who it was for is noted by the agent.
+  const got = await readCollected(address);
+
+  const catalog = await readCatalog([
+    ...new Set([...owned.map((r) => r.id), ...got.map((c) => c.id)]),
+  ]);
 
   const items = owned.map((r) => ({
     ...r,
@@ -95,5 +48,11 @@ export async function GET(req: Request) {
     ingredients: catalog.get(r.id)?.ingredients ?? null,
   }));
 
-  return Response.json({ address, items, unreadable });
+  const collected = got.map((c) => ({
+    ...c,
+    name: catalog.get(c.id)?.name ?? null,
+    preview: catalog.get(c.id)?.preview ?? null,
+  }));
+
+  return Response.json({ address, items, collected, unreadable });
 }

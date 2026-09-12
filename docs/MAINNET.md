@@ -121,6 +121,19 @@ multichain deployment stays one deployment.
 
 ---
 
+### 7. Authorship is attested, not first come
+
+Today the first address to claim a recipe owns it, which assumes nobody else has
+seen its id (SR-01 in `docs/CONTRACT_AUDIT.md`). On a public chain, with a
+public catalog, that does not hold. The fix is a claim carrying two signatures:
+the author, as now, and the agent that crafted the recipe for them, attesting
+that this address asked for this content. An observer can sign for themselves
+but cannot obtain the attestation for work they did not request.
+
+It changes `RecipeBook`, so it means a new deployment and re-publishing the
+recipes that have owners under the new contract, attested by the agent. The
+application keeps the exposure closed until then.
+
 ## The Arc Mainnet question, specifically
 
 Deploying to Arc Mainnet by 30 September would take:

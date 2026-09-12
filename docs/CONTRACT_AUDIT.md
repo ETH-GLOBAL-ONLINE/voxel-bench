@@ -26,11 +26,13 @@ The same contracts are on Arc testnet at different addresses — `docs/STATUS.md
 has both columns. `RecipeBook` gained `publishFor` after the first deployment,
 which is why the addresses changed and why the two chains no longer match.
 
-**The flow.** An author calls `publish(recipeId)` and owns that recipe — the id
-is the hash of its content, so republishing cannot take it from them. Someone
-crafting with it calls `craft(recipeId)` with a payment; `RecipeBook` splits it,
-forwards both parts to `SplitVault` and counts the craft. The author withdraws
-when they like.
+**The flow.** The first address to claim a recipe owns it, through `publish`
+or, signed and relayed, through `publishFor`. The id is the hash of the
+content, so a second claim of the same id is refused. What that does not do is
+prove the first claimant wrote it: see SR-01 below. Someone crafting with a
+recipe calls `craft(recipeId)` with a payment; `RecipeBook` splits it, forwards
+both parts to `SplitVault` and counts the craft. The author withdraws when they
+like.
 
 Separately, the agent that runs the crafting draws its spending money from
 `Allowance`, which refuses past a cap. It holds no other funds, so the ceiling
@@ -121,3 +123,31 @@ read from `RecipeBook` rather than mocked.
 That last one is the reason the library and the contracts are the same project
 rather than two. The contracts are the accounting; your recipes are what there
 is to account for.
+
+---
+
+## Findings
+
+### SR-01: the first observer of an id can take the recipe
+
+Found by Stefan, with a proof of concept. `publish(recipeId)` gives a recipe to
+whoever calls it first, and nothing proves that caller wrote it. The id is a
+hash of content that can be seen, so anyone who has seen an unclaimed id can
+claim it, and every later craft pays them the author share.
+
+The signed route has the same gap. `publishFor` checks that the signature
+matches the author it is handed, and an observer can hand it their own address
+with their own signature; no one else is needed. Removing `publish` alone does
+not close it. `contracts/test/FrontRunPublishFor.t.sol` shows it: the observer
+claims the id, and the real author's valid signature is then refused.
+
+What made it reachable here was the catalog, which listed recipes nobody owned
+yet, contents included. That is closed on the application side:
+
+- a new recipe is filed in the catalog only once someone owns it on the chain;
+- the recipes the platform offers are published under its own address, so they
+  have an owner and cannot be claimed first.
+
+The contract-level fix is in `docs/MAINNET.md`: a claim that also carries the
+signature of the agent that performed the craft, so only someone who crafted a
+recipe can be recorded as its author.

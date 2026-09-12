@@ -9,6 +9,7 @@
 // Optional by design. Without SUPABASE_SERVICE_ROLE_KEY the bench crafts and
 // settles exactly as before, and the catalog simply does not grow.
 import { readFile } from "node:fs/promises";
+import { recipeId } from "./recipes.mjs";
 
 const base = () => process.env.SUPABASE_URL;
 const secret = () => process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -65,6 +66,52 @@ export async function saveRecipe({ id, recipe, preview }) {
       return { saved: false, error: `${res.status} ${(await res.text()).slice(0, 200)}` };
     }
     return { saved: true, preview: previewPath };
+  } catch (err) {
+    return { saved: false, error: err?.message ?? String(err) };
+  }
+}
+
+/**
+ * A recipe's content, read back from the catalog and checked against its id.
+ * Null when the catalog does not have it or has something else under that id.
+ */
+export async function fetchRecipe(id) {
+  if (!catalogEnabled()) return null;
+  try {
+    const res = await fetch(`${base()}/rest/v1/recipes?select=recipe&id=eq.${id}`, {
+      headers: headers(),
+    });
+    if (!res.ok) return null;
+    const [row] = await res.json();
+    if (!row?.recipe) return null;
+    return recipeId(row.recipe).toLowerCase() === id.toLowerCase() ? row.recipe : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Note that `collector` got a copy of a recipe from the marketplace. The payment
+ * to its author is on the chain already; this records who it was for, which the
+ * chain cannot while the agent is the one paying. Never throws.
+ */
+export async function saveCollection({ collector, recipeId: id, chain, transaction }) {
+  if (!catalogEnabled() || !collector) return { saved: false, skipped: "nobody to note" };
+  try {
+    const res = await fetch(`${base()}/rest/v1/collections`, {
+      method: "POST",
+      headers: headers({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        collector: collector.toLowerCase(),
+        recipe_id: id.toLowerCase(),
+        chain,
+        transaction,
+      }),
+    });
+    if (!res.ok) {
+      return { saved: false, error: `${res.status} ${(await res.text()).slice(0, 200)}` };
+    }
+    return { saved: true };
   } catch (err) {
     return { saved: false, error: err?.message ?? String(err) };
   }

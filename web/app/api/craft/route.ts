@@ -14,13 +14,19 @@ export async function POST(req: Request) {
   if (!target) return Response.json(OFFLINE, { status: 503 });
 
   let prompt: unknown;
+  let recipeId: unknown;
+  let collector: unknown;
   try {
-    ({ prompt } = await req.json());
+    ({ prompt, recipeId, collector } = await req.json());
   } catch {
     return Response.json({ error: "expected JSON" }, { status: 400 });
   }
 
-  if (typeof prompt !== "string" || prompt.trim().length < 3) {
+  // A recipe from the marketplace is asked for by its id; a new one by a
+  // sentence. The agent checks both.
+  const fromMarketplace = typeof recipeId === "string" && /^0x[0-9a-fA-F]{64}$/.test(recipeId);
+
+  if (!fromMarketplace && (typeof prompt !== "string" || prompt.trim().length < 3)) {
     return Response.json(
       { error: "Say a little more about what you want." },
       { status: 400 },
@@ -31,7 +37,14 @@ export async function POST(req: Request) {
     const res = await fetch(new URL("/craft", target.base), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: prompt.trim().slice(0, 280) }),
+      body: JSON.stringify(
+        fromMarketplace
+          ? {
+              recipeId,
+              collector: typeof collector === "string" ? collector : undefined,
+            }
+          : { prompt: (prompt as string).trim().slice(0, 280) },
+      ),
       // The agent reads the price list before it answers, so give it a little
       // longer than the crafter needed just to accept a job.
       signal: AbortSignal.timeout(15000),

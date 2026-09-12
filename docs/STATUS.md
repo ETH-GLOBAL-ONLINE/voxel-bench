@@ -201,6 +201,20 @@ of each recipe and checked against it. 34 recipes are in the catalog. The site
 needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and
 the agent files new crafts with `SUPABASE_SERVICE_ROLE_KEY`.
 
+### A marketplace, stocked by the platform
+
+The header offers Marketplace: every recipe on both chains that can be
+crafted, with its preview, author and earnings. The platform publishes recipes of its own under its own
+address, like any author: 47 are on Arc, from the recipe library and from the
+bench. Get it crafts a recipe for you from the catalog, with no model asked,
+and `RecipeBook` pays its author; the backpack lists it under Collected.
+Verified with a platform recipe: only the craft stage was paid, the author was
+credited, and the copy appeared in the backpack of the address that asked.
+
+Who collected what is noted by the agent, because today the agent pays and the
+chain sees the agent. It moves onto the chain when each person pays for their
+own crafts.
+
 ### The spending cap is the brake, not a note about one
 
 Every craft begins by drawing what it is about to spend out of an `Allowance`

@@ -25,7 +25,7 @@ import express from "express";
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
 import { claimTypedData, published, recipeId, settle } from "./recipes.mjs";
 import { allCaps, draw } from "./allowance.mjs";
-import { saveRecipe } from "./catalog.mjs";
+import { fetchRecipe, saveCollection, saveRecipe } from "./catalog.mjs";
 
 loadEnv();
 
@@ -152,7 +152,7 @@ function message(err) {
   return text.slice(0, 400);
 }
 
-async function runCraft(id, prompt) {
+async function runCraft(id, prompt, { recipe: existing = null, collector = null } = {}) {
   try {
     // Draw what this craft will cost before spending any of it. When the
     // window's cap is used up the contract refuses, and the craft stops here —
@@ -164,7 +164,11 @@ async function runCraft(id, prompt) {
     }
     set(id, { allowance });
 
-    const { recipe, notes, usage } = await payFor(id, "recipe", { prompt });
+    // A recipe from the marketplace already exists: no model is asked for it,
+    // which is why getting one is quick and costs only the craft.
+    const { recipe, notes, usage } = existing
+      ? { recipe: existing, notes: ["Crafted from the marketplace: no model was asked."], usage: null }
+      : await payFor(id, "recipe", { prompt });
 
     set(id, { stage: "crafting it in Blender" });
     const built = await payFor(id, "craft", { recipe });
@@ -176,19 +180,34 @@ async function runCraft(id, prompt) {
     set(id, { stage: "recording it on RecipeBook" });
     const book = await settle(recipe);
 
-    // File what it is in the catalog, so a backpack can show it by name while
-    // this machine is asleep. Optional, and never allowed to fail the craft.
-    const catalog = await saveRecipe({
-      id: recipeId(recipe),
-      recipe,
-      preview: resolve(OUT, `${built.name}_preview.png`),
-    });
+    // A new recipe is not filed in the catalog yet. Unowned, its id is up for
+    // grabs to whoever sees it first (SR-01), and the catalog is public. It is
+    // filed when someone claims it — see /claim.
+    const catalog = { saved: false, skipped: existing ? "already in the catalog" : "filed when claimed" };
+
+    // A copy got from the marketplace is noted against whoever asked for it.
+    // Its author has just been paid on the chain; this says who it was for.
+    // Never your own work: a copy of a recipe you wrote is not something you
+    // collected, whoever calls this.
+    const collected =
+      existing &&
+      collector &&
+      book.action === "crafted" &&
+      collector.toLowerCase() !== String(book.author ?? "").toLowerCase()
+        ? await saveCollection({
+            collector,
+            recipeId: book.id,
+            chain: book.chain,
+            transaction: book.transaction,
+          })
+        : null;
 
     set(id, {
       status: "done",
       stage: null,
       book,
       catalog,
+      collected,
       result: {
         name: built.name,
         recipe,
@@ -269,17 +288,32 @@ async function quote(res) {
 
 app.post("/craft", async (req, res) => {
   const prompt = String(req.body?.prompt ?? "").trim();
-  if (prompt.length < 3) {
+  const wanted = String(req.body?.recipeId ?? "").toLowerCase();
+  const asked = String(req.body?.collector ?? "");
+  const collector = /^0x[0-9a-fA-F]{40}$/.test(asked) ? asked : null;
+
+  // Either a sentence, which the model turns into a new recipe, or the id of one
+  // that exists, which is crafted from the catalog as it is.
+  let recipe = null;
+  if (wanted) {
+    if (!/^0x[0-9a-f]{64}$/.test(wanted)) {
+      return res.status(400).json({ error: "bad recipe id" });
+    }
+    recipe = await fetchRecipe(wanted);
+    if (!recipe) return res.status(404).json({ error: "That recipe is not in the catalog." });
+  } else if (prompt.length < 3) {
     return res.status(400).json({ error: "Say a little more about what you want." });
   }
 
   const offer = await quote(res);
   if (!offer) return;
 
-  const stages = Object.values(offer.services).filter((s) => s.stage !== "publish");
+  const stages = Object.values(offer.services).filter(
+    (s) => s.stage !== "publish" && !(recipe && s.stage === "recipe"),
+  );
   const id = start("craft", offer, stages);
 
-  runCraft(id, prompt.slice(0, 280));
+  runCraft(id, recipe ? null : prompt.slice(0, 280), { recipe, collector });
   res.json({ job: id, agent: agent.accountId, payTo: offer.payTo });
 });
 
@@ -324,6 +358,17 @@ app.post("/claim", async (req, res) => {
     return res.status(400).json({ error: "recipe, author and signature are required" });
   }
   const result = await settle(recipe, { author, signature });
+
+  // Owned now, so it can go in the catalog: the backpack shows it by name, and
+  // its id is no longer something a stranger could claim first.
+  if (result.action === "published") {
+    result.catalog = await saveRecipe({
+      id: result.id,
+      recipe,
+      preview: resolve(OUT, `${recipe.name}_preview.png`),
+    });
+  }
+
   res.status(result.action === "failed" ? 502 : 200).json(result);
 });
 
