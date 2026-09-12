@@ -27,7 +27,7 @@ const STATS: Stat[] = [
   { value: 7, decimals: 0, prefix: "~", suffix: "s", label: "to craft" },
   { value: 0.006, decimals: 3, label: "USDC a craft" },
   { value: 0, decimals: 0, label: "gas" },
-  { value: 0, decimals: 0, label: "installs" },
+  { value: 2, decimals: 0, label: "chains" },
 ];
 
 const shown = (s: Stat, v = s.value) => `${s.prefix ?? ""}${v.toFixed(s.decimals)}${s.suffix ?? ""}`;

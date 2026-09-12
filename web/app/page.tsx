@@ -119,7 +119,7 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-5 py-20">
           <h2 className="text-2xl font-bold tracking-tight">How it works</h2>
           <p className="mt-2 max-w-lg text-dim">
-            Nothing to install. A browser is enough.
+            From a sentence to your Roblox account.
           </p>
 
           <Reveal deep>
