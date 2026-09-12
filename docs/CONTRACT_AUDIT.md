@@ -1,4 +1,4 @@
-# Contract audit — for Stefan
+# Contract audit — for Stefan (Keedz1)
 
 **Independent of everything else.** The contracts are written, deployed and
 tested; nothing in the pipeline is waiting on this. Pick it up whenever it suits
