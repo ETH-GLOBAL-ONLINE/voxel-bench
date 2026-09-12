@@ -154,7 +154,9 @@ if course:GetAttribute("Night") ~= false then
 			light.Range = math.max(24, math.max(size.X, size.Z) + 18)
 			light.Shadows = true
 			light.Parent = lamp
-			lamp.Parent = model
+			-- Under the course, not the piece: a lamp inside a piece would
+			-- stretch its bounding box, which the rest of this script reads.
+			lamp.Parent = course
 		end
 	end
 end
