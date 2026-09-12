@@ -74,6 +74,17 @@ type Ledger = {
 };
 
 const POLL_MS = 2000;
+
+// The public Roblox place an obby is played in. A link opens it with the
+// published asset as launch data, and the place loads that obby and runs it
+// (bench/try_in_roblox.lua).
+const ARENA_PLACE_ID = process.env.NEXT_PUBLIC_ROBLOX_ARENA_PLACE_ID ?? "132422861239342";
+
+/** A link that starts the arena with this asset, through Roblox's deep link. */
+const playLink = (assetId: string) =>
+  `https://www.roblox.com/games/start?placeId=${ARENA_PLACE_ID}&launchData=${encodeURIComponent(
+    JSON.stringify({ creatorStoreAssetId: assetId }),
+  )}`;
 // The crafter's own deadline is 120s for the recipe plus Blender's time. Give
 // up a little after that rather than leaving a spinner running forever.
 const GIVE_UP_MS = 210_000;
@@ -898,14 +909,32 @@ export default function Bench({ sample }: { sample: Sample }) {
             Done — it is published to your Roblox account. Find it in the
             Creator Dashboard under Creations → Development Items → Models.
           </p>
-          <a
-            href="https://create.roblox.com/dashboard/creations"
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-block bg-amber px-4 py-2 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
-          >
-            Open the Creator Dashboard ↗
-          </a>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {/* An obby can be played at once: the arena loads it by its
+                asset id. Anything else is a prop, with nothing to play. */}
+            {result?.name.startsWith("obby_") && (
+              <a
+                href={playLink(published.assetId)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block bg-amber px-4 py-2 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
+              >
+                Play it in Roblox ↗
+              </a>
+            )}
+            <a
+              href="https://create.roblox.com/dashboard/creations"
+              target="_blank"
+              rel="noreferrer"
+              className={
+                result?.name.startsWith("obby_")
+                  ? "inline-block border border-amber/60 px-4 py-2 text-sm text-amber transition-colors hover:bg-amber/10"
+                  : "inline-block bg-amber px-4 py-2 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
+              }
+            >
+              Open the Creator Dashboard ↗
+            </a>
+          </div>
           {published.icon && (
             <p
               className={`mt-3 text-xs ${published.icon.set ? "text-sap" : "text-ember"}`}
