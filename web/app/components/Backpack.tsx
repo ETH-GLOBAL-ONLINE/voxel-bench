@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { short, useWallet } from "./walletCore";
 import { skipTour, Spotlight, TourBubble, TOUR_EVENTS, TOUR_STEPS, tourOn } from "./Tour";
+import { BackpackIcon, DockButton } from "./DockButton";
 
 type Item = {
   id: string;
@@ -105,6 +106,13 @@ export default function Backpack() {
     }
   }, [open]);
 
+  // This step is about a button in the dock, so the dock stays above the dim.
+  useEffect(() => {
+    if (!tour) return;
+    document.documentElement.classList.add("tour-dock");
+    return () => document.documentElement.classList.remove("tour-dock");
+  }, [tour]);
+
   const openIt = () => {
     if (tour) {
       setTour(false);
@@ -145,22 +153,14 @@ export default function Backpack() {
   return (
     <>
       <span className={`relative inline-block ${tour ? "z-40" : ""}`}>
-        <button
-          type="button"
-          onClick={openIt}
-          className={`text-xs transition-colors hover:text-ink ${
-            tour ? "tour-breathe px-2 py-1 text-amber" : "text-dim"
-          }`}
-        >
-          Backpack
-        </button>
+        <DockButton label="Backpack" icon={<BackpackIcon />} onClick={openIt} glowing={tour} />
         {tour && (
           <>
             <Spotlight onClose={skip} />
             <TourBubble
               step={4}
               total={TOUR_STEPS}
-              align="right"
+              placement="left"
               title="See it in your Backpack."
               onDismiss={skip}
               action={{
@@ -186,6 +186,8 @@ export default function Backpack() {
       {open &&
         createPortal(
           <div
+            // Its own scroll: the page's smooth scroll leaves it alone.
+            data-lenis-prevent
             className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-16"
             onClick={() => setOpen(false)}
           >

@@ -1,11 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import Image from "next/image";
 import Bench from "./components/Bench";
+import Hero from "./components/Hero";
+import Marquee from "./components/Marquee";
+import Reveal from "./components/Reveal";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
 import { HeaderWallet } from "./components/Wallet";
-import MarketplaceModal from "./components/MarketplaceModal";
+import Dock from "./components/Dock";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/sakura_garden.report.json";
@@ -84,13 +86,6 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      <div className="border-b border-bench-700 bg-bench-900 px-5 py-2 text-center">
-        <p className="label !text-amber">
-          Prototype · the crafter runs on a real machine, not here · your
-          agent pays each stage from your budget, on Hedera and Arc testnets
-        </p>
-      </div>
-
       <header className="sticky top-0 z-50 border-b border-bench-700 bg-bench-950/90 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center gap-8 px-5 py-4">
           <a href="#top" className="flex items-center gap-2.5">
@@ -117,94 +112,20 @@ export default async function Home() {
               </a>
             ))}
           </div>
-          <MarketplaceModal />
           <HeaderWallet />
         </nav>
       </header>
 
+      {/* Marketplace and Backpack, floating on the right once past the hero. */}
+      <Dock />
+
       {/* ── hero ──────────────────────────────────────────────────────── */}
-      {/* Full-bleed art behind the hero: the scene sits on the right, and a
-          scrim in the page's own ground darkens the left so the text reads
-          over it. A second fade at the bottom hands over to the next section. */}
-      <section
-        id="top"
-        className="relative isolate overflow-hidden border-b border-bench-700 lg:min-h-[40rem]"
-      >
-        <Image
-          src="/hero/voxel-bench-hero.webp"
-          alt=""
-          aria-hidden
-          fill
-          priority
-          sizes="100vw"
-          className="-z-20 object-cover object-[72%_center]"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "linear-gradient(90deg, var(--color-bench-950) 0%, color-mix(in srgb, var(--color-bench-950) 88%, transparent) 36%, color-mix(in srgb, var(--color-bench-950) 25%, transparent) 70%, transparent 100%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 -z-10 h-32"
-          style={{
-            background: "linear-gradient(0deg, var(--color-bench-950) 0%, transparent 100%)",
-          }}
-        />
+      <Hero />
 
-        <div className="mx-auto max-w-6xl px-5 pt-20 pb-16">
-        <p className="label mb-5">
-          Agent-run Roblox studio · ETHOnline 2026
-        </p>
-        <h1 className="max-w-3xl text-4xl leading-[1.08] font-bold tracking-tight sm:text-6xl">
-          Craft your Roblox game,
-          <br />
-          <span className="text-amber">one object at a time.</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
-          Describe what you need. An agent builds it in Blender, uploads it
-          straight to your own Roblox account, and pays for each step from a
-          budget you give it with one signature. You install nothing.
-        </p>
-        <p className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects and playable obbies work today, and every recipe has an owner
-          who earns when someone else crafts it. Objects that act on their own
-          are next.
-        </p>
-
-        <div className="mt-9 flex flex-wrap gap-3">
-          <a
-            href="#bench"
-            className="bg-amber px-5 py-2.5 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90"
-          >
-            See what it crafted
-          </a>
-          <a
-            href="#how"
-            className="border border-bench-600 px-5 py-2.5 text-sm text-dim transition-colors hover:text-ink"
-          >
-            How it works
-          </a>
-        </div>
-
-        <dl className="mt-16 grid max-w-2xl grid-cols-2 gap-px border border-bench-700 bg-bench-700 sm:grid-cols-4">
-          {[
-            ["~7s", "to craft in Blender"],
-            ["0.006", "USDC a craft"],
-            ["0", "gas for you"],
-            ["0", "installs"],
-          ].map(([v, k]) => (
-            <div key={k} className="bg-bench-900 px-4 py-3.5">
-              <dt className="font-mono text-xl text-amber">{v}</dt>
-              <dd className="label mt-1">{k}</dd>
-            </div>
-          ))}
-        </dl>
-        </div>
-      </section>
+      {/* Everything after the hero, opaque and above it, so it covers the
+          pinned hero as the page scrolls. */}
+      <div className="relative z-10 bg-bench-950">
+      <Marquee />
 
       {/* ── how it works ──────────────────────────────────────────────── */}
       <section id="how" className="border-t border-bench-700 bg-bench-900">
@@ -214,6 +135,7 @@ export default async function Home() {
             No Blender. No Roblox Studio. A browser.
           </p>
 
+          <Reveal deep>
           <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s) => (
               <li key={s.n} className="bg-bench-850 p-6">
@@ -223,6 +145,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -269,6 +192,7 @@ export default async function Home() {
             beats a big one we cannot.
           </p>
 
+          <Reveal deep>
           <ol className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
             {STAGES.map((s) => (
               <li key={s.t} className="bg-bench-850 p-6">
@@ -282,6 +206,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          </Reveal>
         </div>
       </section>
 
@@ -293,6 +218,7 @@ export default async function Home() {
             Three reasons, none of them decorative.
           </p>
 
+          <Reveal deep>
           <div className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
             <div className="bg-bench-850 p-6">
               <h3 className="font-semibold">Two cents in, ninety out</h3>
@@ -321,6 +247,7 @@ export default async function Home() {
               </p>
             </div>
           </div>
+          </Reveal>
 
           {/* the mechanism, briefly */}
           <div className="mt-px grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-[1fr_minmax(0,22rem)]">
@@ -397,6 +324,7 @@ export default async function Home() {
           <p className="label !text-faint">built from scratch · see AI_USAGE.md</p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

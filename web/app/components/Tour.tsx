@@ -43,13 +43,24 @@ export function bringIntoView(el: HTMLElement | null) {
   const top = el.getBoundingClientRect().top + window.scrollY;
   const room = window.innerHeight - el.offsetHeight - 190;
   const offset = Math.max(80, Math.min(room / 2, 160));
-  window.scrollTo({ top: Math.max(0, top - offset), behavior: "smooth" });
+  const target = Math.max(0, top - offset);
+  // Through the page's smooth scroll when there is one, so the two never
+  // pull in different directions.
+  if (window.__lenis) window.__lenis.scrollTo(target);
+  else window.scrollTo({ top: target, behavior: "smooth" });
 }
 
 export function Spotlight({ onClose }: { onClose: () => void }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => setHost(document.body), []);
+
+  // While a step is up, anything floating above the page (the dock) goes
+  // under the dim with everything else, unless the step is about it.
+  useEffect(() => {
+    document.documentElement.classList.add("tour-active");
+    return () => document.documentElement.classList.remove("tour-active");
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -78,6 +89,7 @@ export function TourBubble({
   onDismiss,
   action,
   align = "left",
+  placement = "below",
 }: {
   step: number;
   total: number;
@@ -88,16 +100,23 @@ export function TourBubble({
   action?: { label: string; onClick: () => void };
   /** Which edge of the element the note lines up with. Right, near the right of the screen. */
   align?: "left" | "right";
+  /** Where the note sits: under the element, or to its left — for something floating on the right. */
+  placement?: "below" | "left";
 }) {
   const right = align === "right";
+  const beside = placement === "left";
   return (
-    // Below what it points at: above, it would sit under the fixed header
-    // whenever the element is near the top of the screen.
+    // Below what it points at by default: above, it would sit under the fixed
+    // header whenever the element is near the top of the screen.
     <div
       role="dialog"
       aria-label={`Step ${step} of ${total}: ${title}`}
-      className={`tour-in absolute top-full z-50 mt-4 border border-amber/40 bg-bench-900 p-4 text-left shadow-[0_18px_50px_-12px_rgba(0,0,0,0.85)] ${
-        right ? "right-0 w-[min(22rem,calc(100vw-2rem))]" : "left-4 w-[min(23rem,calc(100%-2rem))]"
+      className={`tour-in absolute z-50 border border-amber/40 bg-bench-900 p-4 text-left shadow-[0_18px_50px_-12px_rgba(0,0,0,0.85)] ${
+        beside
+          ? "top-1/2 right-full mr-4 w-[min(22rem,calc(100vw-7rem))] -translate-y-1/2"
+          : right
+            ? "top-full right-0 mt-4 w-[min(22rem,calc(100vw-2rem))]"
+            : "top-full left-4 mt-4 w-[min(23rem,calc(100%-2rem))]"
       }`}
     >
       <div className="tour-stagger">
@@ -136,13 +155,19 @@ export function TourBubble({
           </button>
         </div>
       </div>
-      {/* The arrow, pointing up at what to do next. */}
-      <span
-        aria-hidden
-        className={`tour-bob absolute -top-[7px] block ${right ? "right-7" : "left-7"}`}
-      >
-        <span className="block h-3 w-3 rotate-45 border-l border-t border-amber/40 bg-bench-900" />
-      </span>
+      {/* The arrow, pointing at what to do next: up, or right when beside it. */}
+      {beside ? (
+        <span aria-hidden className="absolute top-1/2 -right-[7px] block -translate-y-1/2">
+          <span className="block h-3 w-3 rotate-45 border-t border-r border-amber/40 bg-bench-900" />
+        </span>
+      ) : (
+        <span
+          aria-hidden
+          className={`tour-bob absolute -top-[7px] block ${right ? "right-7" : "left-7"}`}
+        >
+          <span className="block h-3 w-3 rotate-45 border-l border-t border-amber/40 bg-bench-900" />
+        </span>
+      )}
     </div>
   );
 }

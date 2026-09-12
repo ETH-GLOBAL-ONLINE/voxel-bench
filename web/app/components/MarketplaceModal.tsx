@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { short, useWallet } from "./walletCore";
 import { budgetChanged } from "./Budget";
+import { DockButton, MarketIcon } from "./DockButton";
 
 type Item = {
   id: string;
@@ -123,17 +124,13 @@ export default function MarketplaceModal() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-sm text-dim transition-colors hover:text-ink"
-      >
-        Marketplace
-      </button>
+      <DockButton label="Marketplace" icon={<MarketIcon />} onClick={() => setOpen(true)} />
 
       {open &&
         createPortal(
           <div
+            // Its own scroll: the page's smooth scroll leaves it alone.
+            data-lenis-prevent
             className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-16"
             onClick={() => setOpen(false)}
           >
