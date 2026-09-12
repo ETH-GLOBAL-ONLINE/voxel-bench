@@ -5,6 +5,7 @@ This folder separates audit material from executable tests.
 | Path | Purpose |
 |---|---|
 | `SR-01-authorship-capture.md` | The authorship-capture finding, its current status, and the required provenance fix. |
+| `SR-01-attack-trace.md` | Step-by-step before/after trace of the SR-01 claim race. |
 | `TEST_MATRIX.md` | Test inventory, coverage matrix, and the correct interpretation of results. |
 | `evidence/` | Historical Foundry output and run summaries imported from the audit Drive folder. |
 
