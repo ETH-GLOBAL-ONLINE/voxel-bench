@@ -958,3 +958,9 @@ Measured on Arc testnet:
 The receipt changes shape: a Gateway payment comes back as Gateway's transfer
 id, settled onchain in a later batch, so the ledger shows it as "via Circle
 Gateway" rather than linking a transaction that does not exist yet.
+
+Both paths checked from the site, one craft each. Through Gateway, the craft
+stage was accepted as a transfer in 8.9 s. With `VOXEL_ARC_SETTLEMENT=own` and
+nothing else changed, the same stage settled as a direct EIP-3009 transfer on
+Arc in 22.6 s, with its own transaction (`0x2280789f…`). Switching back is a
+restart of the paywall; the agent answers either offer without one.
