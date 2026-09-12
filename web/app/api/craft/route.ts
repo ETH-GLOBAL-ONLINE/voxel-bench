@@ -17,8 +17,9 @@ export async function POST(req: Request) {
   let recipeId: unknown;
   let collector: unknown;
   let obby: unknown;
+  let payer: unknown;
   try {
-    ({ prompt, recipeId, collector, obby } = await req.json());
+    ({ prompt, recipeId, collector, obby, payer } = await req.json());
   } catch {
     return Response.json({ error: "expected JSON" }, { status: 400 });
   }
@@ -43,16 +44,18 @@ export async function POST(req: Request) {
     const res = await fetch(new URL("/craft", target.base), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(
-        asObby
+      // Whoever is signed in pays, from the budget they gave their agent.
+      body: JSON.stringify({
+        ...(asObby
           ? { obby, collector: typeof collector === "string" ? collector : undefined }
           : fromMarketplace
           ? {
               recipeId,
               collector: typeof collector === "string" ? collector : undefined,
             }
-          : { prompt: (prompt as string).trim().slice(0, 280) },
-      ),
+          : { prompt: (prompt as string).trim().slice(0, 280) }),
+        payer: typeof payer === "string" ? payer : undefined,
+      }),
       // The agent reads the price list before it answers, so give it a little
       // longer than the crafter needed just to accept a job.
       signal: AbortSignal.timeout(15000),

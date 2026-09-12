@@ -249,6 +249,39 @@ export async function capOn(name: LedgerName) {
   };
 }
 
+// A person's budget: how much of their USDC they have let the agent spend, and
+// how much they hold. Read here rather than through the agent so it shows with
+// the bench switched off. USDC on Arc as an ERC-20 has 6 decimals.
+const USDC = "0x3600000000000000000000000000000000000000";
+export const AGENT = (process.env.VOXEL_AGENT_ADDRESS ??
+  "0xfe3caAd68785d76B70CeC542518d2a003EA90034") as `0x${string}`;
+
+const usdcAbi = parseAbi([
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function balanceOf(address owner) view returns (uint256)",
+]);
+
+export async function budgetOf(owner: `0x${string}`) {
+  const client = clientFor("arc");
+  const [allowance, balance] = (await Promise.all([
+    patiently(() =>
+      client.readContract({ address: USDC, abi: usdcAbi, functionName: "allowance", args: [owner, AGENT] }),
+    ),
+    patiently(() =>
+      client.readContract({ address: USDC, abi: usdcAbi, functionName: "balanceOf", args: [owner] }),
+    ),
+  ])) as [bigint, bigint];
+
+  return {
+    owner,
+    agent: AGENT,
+    allowance: allowance.toString(),
+    allowanceLabel: `${formatUnits(allowance, 6)} USDC`,
+    balance: balance.toString(),
+    balanceLabel: `${formatUnits(balance, 6)} USDC`,
+  };
+}
+
 /** Whatever answers, across both chains. One being unreachable is not a wall. */
 export async function acrossChains<T>(
   read: (name: LedgerName) => Promise<T>,

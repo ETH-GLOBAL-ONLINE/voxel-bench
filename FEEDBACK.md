@@ -262,6 +262,17 @@ chain we could not read rather than an empty one.
 Stating the limit next to the RPC URL — requests per second, and what counts as
 one — would let an integration size its reads before it meets it.
 
+### Permit on Arc's USDC is what made a gasless budget possible
+
+Each person gives their agent a budget by signing an EIP-2612 permit; the agent
+relays it and pays the gas, and from then on the token enforces the limit. It
+worked the first time, because the ERC-20 view of Arc's USDC exposes
+`PERMIT_TYPEHASH`, `nonces` and the domain `USDC` / `2` like Circle's USDC
+elsewhere. A native gas token that is also a permit-capable ERC-20 is unusual,
+and it is what let someone who signed in with an email a minute ago hold a
+budget without ever sending a transaction. Worth leading with in the Arc
+documentation for agent builders.
+
 ---
 
 ## Roblox Open Cloud
@@ -289,6 +300,11 @@ time overall. Recorded here so it is in one place.
   the file asked for is not a shape Roblox has. The only way to find out is to
   open the result in Studio and look. An upload response that listed what it
   could not honour would have saved us the round trip.
+- **A model's icon can be set through Open Cloud, and the reference barely
+  says how.** The Assets API lists `icon` among the fields of an update and
+  requires an image asset; there is no example request. What worked: upload the
+  render as an image, then `PATCH assets/v1/assets/{id}?updateMask=icon` with a
+  multipart `request` part holding `"icon": "assets/{imageId}"` and no file.
 
 ---
 

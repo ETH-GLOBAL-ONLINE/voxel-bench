@@ -3,8 +3,8 @@
 **Craft your Roblox game, one object at a time.**
 
 Describe what you need. An agent builds it in Blender, uploads it straight to
-your own Roblox account, and pays for each step from its own wallet. The user
-installs nothing — no Blender, no Studio.
+your own Roblox account, and pays for each step from a budget you give it with
+one signature. The user installs nothing — no Blender, no Studio.
 
 Every object is crafted from a reusable **recipe**. Whoever wrote the recipe
 earns a slice every time someone crafts with it, split onchain.
@@ -40,6 +40,7 @@ Three stages:
 | [docs/STATUS.md](docs/STATUS.md) | **what works today and what is left, with where to start on each** |
 | [docs/RECIPE_LIBRARY.md](docs/RECIPE_LIBRARY.md) | building the recipe library: the loop, the format, and a catalogue of themed kits |
 | [PLAN.md](PLAN.md) | the plan: schedule, decisions and why, risks, the demo structure |
+| [docs/PAYMENT_FLOW.md](docs/PAYMENT_FLOW.md) | **who pays what, and on which chain — the happy path in plain words** |
 | [docs/ONCHAIN.md](docs/ONCHAIN.md) | every use of the chain, the non-blockchain alternative we rejected, and the sponsor tracks |
 | [docs/LOG.md](docs/LOG.md) | what has actually been built and measured, and what has not |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, PRs, commits, secrets |
@@ -86,9 +87,10 @@ site  ──►  agent  ──402──►  paywall  ──►  crafter  ──�
             cap             1 account paid
 ```
 
-The site asks the agent, not the crafter. That is the whole arrangement: the
-browser watches an agent spend its own money, stage by stage, and never holds a
-key or signs anything.
+The site asks the agent, not the crafter. The visitor signs once, to give their
+agent a budget in USDC on Arc; after that the browser watches the agent spend
+it, stage by stage, and never holds a key. The platform pays every gas. Who pays
+what, on which chain, is in [docs/PAYMENT_FLOW.md](docs/PAYMENT_FLOW.md).
 
 The agent finds the services by resolving `recipe.voxelbench.eth`,
 `craft.voxelbench.eth` and `publish.voxelbench.eth` on ENSv2, and each name
@@ -186,6 +188,7 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **Publish to Roblox** — `.rbxmx` accepted; the account key stays in the browser
 - [x] **Sign in without a wallet** — email, Google or X through Privy; claiming a recipe costs no gas
 - [x] **Backpack** — what you own and what you collected, with previews
+- [x] **Each person pays their own way** — a budget signed once, no gas; the USDC contract enforces it
 - [ ] **Luau scripts** on objects — the obby carries one; single objects do not yet
 - [x] **`RecipeBook` + `SplitVault`** — live on Hedera and Arc testnets, verified against the chain
 - [x] **x402** — three stages, three prices, paid on Hedera testnet and verified on the ledger
@@ -245,6 +248,11 @@ The schema is `supabase/migrations/0001_recipes.sql`, and recipes crafted before
 the catalog existed are filed with `node services/agent/backfill-catalog.mjs`. Recipes the platform offers are
 published with `node services/agent/publish-stock.mjs`, which reads the list in
 `out/marketplace-review/keep.txt` and sends nothing without `--publish`.
+
+Every job is charged to the signed-in visitor's budget, so crafting needs a
+sign-in. `VOXEL_USER_PAYS=off` in `.env` brings back the agent paying for
+everything. On testnet a new account is sent 0.10 USDC once
+(`VOXEL_TEST_CREDIT`); on mainnet people bring their own.
 
 ## Deploying
 

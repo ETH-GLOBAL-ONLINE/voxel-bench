@@ -134,6 +134,20 @@ It changes `RecipeBook`, so it means a new deployment and re-publishing the
 recipes that have owners under the new contract, attested by the agent. The
 application keeps the exposure closed until then.
 
+### 8. People bring their own money
+
+On testnet a new account is sent 0.10 USDC once, so it can try the bench. On
+mainnet that goes: a person arrives with USDC of their own and gives their agent
+a budget from it, exactly as now.
+
+Two things follow. People pay the agent in USDC on Arc, while the agent pays the
+recipe and publish services in HBAR out of a reserve of the platform's — so that
+reserve has to be converted and topped up from what is charged. And every paid
+stage costs the facilitator gas: on Hedera it measured 0.0026 HBAR a
+settlement, more than the recipe stage's price. A stage that earns less than
+its gas either moves to Arc or stops being charged on its own. Publishing, which
+costs us almost nothing to do, is the first candidate.
+
 ## The Arc Mainnet question, specifically
 
 Deploying to Arc Mainnet by 30 September would take:

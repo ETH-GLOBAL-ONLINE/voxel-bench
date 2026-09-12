@@ -336,9 +336,10 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
+          {/* The shelf gets the full width; the note on revenue follows it. */}
+          <div className="mt-10">
             <Marketplace />
-            <p className="max-w-md self-center text-sm leading-relaxed text-faint">
+            <p className="mt-6 max-w-2xl text-sm leading-relaxed text-faint">
               Your game&rsquo;s revenue never touches any of this. Roblox
               prohibits blockchain integrations and off-platform monetisation, so
               what your game earns stays in Robux and stays yours. We charge for

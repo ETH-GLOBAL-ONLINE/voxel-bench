@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { short, useWallet } from "./walletCore";
+import { budgetChanged } from "./Budget";
 
 type Item = {
   id: string;
@@ -79,7 +80,8 @@ export default function MarketplaceModal() {
       const res = await fetch("/api/craft", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ recipeId: item.id, collector: address }),
+        // Paid from the budget the visitor gave their agent.
+        body: JSON.stringify({ recipeId: item.id, collector: address, payer: address }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "the bench refused");
@@ -90,6 +92,7 @@ export default function MarketplaceModal() {
         const job = await fetch(`/api/craft/${data.job}`, { cache: "no-store" }).then((r) =>
           r.json(),
         );
+        if (job.status === "done" || job.status === "failed") budgetChanged();
         if (job.status === "done") {
           setJustGot((got) => new Set(got).add(item.id));
           setGetting({
@@ -173,7 +176,12 @@ export default function MarketplaceModal() {
                 </p>
               )}
 
-              {!error && !items && <p className="label">reading the chain…</p>}
+              {!error && !items && (
+                <p className="label flex items-center gap-2 !text-sap">
+                  <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-sap" />
+                  reading the chain…
+                </p>
+              )}
 
               {items && items.length === 0 && unreadable.length === 0 && (
                 <p className="text-sm text-dim">Nothing published yet.</p>

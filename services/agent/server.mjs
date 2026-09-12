@@ -27,6 +27,17 @@ import { claimTypedData, lookup, published, recipeId, settle } from "./recipes.m
 import { allCaps, draw } from "./allowance.mjs";
 import { fetchRecipe, hasCollected, saveCollection, saveRecipe } from "./catalog.mjs";
 import { composeObby } from "./obby.mjs";
+import {
+  applyPermit,
+  budgetOf,
+  charge,
+  permitTypedData,
+  PRICE,
+  refund,
+  testCredit,
+  usdc,
+  userPays,
+} from "./budget.mjs";
 
 loadEnv();
 
@@ -91,11 +102,30 @@ function mark(id, stage, fields) {
   if (entry) Object.assign(entry, fields);
 }
 
+// Every step the job takes, in order, so the page can show the work behind a
+// payment rather than only its receipt: the 402, the check against the name,
+// the signature, the settlement.
+function log(id, stage, text, link = null) {
+  const job = jobs.get(id);
+  if (job) job.log.push({ t: since(job.startedAt), stage, text, link });
+}
+
+const short = (a) => `${String(a).slice(0, 6)}…${String(a).slice(-4)}`;
+
+const txLink = (chainName, tx) =>
+  !tx
+    ? null
+    : String(chainName ?? "").startsWith("Arc")
+      ? `https://testnet.arcscan.app/tx/${tx}`
+      : `https://hashscan.io/testnet/transaction/${tx}`;
+
 async function payFor(id, stage, body) {
   mark(id, stage, { status: "paying" });
   set(id, { stage: `paying for the ${stage}` });
 
-  const { body: result, receipt } = await agent.callStage(stage, body);
+  const { body: result, receipt } = await agent.callStage(stage, body, (text, link) =>
+    log(id, stage, text, link),
+  );
 
   mark(id, stage, {
     status: receipt.paid ? "paid" : "unpaid",
@@ -156,16 +186,59 @@ function message(err) {
 async function runCraft(
   id,
   prompt,
-  { recipe: existing = null, collector = null, pieces = null } = {},
+  { recipe: existing = null, collector = null, pieces = null, payer = null, bill = [] } = {},
 ) {
+  // What was taken from the person's budget, and whether the work it paid for
+  // happened. A job that fails before the craft gives it back.
+  let charged = null;
+  let worked = false;
+  const total = bill.reduce((sum, b) => sum + b.amount, 0n);
+
   try {
+    // The person pays first, from the budget they gave their agent. One
+    // transfer for the whole job, so a craft is one line in their wallet
+    // rather than a line per stage.
+    if (userPays() && payer) {
+      set(id, { stage: "taking the cost from your budget" });
+      log(
+        id,
+        "budget",
+        `this job costs ${usdc(total)}: ${bill.map((b) => `${b.item} ${usdc(b.amount)}`).join(", ")}`,
+      );
+      charged = await charge(payer, total);
+      log(
+        id,
+        "budget",
+        `took ${charged.amountLabel} from your budget — USDC.transferFrom(${short(payer)} → agent), ${charged.leftLabel} left`,
+        charged.explorer,
+      );
+      set(id, {
+        bill: {
+          items: bill.map((b) => ({ item: b.item, amount: usdc(b.amount) })),
+          total: usdc(total),
+          transaction: charged.transaction,
+          explorer: charged.explorer,
+          left: charged.leftLabel,
+        },
+      });
+    }
+
     // Draw what this craft will cost before spending any of it. When the
     // window's cap is used up the contract refuses, and the craft stops here —
     // which is the difference between a limit and a note about a limit.
     set(id, { stage: "drawing from the spending cap" });
     const allowance = [];
     for (const [chain, amount] of costOf(id)) {
-      allowance.push(await draw(amount, chain));
+      const drawn = await draw(amount, chain);
+      allowance.push(drawn);
+      if (drawn.drawn) {
+        log(
+          id,
+          "cap",
+          `drew ${drawn.amountLabel} from the agent's own cap on ${chain === "arc" ? "Arc" : "Hedera"} — ${drawn.remainingLabel} left in this window`,
+          txLink(chain === "arc" ? "Arc" : "Hedera", drawn.transaction),
+        );
+      }
     }
     set(id, { allowance });
 
@@ -185,6 +258,7 @@ async function runCraft(
 
     set(id, { stage: "crafting it in Blender" });
     const built = await payFor(id, "craft", { recipe });
+    worked = true;
 
     // Record it against RecipeBook: a recipe nobody has seen is published, one
     // that already has an author is crafted against and the split pays them.
@@ -192,6 +266,18 @@ async function runCraft(
     // and a failure here does not fail a craft that already happened.
     set(id, { stage: "recording it on RecipeBook" });
     const book = await settle(recipe);
+    log(
+      id,
+      "book",
+      book.action === "crafted"
+        ? `RecipeBook.craft on ${book.chain}: 90% to the author, who has now earned ${book.paidToAuthor}`
+        : book.action === "unclaimed"
+          ? "RecipeBook: nobody owns this recipe yet, so there is no author to pay — claim it to own it"
+          : book.action === "published"
+            ? `RecipeBook: published under ${short(book.author)}`
+            : `RecipeBook could not be reached: ${book.error ?? "unknown error"}`,
+      txLink(book.chain, book.transaction),
+    );
 
     // A new recipe is not filed in the catalog yet. Unowned, its id is up for
     // grabs to whoever sees it first (SR-01), and the catalog is public. It is
@@ -233,16 +319,23 @@ async function runCraft(
         if (done.has(piece.id)) continue;
         done.add(piece.id);
 
-        if (me) {
-          const author = await lookup(piece.id).then((r) => r.author).catch(() => null);
-          if (author && author.toLowerCase() === me) {
-            paidPieces.push({ id: piece.id, name: piece.name, action: "yours", author });
-            continue;
-          }
-          if (await hasCollected(me, piece.id)) {
-            paidPieces.push({ id: piece.id, name: piece.name, action: "had", author });
-            continue;
-          }
+        // Decided before the job started, when the bill was drawn up, so what
+        // was charged and what is paid out are the same list.
+        if (piece.plan === "yours" || piece.plan === "had") {
+          paidPieces.push({
+            id: piece.id,
+            name: piece.name,
+            action: piece.plan,
+            author: piece.author ?? null,
+          });
+          log(
+            id,
+            "pieces",
+            piece.plan === "yours"
+              ? `${piece.name} is yours: nothing to pay`
+              : `${piece.name} is already in your backpack: not paid for again`,
+          );
+          continue;
         }
 
         const paid = await settle(piece.recipe);
@@ -264,6 +357,16 @@ async function runCraft(
           paidToAuthor: paid.paidToAuthor ?? null,
           collected: Boolean(kept?.saved),
         });
+        log(
+          id,
+          "pieces",
+          paid.action === "crafted"
+            ? `RecipeBook.craft(${piece.name}): its author has now earned ${paid.paidToAuthor}${kept?.saved ? ", and it is in your backpack" : ""}`
+            : paid.action === "unclaimed"
+              ? `${piece.name} has no author to pay yet`
+              : `could not pay the author of ${piece.name}`,
+          txLink(paid.chain, paid.transaction),
+        );
       }
     }
 
@@ -306,29 +409,133 @@ async function runCraft(
   } catch (err) {
     // Whichever stage was mid-payment when this threw keeps the status it had,
     // so the browser can say which one failed rather than blaming the run.
-    set(id, { status: "failed", stage: null, error: message(err) });
+    let said = message(err);
+    // Nothing was crafted, so nothing the person paid for was delivered: the
+    // job gives back what it took.
+    if (charged && !worked) {
+      const back = await refund(payer, total).catch(() => null);
+      if (back) {
+        log(id, "budget", `the job failed, so ${back.amountLabel} went back to your wallet`, back.explorer);
+        said = `${said} Your ${back.amountLabel} went back to your wallet.`;
+      }
+    }
+    set(id, { status: "failed", stage: null, error: said });
   }
 }
 
-async function runPublish(id, name, apiKey, userId) {
+async function runPublish(id, name, apiKey, userId, payer = null) {
+  let charged = null;
   try {
+    if (userPays() && payer) {
+      set(id, { stage: "taking the cost from your budget" });
+      charged = await charge(payer, PRICE.publish);
+      log(
+        id,
+        "budget",
+        `took ${charged.amountLabel} from your budget for publishing — ${charged.leftLabel} left`,
+        charged.explorer,
+      );
+      set(id, {
+        bill: {
+          items: [{ item: "publish", amount: usdc(PRICE.publish) }],
+          total: usdc(PRICE.publish),
+          transaction: charged.transaction,
+          explorer: charged.explorer,
+          left: charged.leftLabel,
+        },
+      });
+    }
     const asset = await payFor(id, "publish", {
       name,
       api_key: apiKey,
       user_id: userId,
     });
+    // The render goes up as the model's icon, so what was paid for arrives
+    // finished. A failure there is reported, and does not undo the upload.
+    if (asset.icon) {
+      log(
+        id,
+        "publish",
+        asset.icon.set
+          ? `icon set: the render, uploaded as ${asset.icon.kind ?? "image"} asset ${asset.icon.imageAssetId}`
+          : `the icon could not be set: ${asset.icon.error ?? "unknown error"}`,
+      );
+    }
     set(id, {
       status: "done",
       stage: null,
       result: {
         assetId: asset.assetId,
         moderation: asset.moderation,
+        icon: asset.icon ?? null,
         insert: `game:GetService('InsertService'):LoadAsset(${asset.assetId})`,
       },
     });
   } catch (err) {
-    set(id, { status: "failed", stage: null, error: message(err) });
+    let said = message(err);
+    if (charged) {
+      const back = await refund(payer, PRICE.publish).catch(() => null);
+      if (back) {
+        log(id, "budget", `publishing failed, so ${back.amountLabel} went back to your wallet`, back.explorer);
+        said = `${said} Your ${back.amountLabel} went back to your wallet.`;
+      }
+    }
+    set(id, { status: "failed", stage: null, error: said });
   }
+}
+
+// Who each piece of a course belongs to, decided once, before the bill. A
+// piece you wrote or already got costs nothing; one nobody owns has no author
+// to pay; the rest are bought.
+async function planPieces(pieces, payer) {
+  const me = payer?.toLowerCase() ?? null;
+  const seen = new Set();
+  for (const piece of pieces) {
+    if (seen.has(piece.id)) {
+      piece.plan = "repeat";
+      continue;
+    }
+    seen.add(piece.id);
+    const author = await lookup(piece.id).then((r) => r.author).catch(() => null);
+    piece.author = author;
+    piece.plan = !author
+      ? "unclaimed"
+      : me && author.toLowerCase() === me
+        ? "yours"
+        : me && (await hasCollected(me, piece.id))
+          ? "had"
+          : "buy";
+  }
+}
+
+/**
+ * Whether this person's budget covers `total`, answered before any job starts,
+ * so a refusal costs nothing and says what to do about it.
+ */
+async function affordable(res, payer, total) {
+  if (!userPays()) return true;
+  if (!payer) {
+    res.status(402).json({ error: "Sign in and give your agent a budget first." });
+    return false;
+  }
+  const budget = await budgetOf(payer).catch(() => null);
+  if (!budget) {
+    res.status(503).json({ error: "Could not read your budget on Arc just now. Try again." });
+    return false;
+  }
+  if (BigInt(budget.allowance) < total) {
+    res.status(402).json({
+      error: `Your agent's budget has ${budget.allowanceLabel} left and this costs ${usdc(total)}. Raise your limit.`,
+    });
+    return false;
+  }
+  if (BigInt(budget.balance) < total) {
+    res.status(402).json({
+      error: `Your wallet holds ${budget.balanceLabel} and this costs ${usdc(total)}.`,
+    });
+    return false;
+  }
+  return true;
 }
 
 const app = express();
@@ -352,6 +559,8 @@ function start(kind, offer, stages) {
     discovery: offer.source,
     parent: offer.parent ?? null,
     payments: quotes(stages),
+    bill: null,
+    log: [],
   });
   return id;
 }
@@ -408,6 +617,23 @@ app.post("/craft", async (req, res) => {
     return res.status(400).json({ error: "Say a little more about what you want." });
   }
 
+  // Who pays: the person signed in. A marketplace get or an obby names them as
+  // the collector already.
+  const named = String(req.body?.payer ?? "");
+  const payer = /^0x[0-9a-fA-F]{40}$/.test(named) ? named : collector;
+
+  // The bill, item by item, before anything is spent.
+  if (pieces) await planPieces(pieces, payer);
+  const bill = [];
+  if (!recipe) bill.push({ item: "recipe", amount: PRICE.recipe });
+  bill.push({ item: "craft", amount: PRICE.craft });
+  if (recipe && !pieces) bill.push({ item: "its author", amount: PRICE.author });
+  for (const piece of pieces ?? []) {
+    if (piece.plan === "buy") bill.push({ item: `${piece.name}'s author`, amount: PRICE.author });
+  }
+  const total = bill.reduce((sum, b) => sum + b.amount, 0n);
+  if (!(await affordable(res, payer, total))) return;
+
   const offer = await quote(res);
   if (!offer) return;
 
@@ -420,6 +646,8 @@ app.post("/craft", async (req, res) => {
     recipe,
     collector,
     pieces,
+    payer,
+    bill,
   });
   res.json({ job: id, agent: agent.accountId, payTo: offer.payTo });
 });
@@ -433,19 +661,68 @@ app.post("/publish", async (req, res) => {
     return res.status(400).json({ error: "Connect a Roblox account first." });
   }
 
+  const named = String(req.body?.payer ?? "");
+  const payer = /^0x[0-9a-fA-F]{40}$/.test(named) ? named : null;
+  if (!(await affordable(res, payer, PRICE.publish))) return;
+
   const offer = await quote(res);
   if (!offer) return;
 
   const stages = Object.values(offer.services).filter((s) => s.stage === "publish");
   const id = start("publish", offer, stages);
 
-  runPublish(id, String(name), String(apiKey), String(userId));
+  runPublish(id, String(name), String(apiKey), String(userId), payer);
   res.json({ job: id });
 });
 
 // What an author signs to claim a recipe, built from the deployment rather
 // than from anything the page knows. A page that hardcodes a contract address
 // keeps signing for the wrong one after a redeployment.
+// A person's budget: what to sign, the signed permit relayed, and test USDC
+// for an account that has none. The budget itself is read by the site from the
+// chain, so it shows with the bench switched off.
+const isAddress = (v) => /^0x[0-9a-fA-F]{40}$/.test(String(v ?? ""));
+
+app.post("/budget/typed", async (req, res) => {
+  const { owner, value } = req.body ?? {};
+  if (!isAddress(owner)) return res.status(400).json({ error: "bad address" });
+  const units = BigInt(Math.max(0, Math.round(Number(value) || 0)));
+  if (units === 0n) return res.status(400).json({ error: "a budget has to be more than zero" });
+  // Good for a month; after that the person signs again.
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 3600);
+  try {
+    res.json({
+      typed: await permitTypedData(owner, units, deadline),
+      value: units.toString(),
+      deadline: deadline.toString(),
+    });
+  } catch (err) {
+    res.status(502).json({ error: message(err) });
+  }
+});
+
+app.post("/budget/permit", async (req, res) => {
+  const { owner, value, deadline, signature } = req.body ?? {};
+  if (!isAddress(owner) || !signature || !value || !deadline) {
+    return res.status(400).json({ error: "owner, value, deadline and signature are required" });
+  }
+  try {
+    res.json(await applyPermit({ owner, value, deadline, signature }));
+  } catch (err) {
+    res.status(502).json({ error: message(err) });
+  }
+});
+
+app.post("/budget/credit", async (req, res) => {
+  const { owner } = req.body ?? {};
+  if (!isAddress(owner)) return res.status(400).json({ error: "bad address" });
+  try {
+    res.json(await testCredit(owner));
+  } catch (err) {
+    res.status(502).json({ error: message(err) });
+  }
+});
+
 app.get("/claim/:id", (req, res) => {
   const { id } = req.params;
   const author = String(req.query.author ?? "");

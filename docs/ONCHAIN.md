@@ -81,6 +81,13 @@ An obby is built from recipes, and pays the same way. Each piece in the course
 that the builder does not have yet is crafted against `RecipeBook` once, so
 every author whose work is in it is paid — not only whoever put it together.
 
+The money is the crafter's own. Each person gives their agent a budget in USDC
+on Arc by signing an EIP-2612 permit, and each job is taken from it before any
+work is paid for. The token enforces the limit: past it the agent is refused,
+whoever asks. So the two limits in this project are both onchain — the person's,
+on what the agent may take from them, and the platform's `Allowance`, on what
+the agent may spend at all. `docs/PAYMENT_FLOW.md` walks through it.
+
 A recipe's id is the hash of its content rather than its name. The same recipe
 is the same id whoever writes it, so a second publisher cannot take the first
 one's authorship, and renaming a recipe does not make it new.

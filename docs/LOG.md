@@ -863,3 +863,64 @@ gate as scenery), playing on a fresh Baseplate:
 
 Then played by hand in the same session, start to finish, with the jumps as
 laid out.
+
+## Each person pays their own way
+
+### A budget of your own, enforced by the token
+
+Until now the agent paid for every craft out of its own wallet, so every craft
+was a gift from the platform. Now whoever crafts gives their agent a budget in
+USDC on Arc by signing an EIP-2612 permit — no gas, no transaction from them —
+and every job takes what it costs from that budget in one `transferFrom` before
+any work is paid for. Past the limit the USDC contract refuses the agent,
+whoever asks. The platform still pays every gas.
+
+Checked first that Arc's USDC has it: `PERMIT_TYPEHASH`, `nonces`, and the
+domain `USDC` / `2`, at 6 decimals.
+
+Measured end to end with a throwaway wallet, through the agent:
+
+| | |
+|---|---|
+| test credit | 0.10 USDC sent once; a second request refused |
+| permit for 0.02 USDC | signed with no gas and relayed; the allowance read 0.02 on Arc |
+| a marketplace get | one transfer of 0.006 USDC from the budget, then the craft paid over x402 and the author paid by RecipeBook |
+| a job that failed | the crafter was down; the 0.006 went back to the wallet in the same job |
+| a limit too small | with 0.004 left, a 0.006 get refused with 402 before anything was spent |
+| nobody signed in | refused: "Sign in and give your agent a budget first." |
+
+Then from the site, by hand: sign in, set the limit, craft, claim, build an
+obby, publish — each job charged to the signed-in wallet.
+
+The person pays in USDC on Arc and nothing else. The agent pays the recipe and
+publish services in HBAR on Hedera out of the platform's reserve, and the craft
+service and the authors in USDC on Arc. `docs/PAYMENT_FLOW.md` has it in plain
+words.
+
+### Every step, not only the receipt
+
+A mentor's suggestion: each stage in the ledger now opens into the steps behind
+it — the request, the 402, the check against the ENS name, the signature, the
+settlement with its transaction. The stage being paid opens by itself, and
+every step of the job, including the charge to the budget and the draw on the
+platform's cap, is listed in order below it.
+
+### A guide through the happy path
+
+Six steps, each pointing at the thing to do next with the rest of the page
+dimmed: give your agent a budget, describe something, claim it, look in the
+backpack, build an obby, publish it. Claiming waits until the render has been on
+screen for five seconds, so the payment log is read first; the obby is built
+without the guide, and its render leads to publishing. It shows on every load,
+because it is the path being demonstrated; `?tour=0` turns it off.
+
+### Publishing a course, with its render as its icon
+
+The first course published through Open Cloud — the first model with a script
+in it — arrived in the account whose key sent it (asset `88547750146408`), with
+no picture until Roblox made one. Publishing now also uploads the render as an
+image and sets it as the model's icon; the next publish arrived with the render
+on it.
+
+From the Creator Hub, trying the course in Studio played it: spawn, hazards,
+finish.

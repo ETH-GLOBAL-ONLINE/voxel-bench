@@ -151,18 +151,39 @@ export function createAgent() {
   // url and read back after, where it can be raised properly.
   const refusals = new Map();
 
+  // Whoever is waiting on a request, to be told each step of paying for it.
+  const listeners = new Map();
+
   http.onPaymentRequired(async ({ paymentRequired, requestUrl }) => {
-    const { services } = await discover();
-    const terms = Object.values(services).find((s) => s.url === requestUrl);
+    const say = listeners.get(requestUrl) ?? (() => {});
+    const asked = paymentRequired.accepts?.[0];
+    if (asked) {
+      say(
+        `402 Payment Required: ${money(asked.amount ?? asked.maxAmountRequired, asked.network)} to ${String(asked.payTo).slice(0, 10)}… on ${asked.network}`,
+      );
+    }
+
+    const found = await discover();
+    const terms = Object.values(found.services).find((s) => s.url === requestUrl);
     if (!terms) return;
 
     for (const requirement of paymentRequired.accepts ?? []) {
       const wrong = disagreement(terms, requirement);
       if (wrong) {
         refusals.set(requestUrl, wrong);
+        say(`refused to pay: ${wrong}`);
         throw new Error(wrong);
       }
     }
+
+    if (found.source === "ens") {
+      say(`checked against ${terms.stage}.${found.parent}: the price matches the name, which the service cannot edit`);
+    }
+    say(
+      asked?.network?.startsWith("eip155:")
+        ? "signing an EIP-3009 transferWithAuthorization for USDC — the facilitator submits it and pays the gas"
+        : "signing a partial HBAR transfer — the facilitator co-signs, submits it and pays the gas",
+    );
   });
 
   const paidFetch = wrapFetchWithPayment(globalThis.fetch, http);
@@ -170,13 +191,15 @@ export function createAgent() {
   /** The stages, their endpoints and their prices, resolved from names. */
   const offer = () => discover();
 
-  async function callStage(stage, body) {
+  async function callStage(stage, body, onLog = () => {}) {
     const started = Date.now();
     const { services } = await discover();
     const terms = services[stage];
     if (!terms) throw new Error(`no service called ${stage}`);
 
     refusals.delete(terms.url);
+    listeners.set(terms.url, onLog);
+    onLog(`POST ${terms.url}`);
 
     let res;
     try {
@@ -192,6 +215,8 @@ export function createAgent() {
         throw new Error(`did not pay — ${refused}`);
       }
       throw err;
+    } finally {
+      listeners.delete(terms.url);
     }
 
     // processResponse decodes the PAYMENT-RESPONSE header the facilitator sets
@@ -199,6 +224,12 @@ export function createAgent() {
     // lives. A 200 with no such header means the stage was not paid for.
     const parsed = await http.processResponse(res.clone());
     const settled = parsed.paymentStatus === "settled" ? parsed.header : null;
+    onLog(
+      settled?.success
+        ? `settled on ${settled.network ?? "hedera:testnet"} — the service did the work (${res.status})`
+        : `answered ${res.status} without a settlement`,
+      explorerFor(settled?.network ?? "hedera:testnet", settled?.transaction),
+    );
 
     if (!res.ok) {
       const text = await res.text();

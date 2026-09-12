@@ -2,11 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import Viewer from "./Viewer";
-import Payments, { type Payment } from "./Payments";
+import Payments, { type Bill, type LogEntry, type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
 import Wallet, { short, useWallet } from "./Wallet";
 import ObbyBuilder from "./ObbyBuilder";
 import SpendingCap from "./SpendingCap";
+import Budget, { budgetChanged } from "./Budget";
+import {
+  bringIntoView,
+  skipTour,
+  Spotlight,
+  TourBubble,
+  TOUR_EVENTS,
+  TOUR_NEXT,
+  TOUR_STEPS,
+  tourOn,
+} from "./Tour";
 
 type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
 type Result = {
@@ -29,7 +40,13 @@ type Sample = {
   tris: number;
   studs: number[];
 };
-type Published = { assetId: string; moderation: string; insert: string };
+type Published = {
+  assetId: string;
+  moderation: string;
+  insert: string;
+  // The render, uploaded as the model's icon.
+  icon?: { set: boolean; imageAssetId?: string | null; error?: string | null } | null;
+};
 
 // What the craft did to RecipeBook: registered a recipe nobody had, or settled
 // against one that already has an owner and paid them.
@@ -50,6 +67,9 @@ type Ledger = {
   network?: string | null;
   discovery?: string | null;
   parent?: string | null;
+  // Every step behind the payments, and what the person paid for the job.
+  log?: LogEntry[];
+  bill?: Bill | null;
 };
 
 const POLL_MS = 2000;
@@ -82,7 +102,102 @@ export default function Bench({ sample }: { sample: Sample }) {
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [mode, setMode] = useState<"describe" | "obby">("describe");
+  // The guide's second step, pointing at the prompt once a budget is set.
+  const [describeTour, setDescribeTour] = useState(false);
+  const promptInput = useRef<HTMLInputElement>(null);
+  // Steps three and five: claim what was made, then publish it.
+  const [claimTour, setClaimTour] = useState(false);
+  // Step three is armed when a craft finishes. It waits for the visitor to
+  // scroll down to the render, gives them five seconds with it, and only then
+  // takes them back up to the claim — so the payment log and the object itself
+  // are both seen first.
+  const [claimArmed, setClaimArmed] = useState(false);
+  const renderArea = useRef<HTMLDivElement>(null);
+  const [publishTour, setPublishTour] = useState(false);
+  // Step five points at the obby tab and goes when it is opened; the obby is
+  // then built without the guide. Its render, seen for a moment, brings step
+  // six: connect Roblox and publish.
+  const [obbyTour, setObbyTour] = useState(false);
+  const [publishArmed, setPublishArmed] = useState(false);
+  const building = useRef(false);
+  const tabsArea = useRef<HTMLDivElement>(null);
+  const claimArea = useRef<HTMLDivElement>(null);
+  const publishArea = useRef<HTMLDivElement>(null);
   const wallet = useWallet();
+
+  const RENDER_PAUSE_MS = 5000;
+  useEffect(() => {
+    if (!claimArmed || !renderArea.current) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const watcher = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || timer) return;
+        watcher.disconnect();
+        timer = setTimeout(() => {
+          setClaimArmed(false);
+          if (!tourOn()) return;
+          setClaimTour(true);
+          bringIntoView(claimArea.current);
+        }, RENDER_PAUSE_MS);
+      },
+      { threshold: 0.5 },
+    );
+    watcher.observe(renderArea.current);
+    return () => {
+      watcher.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [claimArmed]);
+
+  // Step five arrives from the backpack, once it has been seen.
+  useEffect(() => {
+    const next = () => {
+      if (!tourOn()) return;
+      setObbyTour(true);
+      setTimeout(() => bringIntoView(tabsArea.current), 60);
+    };
+    window.addEventListener(TOUR_EVENTS.obby, next);
+    return () => window.removeEventListener(TOUR_EVENTS.obby, next);
+  }, []);
+
+  // Step six: the obby's render has been on screen for a moment, then on to
+  // publishing it — the end of the path.
+  useEffect(() => {
+    if (!publishArmed || !renderArea.current) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const watcher = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || timer) return;
+        watcher.disconnect();
+        timer = setTimeout(() => {
+          setPublishArmed(false);
+          if (!tourOn()) return;
+          setPublishTour(true);
+          bringIntoView(publishArea.current);
+        }, RENDER_PAUSE_MS);
+      },
+      { threshold: 0.5 },
+    );
+    watcher.observe(renderArea.current);
+    return () => {
+      watcher.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [publishArmed]);
+
+  useEffect(() => {
+    const next = () => {
+      if (!tourOn()) return;
+      setMode("describe");
+      setDescribeTour(true);
+      setTimeout(() => {
+        bringIntoView(promptInput.current?.form ?? null);
+        promptInput.current?.focus({ preventScroll: true });
+      }, 60);
+    };
+    window.addEventListener(TOUR_NEXT, next);
+    return () => window.removeEventListener(TOUR_NEXT, next);
+  }, []);
   const [publishLedger, setPublishLedger] = useState<Ledger | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pubTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,7 +215,8 @@ export default function Bench({ sample }: { sample: Sample }) {
   async function craft(e: React.FormEvent) {
     e.preventDefault();
     if (busy || prompt.trim().length < 3) return;
-    await startCraft({ prompt });
+    setDescribeTour(false);
+    await startCraft({ prompt, payer: wallet.address });
   }
 
   /** Start a craft and follow it: a sentence, or the pieces of an obby. */
@@ -114,8 +230,12 @@ export default function Bench({ sample }: { sample: Sample }) {
     setPublishLedger(null);
     setBook(null);
     setClaimError(null);
+    setClaimTour(false);
+    setClaimArmed(false);
+    setPublishArmed(false);
     setElapsed(0);
     setStage("sending it to the bench");
+    const isObby = Array.isArray(body.obby);
 
     let job: string;
     try {
@@ -150,17 +270,27 @@ export default function Bench({ sample }: { sample: Sample }) {
             network: data.network,
             discovery: data.discovery,
             parent: data.parent,
+            log: data.log,
+            bill: data.bill,
           });
         }
         if (data.status === "done") {
           setStage(null);
           setResult(data.result);
           if (data.book) setBook(data.book);
+          budgetChanged();
+          // The obby built during the guide leads to publishing; anything else
+          // new and unowned leads to claiming it.
+          if (tourOn()) {
+            if (isObby && building.current) setPublishArmed(true);
+            else if (data.book?.action === "unclaimed") setClaimArmed(true);
+          }
           return;
         }
         if (data.status === "failed") {
           setStage(null);
           setError(data.error ?? "the craft failed");
+          budgetChanged();
           return;
         }
         setStage(data.stage ?? "working");
@@ -211,6 +341,13 @@ export default function Bench({ sample }: { sample: Sample }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "the claim was refused");
       setBook(data);
+      // Claimed during the guide — or before the scroll that would have
+      // shown step three: on to the backpack, where it now is.
+      if (claimTour || claimArmed) {
+        setClaimTour(false);
+        setClaimArmed(false);
+        window.dispatchEvent(new Event(TOUR_EVENTS.backpack));
+      }
     } catch (err) {
       setClaimError(err instanceof Error ? err.message : "the claim failed");
     } finally {
@@ -220,6 +357,7 @@ export default function Bench({ sample }: { sample: Sample }) {
 
   async function publish() {
     if (!result || publishing) return;
+    setPublishTour(false);
     setPublishError(null);
     setPublishing("sending it to Roblox");
 
@@ -232,6 +370,7 @@ export default function Bench({ sample }: { sample: Sample }) {
           name: result.name,
           apiKey: account?.apiKey,
           userId: account?.userId,
+          payer: wallet.address,
         }),
       });
       const data = await res.json();
@@ -245,7 +384,8 @@ export default function Bench({ sample }: { sample: Sample }) {
 
     const started = Date.now();
     const poll = async () => {
-      if (Date.now() - started > 120_000) {
+      // The model, then the render as its icon: two uploads and two waits.
+      if (Date.now() - started > 240_000) {
         setPublishing(null);
         setPublishError("Roblox is taking too long to answer.");
         return;
@@ -260,16 +400,20 @@ export default function Bench({ sample }: { sample: Sample }) {
             network: data.network,
             discovery: data.discovery,
             parent: data.parent,
+            log: data.log,
+            bill: data.bill,
           });
         }
         if (data.status === "done") {
           setPublishing(null);
           setPublished(data.result);
+          budgetChanged();
           return;
         }
         if (data.status === "failed") {
           setPublishing(null);
           setPublishError(data.error ?? "the upload failed");
+          budgetChanged();
           return;
         }
         setPublishing(data.stage ?? "publishing");
@@ -309,22 +453,55 @@ export default function Bench({ sample }: { sample: Sample }) {
         <Wallet />
       </p>
 
-      <div className="mb-4">
-        <RobloxConnect account={account} onChange={setAccount} />
-      </div>
+      {/* The first step of the happy path: before anything is crafted, the
+          agent is given a budget of the visitor's own. */}
+      <Budget />
 
-      <div className="mb-3 flex gap-5 border-b border-bench-700">
+      <div
+        ref={tabsArea}
+        className={`relative mb-3 flex gap-5 border-b border-bench-700 ${obbyTour ? "z-40" : ""}`}
+      >
+        {obbyTour && (
+          <>
+            <Spotlight
+              onClose={() => {
+                skipTour();
+                setObbyTour(false);
+              }}
+            />
+            <TourBubble
+              step={5}
+              total={TOUR_STEPS}
+              title="Now build an obby."
+              onDismiss={() => {
+                skipTour();
+                setObbyTour(false);
+              }}
+            >
+              Open Build an obby and pick pieces from your backpack and the
+              marketplace, in the order a player runs them. The course pays
+              every piece&apos;s author.
+            </TourBubble>
+          </>
+        )}
         {(["describe", "obby"] as const).map((m) => (
           <button
             key={m}
             type="button"
             disabled={busy}
-            onClick={() => setMode(m)}
+            onClick={() => {
+              setMode(m);
+              // Opening the obby ends step five; the obby is built unguided.
+              if (m === "obby" && obbyTour) {
+                setObbyTour(false);
+                building.current = true;
+              }
+            }}
             className={`border-b-2 px-1 pb-1 text-xs transition-colors disabled:opacity-40 ${
               mode === m
                 ? "border-amber text-ink"
                 : "border-transparent text-faint hover:text-dim"
-            }`}
+            } ${obbyTour && m === "obby" ? "tour-breathe bg-bench-900 px-2 !text-amber" : ""}`}
           >
             {m === "describe" ? "Describe an object" : "Build an obby"}
           </button>
@@ -332,10 +509,39 @@ export default function Bench({ sample }: { sample: Sample }) {
       </div>
 
       {mode === "obby" ? (
-        <ObbyBuilder busy={busy} onCraft={(ids) => startCraft({ obby: ids, collector: wallet.address })} />
+        <ObbyBuilder busy={busy} onCraft={(ids) =>
+            startCraft({ obby: ids, collector: wallet.address, payer: wallet.address })
+          } />
       ) : (
-      <form onSubmit={craft} className="slot flex flex-wrap gap-3 p-4">
+      <form
+        onSubmit={craft}
+        className={`slot relative flex flex-wrap gap-3 p-4 ${describeTour ? "tour-breathe z-40" : ""}`}
+      >
+        {describeTour && (
+          <>
+            <Spotlight
+              onClose={() => {
+                skipTour();
+                setDescribeTour(false);
+              }}
+            />
+            <TourBubble
+              step={2}
+              total={TOUR_STEPS}
+              title="Now describe what you want."
+              onDismiss={() => {
+                skipTour();
+                setDescribeTour(false);
+              }}
+            >
+              One sentence — try &ldquo;a stone well with a bucket&rdquo;. Your
+              agent pays each stage from your budget, and you can open every
+              step it takes.
+            </TourBubble>
+          </>
+        )}
         <input
+          ref={promptInput}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="a stone well with a bucket"
@@ -345,15 +551,21 @@ export default function Bench({ sample }: { sample: Sample }) {
         />
         <button
           type="submit"
-          disabled={busy || prompt.trim().length < 3}
+          disabled={busy || prompt.trim().length < 3 || !wallet.address}
+          title={wallet.address ? undefined : "Sign in first: your agent pays with your budget"}
           className="bg-amber px-6 py-2.5 text-sm font-semibold text-bench-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? "Crafting…" : "Craft"}
         </button>
+        {/* Every job is paid from the visitor's own budget, so crafting starts
+            with signing in — with a wallet, an email or a social account. */}
+        {!wallet.address && (
+          <p className="w-full text-xs text-faint">
+            Sign in above to craft — your agent pays with a budget of your own.
+          </p>
+        )}
       </form>
       )}
-
-      <SpendingCap />
 
       {mode === "describe" && (
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -391,13 +603,51 @@ export default function Bench({ sample }: { sample: Sample }) {
           network={ledger.network}
           discovery={ledger.discovery}
           parent={ledger.parent}
+          log={ledger.log}
+          bill={ledger.bill}
         />
       )}
 
       {/* Paying for the work and owning what was made are different things, so
           they are reported separately rather than merged into one number. */}
       {book && book.action !== "failed" && (
-        <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
+        <div
+          ref={claimArea}
+          className={`relative mt-3 ${claimTour ? "tour-breathe z-40 bg-bench-900 p-3" : ""}`}
+        >
+        {claimTour && (
+          <>
+            <Spotlight
+              onClose={() => {
+                skipTour();
+                setClaimTour(false);
+              }}
+            />
+            <TourBubble
+              step={3}
+              total={TOUR_STEPS}
+              title="Claim it — make it yours."
+              onDismiss={() => {
+                skipTour();
+                setClaimTour(false);
+              }}
+              // Not claiming is an answer too: the guide carries on without it.
+              action={{
+                label: "Next step →",
+                onClick: () => {
+                  setClaimTour(false);
+                  window.dispatchEvent(
+                    new CustomEvent(TOUR_EVENTS.backpack, { detail: { claimed: false } }),
+                  );
+                },
+              }}
+            >
+              Sign a message: no gas, no transaction. RecipeBook records you as
+              its author, and you earn 90% every time someone crafts it.
+            </TourBubble>
+          </>
+        )}
+        <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
           <span className="text-dim">
             {book.action === "unclaimed" &&
               "Nobody owns this recipe yet. Claim it and you earn when others craft with it."}
@@ -439,6 +689,7 @@ export default function Bench({ sample }: { sample: Sample }) {
             </a>
           )}
         </p>
+        </div>
       )}
 
       {claimError && (
@@ -484,7 +735,10 @@ export default function Bench({ sample }: { sample: Sample }) {
         <p className="label">the grey figure is 5 studs — one Roblox character</p>
       </div>
 
-      <div className="mt-4 grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-2">
+      <div
+        ref={renderArea}
+        className="mt-4 grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-2"
+      >
         <figure className="slot !border-0 p-4">
           <figcaption className="label mb-3">Preview render</figcaption>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -497,8 +751,11 @@ export default function Bench({ sample }: { sample: Sample }) {
         </figure>
         <div className="slot !border-0 p-4">
           <p className="label mb-3">GLB in your browser</p>
-          <div className="h-[340px] border border-bench-700 sm:h-[420px]">
-            <Viewer key={shown.glb} src={shown.glb} />
+          {/* Square, like the render beside it, so the two panels match. */}
+          <div className="aspect-square w-full border border-bench-700">
+            {/* Closer only for the sample garden, which is huge; a crafted
+                object keeps its frame. */}
+            <Viewer key={shown.glb} src={shown.glb} closer={!result} />
           </div>
         </div>
       </div>
@@ -520,9 +777,43 @@ export default function Bench({ sample }: { sample: Sample }) {
         ))}
       </dl>
 
+      {/* Connecting Roblox belongs with publishing, after the thing to
+          publish exists — not before anything has been made. */}
+      <div
+        ref={publishArea}
+        className={`relative mt-6 ${publishTour ? "tour-breathe z-40 bg-bench-900 p-3" : ""}`}
+      >
+        {publishTour && (
+          <>
+            <Spotlight
+              onClose={() => {
+                skipTour();
+                setPublishTour(false);
+              }}
+            />
+            <TourBubble
+              step={6}
+              total={TOUR_STEPS}
+              title={account ? "Publish it to Roblox." : "Connect Roblox, then publish."}
+              onDismiss={() => {
+                skipTour();
+                setPublishTour(false);
+              }}
+            >
+              {account
+                ? "It lands in your Roblox inventory as native parts. In Studio: Toolbox → Inventory → My Models."
+                : "Paste an Open Cloud key — it stays in this browser. Then Publish puts it straight into your Roblox inventory."}
+            </TourBubble>
+          </>
+        )}
+
+        <div className="mb-4">
+          <RobloxConnect account={account} onChange={setAccount} />
+        </div>
+
       {/* Publishing is the point: it lands in your account, you install
           nothing. Downloading the file is the fallback, and looks like one. */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
         <button
           type="button"
           onClick={publish}
@@ -562,6 +853,7 @@ export default function Bench({ sample }: { sample: Sample }) {
           or download the .rbxmx
         </a>
       </div>
+      </div>
 
       {publishLedger && (
         <Payments
@@ -570,6 +862,8 @@ export default function Bench({ sample }: { sample: Sample }) {
           network={publishLedger.network}
           discovery={publishLedger.discovery}
           parent={publishLedger.parent}
+          log={publishLedger.log}
+          bill={publishLedger.bill}
         />
       )}
 
@@ -593,6 +887,15 @@ export default function Bench({ sample }: { sample: Sample }) {
             It is in your Roblox inventory. Open Studio and find it under
             Toolbox, Inventory, My Models.
           </p>
+          {published.icon && (
+            <p
+              className={`mt-2 text-xs ${published.icon.set ? "text-sap" : "text-ember"}`}
+            >
+              {published.icon.set
+                ? `Its icon is the render, uploaded as image ${published.icon.imageAssetId}.`
+                : `The model is up, but its icon could not be set: ${published.icon.error ?? "unknown error"}`}
+            </p>
+          )}
           <details className="mt-3">
             <summary className="cursor-pointer text-xs text-faint hover:text-dim">
               or insert it with one line
@@ -613,6 +916,13 @@ export default function Bench({ sample }: { sample: Sample }) {
           arrives at the right size and colour
         </p>
       )}
+
+      {/* The platform's own brake, shared by everyone. It is not part of
+          crafting something, so it sits after the result rather than between
+          the prompt and what the prompt made. */}
+      <div className="mt-8">
+        <SpendingCap />
+      </div>
     </div>
   );
 }
