@@ -41,6 +41,16 @@
   }
 }
 
+/* The page reads best a size down on a wide screen. Everything is measured in
+   rem, so a smaller root scales text, spacing and the container together — as
+   a browser zoom of 80% would, without its side effects on the pinned hero and
+   the scroll. Phones keep the full size. */
+@media (min-width: 1024px) {
+  html {
+    font-size: 80%;
+  }
+}
+
 @layer components {
   /* The recurring motif: an inset slot, like a socket on a workbench. */
   .slot {
