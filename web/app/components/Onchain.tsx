@@ -262,9 +262,15 @@ export default function Onchain() {
                 >
                   {i + 1}
                 </span>
-                <div data-flow-text className="lg:mt-5">
+                {/* On a wide screen the description takes whatever height is
+                    left, so every tag sits on the same line however many
+                    lines the text above it wraps to. */}
+                <div
+                  data-flow-text
+                  className="lg:mt-5 lg:flex lg:flex-1 lg:flex-col lg:items-center"
+                >
                   <p className="font-semibold">{s.t}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-dim">{s.d}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-dim lg:flex-1">{s.d}</p>
                   <span className="mt-3 inline-block border border-bench-600 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-amber uppercase">
                     {s.tag}
                   </span>
