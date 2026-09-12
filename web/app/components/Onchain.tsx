@@ -1,7 +1,8 @@
 "use client";
 
 // Why it's paid onchain: three reasons, the path a craft's money takes, and the
-// contracts that hold it.
+// contracts that hold it. The reasons open the section, over its background;
+// the path and the contracts follow below it.
 //
 // The path is the part worth watching. As it scrolls through, a line fills
 // from the first stage to the last and each stage lights up as the line
@@ -57,6 +58,8 @@ const CONTRACTS = [
 const AMBER = "#ffae3b";
 const UNLIT = { border: "#4e4840", text: "#7a7167", bg: "#131110" };
 
+const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 function Cube() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
@@ -66,6 +69,85 @@ function Cube() {
   );
 }
 
+/** The three reasons, each opening on a figure. */
+export function OnchainReasons() {
+  const scope = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const root = scope.current;
+      if (!root || still()) return;
+
+      // The cards rise in, and their figures with them.
+      const cards = root.querySelectorAll<HTMLElement>("[data-reason]");
+      gsap.from(cards, {
+        y: 56,
+        autoAlpha: 0,
+        stagger: 0.12,
+        ease: "none",
+        scrollTrigger: { trigger: root, start: "top 92%", end: "top 55%", scrub: 0.6 },
+      });
+      root.querySelectorAll<HTMLElement>("[data-figure]").forEach((fig) => {
+        gsap.from(fig, {
+          yPercent: 110,
+          ease: "none",
+          scrollTrigger: { trigger: fig, start: "top 95%", end: "top 65%", scrub: 0.6 },
+        });
+      });
+      root.querySelectorAll<HTMLElement>("[data-count]").forEach((el) => {
+        const to = Number(el.dataset.count);
+        const n = { v: 0 };
+        gsap.to(n, {
+          v: to,
+          ease: "none",
+          onUpdate: () => {
+            el.textContent = `${Math.round(n.v)}%`;
+          },
+          scrollTrigger: { trigger: el, start: "top 95%", end: "top 60%", scrub: 0.6 },
+        });
+      });
+      root.querySelectorAll<HTMLElement>("[data-bar]").forEach((bar) => {
+        gsap.from(bar, {
+          scaleX: 0,
+          ease: "none",
+          scrollTrigger: { trigger: bar, start: "top 90%", end: "top 55%", scrub: 0.6 },
+        });
+      });
+    },
+    { scope },
+  );
+
+  return (
+    <div ref={scope} className="mt-12 grid gap-4 md:grid-cols-3">
+      {REASONS.map((r) => (
+        <article
+          key={r.t}
+          data-reason
+          className="group relative overflow-hidden border border-bench-700 bg-bench-850 p-6 transition-colors duration-300 hover:border-amber/50 hover:bg-bench-800"
+        >
+          <span
+            data-bar
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-0.5 origin-left bg-amber"
+          />
+          <div className="overflow-hidden">
+            <p
+              data-figure
+              className="font-mono text-5xl font-bold tracking-tight text-amber tabular-nums"
+            >
+              <span data-count={r.count}>{r.figure}</span>
+            </p>
+          </div>
+          <p className="label mt-2">{r.kicker}</p>
+          <h3 className="mt-6 font-semibold">{r.t}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-dim">{r.d}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** What happens on a craft, as a path that lights up, and the three contracts. */
 export default function Onchain() {
   const scope = useRef<HTMLDivElement>(null);
 
@@ -105,42 +187,6 @@ export default function Onchain() {
         (ctx) => {
           const { wide, still } = ctx.conditions as { wide: boolean; still: boolean };
           if (still) return;
-
-          // The reasons rise in, and their figures with them.
-          const cards = root.querySelectorAll<HTMLElement>("[data-reason]");
-          gsap.from(cards, {
-            y: 56,
-            autoAlpha: 0,
-            stagger: 0.12,
-            ease: "none",
-            scrollTrigger: { trigger: cards[0], start: "top 92%", end: "top 55%", scrub: 0.6 },
-          });
-          root.querySelectorAll<HTMLElement>("[data-figure]").forEach((fig) => {
-            gsap.from(fig, {
-              yPercent: 110,
-              ease: "none",
-              scrollTrigger: { trigger: fig, start: "top 95%", end: "top 65%", scrub: 0.6 },
-            });
-          });
-          root.querySelectorAll<HTMLElement>("[data-count]").forEach((el) => {
-            const to = Number(el.dataset.count);
-            const n = { v: 0 };
-            gsap.to(n, {
-              v: to,
-              ease: "none",
-              onUpdate: () => {
-                el.textContent = `${Math.round(n.v)}%`;
-              },
-              scrollTrigger: { trigger: el, start: "top 95%", end: "top 60%", scrub: 0.6 },
-            });
-          });
-          root.querySelectorAll<HTMLElement>("[data-bar]").forEach((bar) => {
-            gsap.from(bar, {
-              scaleX: 0,
-              ease: "none",
-              scrollTrigger: { trigger: bar, start: "top 90%", end: "top 55%", scrub: 0.6 },
-            });
-          });
 
           // The path: the line fills, a spark rides it, each stage lights as
           // the spark reaches it.
@@ -188,7 +234,7 @@ export default function Onchain() {
             );
           });
 
-          // The note under it and the contracts come in last.
+          // The contracts come in last.
           gsap.from(root.querySelectorAll("[data-contract]"), {
             y: 40,
             autoAlpha: 0,
@@ -214,36 +260,8 @@ export default function Onchain() {
 
   return (
     <div ref={scope}>
-      {/* ── three reasons ─────────────────────────────────────────────── */}
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
-        {REASONS.map((r) => (
-          <article
-            key={r.t}
-            data-reason
-            className="group relative overflow-hidden border border-bench-700 bg-bench-850 p-6 transition-colors duration-300 hover:border-amber/50 hover:bg-bench-800"
-          >
-            <span
-              data-bar
-              aria-hidden
-              className="absolute inset-x-0 top-0 h-0.5 origin-left bg-amber"
-            />
-            <div className="overflow-hidden">
-              <p
-                data-figure
-                className="font-mono text-5xl font-bold tracking-tight text-amber tabular-nums"
-              >
-                <span data-count={r.count}>{r.figure}</span>
-              </p>
-            </div>
-            <p className="label mt-2">{r.kicker}</p>
-            <h3 className="mt-6 font-semibold">{r.t}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-dim">{r.d}</p>
-          </article>
-        ))}
-      </div>
-
       {/* ── what happens on a craft ──────────────────────────────────── */}
-      <div data-flow className="mt-16">
+      <div data-flow>
         <p className="label mb-8">What actually happens on a craft</p>
         <div className="relative">
           <div data-flow-track aria-hidden className="absolute bg-bench-700">
