@@ -760,7 +760,9 @@ export default function Bench({ sample }: { sample: Sample }) {
         </div>
       </div>
 
-      <dl className="mt-px grid grid-cols-2 gap-px border border-bench-700 bg-bench-700 sm:grid-cols-5">
+      {/* A compact wrapped line on a phone, five cells from 640px up; the
+          layout lives in globals.css (.specs). */}
+      <dl className="specs">
         {[
           ["ingredients", String(shown.ingredients)],
           ["triangles", shown.tris ? String(shown.tris) : "—"],
@@ -770,9 +772,9 @@ export default function Bench({ sample }: { sample: Sample }) {
           // two are no longer the same number.
           ["parts", shown.parts ? String(shown.parts) : "—"],
         ].map(([k, v]) => (
-          <div key={k} className="bg-bench-900 px-4 py-3">
+          <div key={k} className="spec">
             <dt className="label">{k}</dt>
-            <dd className="mt-1 font-mono text-sm">{v}</dd>
+            <dd className="font-mono text-sm">{v}</dd>
           </div>
         ))}
       </dl>
