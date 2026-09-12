@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {RecipeBook} from "../src/RecipeBook.sol";
 import {SplitVault} from "../src/SplitVault.sol";
 
-/// @notice Regression coverage for SR-01, the former first-observer authorship capture.
+/// @notice Regression coverage for the direct-publish route and signature binding.
 contract SR01RecipeAuthorshipRegressionTest is Test {
     uint256 internal constant TRUE_AUTHOR_KEY = 0xA11CE;
     bytes32 internal constant RECIPE_ID = keccak256("private_recipe_content_hash");
@@ -23,8 +23,8 @@ contract SR01RecipeAuthorshipRegressionTest is Test {
         book = new RecipeBook(address(vault), 1000);
     }
 
-    /// @dev Before the fix, this call assigned the attacker as author and routed
-    /// future royalties to them. It must now always revert before recording an author.
+    /// @dev The old direct route assigned the attacker as author. It must now
+    /// always revert before recording an author.
     function testRegression_DirectPublishCannotCaptureAuthorship() public {
         vm.prank(attacker);
         vm.expectRevert(RecipeBook.DirectPublishDisabled.selector);
@@ -33,8 +33,8 @@ contract SR01RecipeAuthorshipRegressionTest is Test {
         assertEq(book.authorOf(RECIPE_ID), address(0));
     }
 
-    /// @dev A relayer may submit a valid claim, but the EIP-712 signer is the
-    /// author and receives the royalty share.
+    /// @dev A relayer may submit a valid claim, but cannot replace the signer.
+    /// This verifies signature binding; it does not prove content provenance.
     function testFixed_SignedClaimCreditsAuthorWhenRelayedByAttacker() public {
         bytes memory signature = _sign(TRUE_AUTHOR_KEY, RECIPE_ID, trueAuthor);
 
