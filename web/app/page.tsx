@@ -5,6 +5,7 @@ import Bench from "./components/Bench";
 import Hero from "./components/Hero";
 import Marquee from "./components/Marquee";
 import Reveal from "./components/Reveal";
+import Onchain from "./components/Onchain";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
 import { HeaderWallet } from "./components/Wallet";
@@ -226,96 +227,12 @@ export default async function Home() {
             Three reasons, none of them decorative.
           </p>
 
-          <Reveal deep>
-          <div className="mt-10 grid gap-px border border-bench-700 bg-bench-700 md:grid-cols-3">
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">Two cents in, ninety out</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                A craft should cost cents, and a card cannot process two cents
-                for less than two cents. The harder half is the other
-                direction: paying forty authors ninety cents each, in twenty
-                countries, costs more in fees and onboarding than it moves.
-              </p>
-            </div>
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">Recipe authors get paid without trusting us</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                If forty people craft with your recipe, you earn on each craft.
-                The split is a contract and the ledger is public, so nobody has
-                to take our bookkeeping on faith.
-              </p>
-            </div>
-            <div className="bg-bench-850 p-6">
-              <h3 className="font-semibold">The agent&rsquo;s limits are not a prompt</h3>
-              <p className="mt-2 text-sm leading-relaxed text-dim">
-                You give your agent a budget by signing a USDC permit, and the
-                token refuses it anything past that. The platform&rsquo;s own
-                cap is a contract too. Neither is a setting the model could be
-                talked past — a prepaid card, not your credit card.
-              </p>
-            </div>
-          </div>
-          </Reveal>
-
-          {/* the mechanism, briefly */}
-          <div className="mt-px grid gap-px border border-bench-700 bg-bench-700 lg:grid-cols-[1fr_minmax(0,22rem)]">
-            <div className="bg-bench-900 p-6">
-              <p className="label mb-4">What actually happens on a craft</p>
-              <ol className="space-y-2.5 font-mono text-sm">
-                {[
-                  ["1", "you pay your agent, from your budget", "USDC · Arc"],
-                  ["2", "the agent pays the recipe service", "x402 · Hedera"],
-                  ["3", "the agent pays the craft service", "Nanopayments · Arc"],
-                  ["4", "a recipe with an author pays them 90%", "RecipeBook"],
-                  ["5", "publishing, when you ask, is paid the same way", "x402 · Hedera"],
-                ].map(([n, text, tag]) => (
-                  <li key={n} className="flex flex-wrap items-baseline gap-x-3">
-                    <span className="text-faint">{n}</span>
-                    <span className="text-dim">{text}</span>
-                    {tag ? (
-                      <span className="border border-bench-600 px-1.5 text-[10px] tracking-wider text-amber uppercase">
-                        {tag}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-5 text-sm leading-relaxed text-faint">
-                Each stage is a separate paid service, so no secrets are shared
-                between them. The craft service cannot publish; the publish
-                service never sees your prompt. Compromising one does not hand
-                over the others — that is the real argument for paying rather
-                than sharing an API key.
-              </p>
-            </div>
-
-            <div className="bg-bench-900 p-6">
-              <p className="label mb-4">Three contracts</p>
-              <dl className="space-y-4">
-                {[
-                  ["RecipeBook", "recipe, author, split terms, craft count"],
-                  ["SplitVault", "what each author has earned, and can withdraw"],
-                  ["Allowance", "the agent's spending cap, and the human signature needed to raise it"],
-                ].map(([name, what]) => (
-                  <div key={name}>
-                    <dt className="font-mono text-sm text-amber">{name}</dt>
-                    <dd className="mt-0.5 text-sm leading-relaxed text-dim">
-                      {what}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-5 text-sm text-faint">
-                Deliberately small. Details in{" "}
-                <code className="font-mono">docs/ONCHAIN.md</code>.
-              </p>
-            </div>
-          </div>
+          <Onchain />
 
           {/* The shelf gets the full width; the note on revenue follows it. */}
-          <div className="mt-10">
+          <div className="mt-16">
             <Marketplace />
-            <p className="mt-6 max-w-2xl text-sm leading-relaxed text-faint">
+            <p className="mt-6 text-sm leading-relaxed text-faint">
               Your game&rsquo;s revenue never touches any of this. Roblox
               prohibits blockchain integrations and off-platform monetisation, so
               what your game earns stays in Robux and stays yours. We charge for
@@ -327,9 +244,9 @@ export default async function Home() {
       </section>
 
       <footer className="border-t border-bench-700 px-5 py-8">
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2">
+        <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-6 gap-y-2 text-center">
           <p className="label">Voxel Bench · ETHOnline 2026</p>
-          <p className="label !text-faint">built from scratch · see AI_USAGE.md</p>
+          <p className="label !text-faint">built from scratch</p>
         </div>
       </footer>
       </div>
