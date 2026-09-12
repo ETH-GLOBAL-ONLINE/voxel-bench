@@ -1,5 +1,7 @@
 # SR-01: trace захвата авторства
 
+> **Status (English):** closed. The "after" flow below is now what the contract does, with the platform's word carried by the relayer rather than by a second signature: `publish` and `publishFor` revert with `NotAttester` from anyone but the attester, and the attester relays a claim only for the person it crafted the recipe for. `FrontRunPublishFor.t.sol` now shows the capture failing. See `SR-01-authorship-capture.md`.
+
 **Идентификатор:** SR-01 — first-claim authorship capture
 **Затронутая логика:** `RecipeBook.publishFor`
 **Условие риска:** `recipeId` становится виден до того, как настоящему автору выдано доверенное подтверждение происхождения.

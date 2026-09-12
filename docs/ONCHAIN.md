@@ -71,9 +71,10 @@ Rejected — it works, but it makes us the only party who can see the truth, whi
 is precisely the trust we are asking a stranger to extend before writing a
 recipe for us.
 
-**Where it stands.** Every craft on the site is recorded: a recipe nobody has
-seen is published and gains an owner, one that already has an owner is crafted
-against and the split pays them. The marketplace reads that back from the chain
+**Where it stands.** Every craft on the site is recorded: a new recipe waits
+for the person who crafted it to claim it — only they can, and the agent relays
+the claim — and one that already has an owner is crafted against and the split
+pays them. The marketplace reads that back from the chain
 and shows the contract address, so the claim above can be checked rather than
 believed.
 
@@ -90,7 +91,11 @@ the agent may spend at all. `docs/PAYMENT_FLOW.md` walks through it.
 
 A recipe's id is the hash of its content rather than its name. The same recipe
 is the same id whoever writes it, so a second publisher cannot take the first
-one's authorship, and renaming a recipe does not make it new.
+one's authorship, and renaming a recipe does not make it new. Knowing an id is
+not writing it, though, so an author is recorded only through the agent that
+crafted the recipe: `RecipeBook` accepts a claim from its attester alone, and
+the agent relays one only for the person it crafted for. That is SR-01 in
+`docs/CONTRACT_AUDIT.md`, and how it was closed.
 
 Tested with an owner who is not us. A fresh account published a recipe, we
 crafted against it, and `SplitVault` credited them 0.9 of 1 USDC, which they

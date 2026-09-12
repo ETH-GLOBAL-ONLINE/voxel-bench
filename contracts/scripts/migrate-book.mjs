@@ -93,7 +93,9 @@ try {
     console.log("the new book is sealed: nothing can be migrated");
     process.exit(writing ? 1 : 0);
   }
-  const already = await Promise.all(rows.map((r) => read(to, "authorOf", [r.id])));
+  // One at a time: Arc's public node refuses a burst of reads.
+  const already = [];
+  for (const r of rows) already.push(await read(to, "authorOf", [r.id]));
   pending = rows.filter((_, i) => already[i] === "0x0000000000000000000000000000000000000000");
   console.log(`new book: ${rows.length - pending.length} already there, ${pending.length} to migrate`);
 } catch (err) {

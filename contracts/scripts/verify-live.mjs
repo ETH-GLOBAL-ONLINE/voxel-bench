@@ -49,11 +49,11 @@ const money = (v) => `${formatUnits(v, NETWORK.valueDecimals)} ${NETWORK.symbol}
 // because the deployer's nonces were no longer in step.
 const ADDRESSES = {
   hedera: {
-    book: "0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E",
+    book: "0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41",
     vault: "0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE",
   },
   arc: {
-    book: "0xe0C3Bd1b9dD6ee6606C6780dc1979855556bb396",
+    book: "0xC456D809Fb6B71a1901c4E5957c0F70b034783BA",
     vault: "0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721",
   },
 };

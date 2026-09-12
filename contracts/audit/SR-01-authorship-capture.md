@@ -1,31 +1,46 @@
-# SR-01 — authorship capture through direct publish
+# SR-01 — authorship capture of an observed recipe id
 
-**Status:** direct route disabled; signed first-claim route still requires a provenance fix.
+**Status:** closed. An author is recorded only through the attester, which relays a claim only for the person it crafted the recipe for.
 
 ## Original issue
 
-The former direct path `publish(recipeId)` recorded `msg.sender` as author. An observer of an unclaimed recipe ID could publish first, become the permanent author, and receive future royalty payments.
+The direct path `publish(recipeId)` recorded `msg.sender` as author. An observer of an unclaimed recipe ID could publish first, become the permanent author, and receive future royalty payments.
 
-## Partial mitigation
+The signed path had the same gap. `publishFor(recipeId, author, signature)` bound a signature to the recipe ID, chain ID and contract address, which proved that `author` controlled the signing wallet but not that `author` created the recipe content. A first observer could sign the observed ID with their own wallet before the legitimate claim arrived. Disabling `publish` alone did not close it; `test/FrontRunPublishFor.t.sol` showed the capture through `publishFor`.
 
-Direct publishing now reverts with `DirectPublishDisabled`. This removes the unsafe direct route.
+## The fix
 
-`publishFor(recipeId, author, signature)` binds a signature to the recipe ID, chain ID, and this contract address. It proves that `author` controls the signing wallet, but it does **not** prove that `author` created the recipe content. A first observer can still sign the observed ID with their own wallet before the legitimate claim arrives.
+Provenance has to come from somewhere other than the claimant's wallet. The one party that saw who did the work is the agent that crafted the recipe — every craft is charged to a signed-in person's budget — so the fix puts the agent between the claim and the record, on both sides of the chain.
 
-## Regression test
+**Contract.** `RecipeBook` has an `attester`, set to the deployer and rotated by the owner. Both routes are gated:
+
+- `publish(recipeId)` — `onlyAttester`. The platform's own stock, published under the agent's address.
+- `publishFor(recipeId, author, signature)` — `onlyAttester`, and the author's EIP-712 signature is still verified. The signature says this person wants this recipe; the relay says the agent crafted it for them. A substituted author does not recover, so the attester cannot misname a signer either.
+
+Everything else in the contract is unchanged. Recipes from the earlier deployment were carried over with `migrate` (owner-only, refused for an existing id, checked against the old book) and the migration sealed with `sealMigration`, which is final.
+
+**Application.** The agent writes down, privately, who paid for each new craft (`services/agent/crafted.mjs`, in `out/crafted.json`, never in the public catalog), and relays a claim only for them. Anyone else is refused whatever they signed, and a second claim of the same recipe is refused. A recipe not claimed on the spot waits under *Unclaimed* in the backpack, where only its crafter can claim it.
+
+## Tests
+
+`test/FrontRunPublishFor.t.sol` — the discovery test, turned around: the observer's self-signed `publishFor` and their direct `publish` revert with `NotAttester`, the real author's claim relayed by the attester is recorded, and an author's signature relayed under another name does not recover.
 
 `test/SR01RecipeAuthorshipRegression.t.sol` verifies that:
 
 1. Direct publication cannot record an attacker as author.
-2. A relayer can submit a real author's signed claim, but royalties go to the signer.
-3. A relayer cannot substitute their own address for the signed author.
+2. A self-signed claim for an observed id cannot record an attacker as author.
+3. A valid claim in an attacker's hands cannot be relayed at all.
+4. The attester relays the true author's claim, and the author is credited and paid.
+5. The attester cannot substitute an address for the signer's.
 
-`test/FrontRunPublishFor.t.sol` remains an active discovery test: it demonstrates that a first observer can self-sign and claim an observed ID. This means SR-01 is not fully closed yet.
+`test/ProtocolFuzzTest.t.sol` adds `invariant_OnlyTheAttesterPublishes` and `test_attesterGatesBothRoutes`.
 
-## Required final fix
+End to end on testnet, through the running agent: a fresh account crafted a recipe; a stranger's self-signed claim was refused by the agent, and the same call simulated on the contract reverted from the stranger and succeeded from the attester; the crafter's claim was recorded on the new book, and a marketplace craft of a migrated recipe paid its author with the carried-over count continuing.
 
-The contract needs an authorization source that is independent from the claimant's own wallet. For this product, the clearest option is a backend/platform attestation: after recording recipe creation, the trusted service signs `(recipeId, author)` and the contract accepts only that service's signature. A commit-reveal flow with a secret salt is another option when the author must claim without a trusted backend.
+## What remains a matter of trust
+
+The attester is the platform's agent. It could, in principle, vouch for the wrong address; the contract cannot tell. That trust is stated rather than hidden: it is the same agent that already spends the platform's money and crafts the objects, its address is public, and every claim it relays is an event on the chain that names both the recipe and the author.
 
 ## Demo statement
 
-"We identified SR-01 during audit. Direct publishing is disabled, and signature-substitution is covered by tests. Our remaining security test shows that self-signed first claims still need a provenance mechanism, so we are implementing a platform attestation before calling the issue fully closed."
+"We identified SR-01 during the audit: whoever saw an unclaimed recipe id could claim it, since a signature proves a wallet and not the work. We closed it by recording authors only through the agent that crafted the recipe, which vouches only for the person it crafted for, and redeployed the book on both chains with the earlier recipes carried over. The discovery test now shows the attack failing."

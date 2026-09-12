@@ -1,11 +1,12 @@
 # Contract test guide
 
-This folder contains executable Foundry tests for the Solidity contracts. Each row below explains the behaviour checked by a test, so a reviewer can connect the code with its security claim.
+This folder contains executable Foundry-style tests for the Solidity contracts. Each row below explains the behaviour checked by a test, so a reviewer can connect the code with its security claim.
 
-Run the suite from `contracts/` with:
+Run the suite from `contracts/` with either runner:
 
 ```bash
-forge test -vvv
+npx hardhat test      # what the repo uses; runs the .t.sol files, fuzz and invariants included
+forge test -vvv       # with Foundry installed; foundry.toml is here
 ```
 
 Historical run evidence and the dated result summary are in [`../audit/TEST_MATRIX.md`](../audit/TEST_MATRIX.md) and [`../audit/evidence/`](../audit/evidence/).
@@ -14,11 +15,19 @@ Historical run evidence and the dated result summary are in [`../audit/TEST_MATR
 
 | Test | What it checks |
 |---|---|
-| `test_publish_records_the_author` | A valid signed publish claim records the signing wallet as author. |
-| `test_direct_publish_is_disabled` | The former unsigned `publish` route always reverts and cannot create a claim. |
-| `test_relayer_cannot_steal_signed_authorship` | Any account may relay a valid author signature, but royalties remain assigned to the signer. |
-| `test_attacker_cannot_publish_with_wrong_signature` | A signature from a different wallet cannot be used to claim authorship for the author. |
-| `test_republishing_cannot_steal_authorship` | A claimed recipe ID cannot be claimed again by another wallet. |
+| `test_the_platform_publishes_its_own_stock` | The attester's direct `publish` records the attester as author. |
+| `test_nobody_else_publishes_directly` | Direct `publish` from anyone but the attester reverts with `NotAttester`. |
+| `test_republishing_cannot_steal_authorship` | A claimed recipe ID cannot be claimed again, directly or with another wallet's valid signature. |
+| `test_publishFor_is_relayed_only_by_the_attester` | A valid claim relayed by anyone but the attester reverts; the same claim relayed by the attester is recorded. |
+| `test_only_the_owner_appoints_the_attester` | Only the owner sets the attester, and never to the zero address. |
+| `test_a_new_attester_takes_over` | After a rotation the old attester records nothing and the new one relays claims. |
+| `test_publishDigest_is_the_eip712_digest` | The digest the contract exposes equals the EIP-712 digest built by hand, so a domain drift would show. |
+| `test_migration_carries_recipes_over` | `migrate` records each recipe's author, craft count and earnings, emits `RecipePublished`, and crafts continue from the carried-over count. |
+| `test_migration_is_the_owners_alone` | A non-owner cannot migrate. |
+| `test_migration_refuses_mismatched_lists` | Lists of different lengths revert with `LengthMismatch`. |
+| `test_migration_refuses_a_zero_author` | A zero author reverts with `ZeroAddress`. |
+| `test_migration_cannot_overwrite_an_author` | Migrating an id that already has an author reverts with `AlreadyPublished`. |
+| `test_sealing_ends_the_migration_for_good` | Only the owner seals; once sealed, `migrate` and `sealMigration` revert with `Sealed`, and claims still work. |
 | `test_craft_splits_and_counts` | A craft sends 90% to the author and 10% to the platform, tracks the liability, and increments counters. |
 | `test_crafting_an_unknown_recipe_reverts` | Crafting an unpublished recipe is rejected. |
 | `test_the_contract_never_holds_the_money` | Payment is forwarded to `SplitVault`; `RecipeBook` keeps no ETH. |
@@ -26,10 +35,9 @@ Historical run evidence and the dated result summary are in [`../audit/TEST_MATR
 | `test_platform_share_is_capped` | The constructor rejects a platform share above the configured maximum. |
 | `test_only_the_owner_moves_the_platform_share` | A non-owner cannot change the platform fee. |
 | `testFuzz_split_never_loses_or_invents_value` | For many payment and valid fee values, author share plus platform share always equals payment. |
-| `test_publishFor_credits_the_signer_not_the_sender` | A relayer is not paid or recorded as author just by submitting the transaction. |
+| `test_publishFor_credits_the_signer_not_the_relayer` | The attester relaying a claim is not recorded as its author; the signer is. |
 | `test_publishFor_refuses_a_substituted_author` | Replacing the signed author address with another address invalidates the signature. |
 | `test_publishFor_refuses_a_signature_for_another_recipe` | A signature for recipe A cannot claim recipe B. |
-| `test_publishFor_cannot_take_an_existing_recipe` | The signed route also rejects a recipe that is already claimed. |
 | `test_publishFor_refuses_a_malformed_signature` | Invalid-length or malformed signature bytes are rejected. |
 | `test_a_relayed_author_is_paid_like_any_other` | An author whose signed claim was relayed still receives their craft proceeds. |
 
@@ -52,17 +60,21 @@ Historical run evidence and the dated result summary are in [`../audit/TEST_MATR
 
 | Test | What it checks |
 |---|---|
-| `testRegression_DirectPublishCannotCaptureAuthorship` | Regression for SR-01: an attacker cannot use the old direct route to record themselves as author. |
-| `testFixed_SignedClaimCreditsAuthorWhenRelayedByAttacker` | A valid claim relayed by an attacker credits and pays the genuine signature holder. |
-| `testFixed_AttackerCannotSubstituteTheirAddressForSigner` | An attacker cannot reuse another author's signature while naming themselves as author. |
+| `testRegression_DirectPublishCannotCaptureAuthorship` | Regression for SR-01: an attacker cannot use the direct route to record themselves as author. |
+| `testRegression_SelfSignedClaimCannotCaptureAuthorship` | Regression for SR-01: an attacker's self-signed claim for an observed id is not relayed. |
+| `testFixed_AttackerCannotRelayEvenAValidClaim` | A valid claim in an attacker's hands cannot be relayed at all. |
+| `testFixed_SignedClaimCreditsAuthorWhenRelayedByAttester` | The attester relays the true author's claim; the author, not the relayer, is credited and paid. |
+| `testFixed_AttesterCannotSubstituteAddressForSigner` | Even the attester cannot reuse an author's signature while naming someone else. |
 
-These tests prove signature binding and direct-route removal. They do **not** prove that the first wallet to sign an observed recipe ID created its content; see the discovery test below.
+These tests prove that an author is recorded only through the attester and only under the name that signed. What they do not, and cannot, prove is that the attester vouches for the right person: that is the agent's job (`services/agent/crafted.mjs`), stated as the trust the design places.
 
 ## `FrontRunPublishFor.t.sol`
 
 | Test | What it checks |
 |---|---|
-| `test_an_observer_claims_a_seen_id_with_their_own_signature` | Discovery proof for the remaining first-claim risk: an observer of an unclaimed ID can sign it with their own wallet, claim it first, and block the real author. This test is expected to pass because it demonstrates the unresolved provenance issue. |
+| `test_an_observer_cannot_claim_a_seen_id_with_their_own_signature` | The SR-01 capture, failing: an observer's self-signed `publishFor` and their direct `publish` both revert with `NotAttester`, and the real author's claim relayed by the attester is recorded. |
+| `test_an_observer_cannot_have_the_attester_name_them_either` | An author's signature relayed under another name does not recover, so even the attester cannot misname an author. |
+| `test_the_attackers_own_signature_relayed_by_the_attester_is_the_only_way` | States where the trust sits: only the attester vouching for an address records it, which the agent does only for whoever it crafted for. |
 
 ## `ProtocolFuzzTest.t.sol`
 
@@ -79,6 +91,7 @@ These tests prove signature binding and direct-route removal. They do **not** pr
 | `invariant_AllowanceRemainingFormula` | Allowance remaining equals the smaller of unused cap and available ETH, with correct time-window reset handling. |
 | `invariant_AllowanceAgentMatchesHandlerModel` | The on-chain allowance agent matches the latest valid agent rotation in the model. |
 | `invariant_BookOwnerMatchesHandlerModel` | The on-chain `RecipeBook` owner matches the model after ownership transfers. |
+| `invariant_OnlyTheAttesterPublishes` | The attester stays the one the owner set, whatever the owner does, and every recorded author is one the handler published. |
 | `invariant_AllowanceLiquidityBoundHolds` | The remaining allowance can never exceed its contract balance. |
 
 ### Stateless laws: `ProtocolLawStatelessTest`
@@ -88,6 +101,7 @@ These tests prove signature binding and direct-route removal. They do **not** pr
 | `testFuzz_quoteEqualsExecution` | For varied payments and valid fees, `quote` exactly matches the later craft credits. |
 | `test_unknownOrZeroPaymentDoesNotChangeState` | Zero payments and unknown recipe IDs revert without creating a balance or liability. |
 | `test_publishForCannotSubstituteSigner` | A valid signature cannot be rebound to a different author address. |
+| `test_attesterGatesBothRoutes` | `publish` and `publishFor` revert for anyone but the attester; only the owner appoints one, never the zero address; after a rotation the new attester relays and the old one cannot. |
 | `test_allowanceRejectsOutsiderAndOverCap` | Non-agents cannot draw and agents cannot exceed the cap. |
 | `test_failedWithdrawalIsAtomic` | When an ETH recipient rejects payment, their vault credit and total liability stay unchanged. |
 | `testFuzz_creditUpdatesAccountAndLiability` | For varied beneficiaries and amounts, vault credit increases the individual balance and total liability equally. |

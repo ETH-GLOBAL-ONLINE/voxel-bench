@@ -1,0 +1,83 @@
+
+Compiled 3 Solidity files with solc 0.8.24 (evm target: shanghai)
+
+Running Solidity tests
+
+  test/FrontRunPublishFor.t.sol:FrontRunPublishForTest
+    ✔ test_the_attackers_own_signature_relayed_by_the_attester_is_the_only_way()
+    ✔ test_an_observer_cannot_have_the_attester_name_them_either()
+    ✔ test_an_observer_cannot_claim_a_seen_id_with_their_own_signature()
+
+  test/Allowance.t.sol:AllowanceTest
+    ✔ test_the_window_resets()
+    ✔ test_the_owner_can_take_it_all_back()
+    ✔ test_the_cap_is_a_wall_not_a_suggestion()
+    ✔ test_the_cap_cannot_outrun_the_balance()
+    ✔ test_the_agent_cannot_raise_its_own_cap()
+    ✔ test_raising_the_cap_takes_effect()
+    ✔ test_nobody_else_can_draw()
+    ✔ test_draws_accumulate_inside_one_window()
+    ✔ test_agent_draws_within_the_cap()
+    ✔ testFuzz_the_agent_never_exceeds_the_cap_in_a_window(uint96,uint96) (runs: 256)
+
+  test/ProtocolFuzzTest.t.sol:ProtocolLawStatelessTest
+    ✔ test_unknownOrZeroPaymentDoesNotChangeState()
+    ✔ test_republishAndOwnerTransitionAreBounded()
+    ✔ test_reentrantWithdrawalCannotSpendLiabilityTwice()
+    ✔ test_publishForCannotSubstituteSigner()
+    ✔ test_failedWithdrawalIsAtomic()
+    ✔ test_attesterGatesBothRoutes()
+    ✔ test_allowanceRejectsOutsiderAndOverCap()
+    ✔ test_allowanceOwnerBoundariesAndAgentRotation()
+    ✔ testFuzz_remainingMatchesCapAndLiquidity(uint96,uint96) (runs: 256)
+    ✔ testFuzz_quoteEqualsExecution(uint96,uint16) (runs: 256)
+    ✔ testFuzz_failedAllowanceDrawDoesNotChangeState(uint96,uint96) (runs: 256)
+    ✔ testFuzz_creditUpdatesAccountAndLiability(address,uint96) (runs: 256)
+
+  test/SR01RecipeAuthorshipRegression.t.sol:SR01RecipeAuthorshipRegressionTest
+    ✔ testRegression_SelfSignedClaimCannotCaptureAuthorship()
+    ✔ testRegression_DirectPublishCannotCaptureAuthorship()
+    ✔ testFixed_SignedClaimCreditsAuthorWhenRelayedByAttester()
+    ✔ testFixed_AttesterCannotSubstituteAddressForSigner()
+    ✔ testFixed_AttackerCannotRelayEvenAValidClaim()
+
+  test/RecipeBook.t.sol:RecipeBookTest
+    ✔ test_the_platform_publishes_its_own_stock()
+    ✔ test_the_contract_never_holds_the_money()
+    ✔ test_sealing_ends_the_migration_for_good()
+    ✔ test_republishing_cannot_steal_authorship()
+    ✔ test_publishFor_refuses_a_substituted_author()
+    ✔ test_publishFor_refuses_a_signature_for_another_recipe()
+    ✔ test_publishFor_refuses_a_malformed_signature()
+    ✔ test_publishFor_is_relayed_only_by_the_attester()
+    ✔ test_publishFor_credits_the_signer_not_the_relayer()
+    ✔ test_publishDigest_is_the_eip712_digest()
+    ✔ test_platform_share_is_capped()
+    ✔ test_only_the_owner_moves_the_platform_share()
+    ✔ test_only_the_owner_appoints_the_attester()
+    ✔ test_nobody_else_publishes_directly()
+    ✔ test_migration_refuses_mismatched_lists()
+    ✔ test_migration_refuses_a_zero_author()
+    ✔ test_migration_is_the_owners_alone()
+    ✔ test_migration_carries_recipes_over()
+    ✔ test_migration_cannot_overwrite_an_author()
+    ✔ test_crafting_an_unknown_recipe_reverts()
+    ✔ test_craft_splits_and_counts()
+    ✔ test_author_withdraws_what_they_earned()
+    ✔ test_a_relayed_author_is_paid_like_any_other()
+    ✔ test_a_new_attester_takes_over()
+    ✔ testFuzz_split_never_loses_or_invents_value(uint96,uint16) (runs: 256)
+
+  test/ProtocolFuzzTest.t.sol:ProtocolFuzzTest
+    ✔ invariant_VaultIsSolvent() (runs: 256)
+    ✔ invariant_TrackedVaultLiabilitiesMatchGhostFlow() (runs: 256)
+    ✔ invariant_RecipeAccountingMatchesGhostState() (runs: 256)
+    ✔ invariant_OnlyTheAttesterPublishes() (runs: 256)
+    ✔ invariant_BookOwnerMatchesHandlerModel() (runs: 256)
+    ✔ invariant_BookNeverRetainsValue() (runs: 256)
+    ✔ invariant_AllowanceRemainingFormula() (runs: 256)
+    ✔ invariant_AllowanceLiquidityBoundHolds() (runs: 256)
+    ✔ invariant_AllowanceAgentMatchesHandlerModel() (runs: 256)
+
+64 passing (64 solidity)
+

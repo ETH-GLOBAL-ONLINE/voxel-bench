@@ -1,0 +1,13 @@
+{
+  "chain": "Hedera Testnet",
+  "chainId": 296,
+  "book": "0x36c6c3e991b8673c44b7216f1b0499ea19f8df41",
+  "vault": "0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE",
+  "owner": "0xfe3caAd68785d76B70CeC542518d2a003EA90034",
+  "attester": "0xfe3caAd68785d76B70CeC542518d2a003EA90034",
+  "platformBps": 1000,
+  "transaction": "0x69bb6ab09964c48a2753ade781c89dbb4a1178ca7a3ce971b70bc8a68a428440",
+  "block": "40436149",
+  "previousBook": "0x333EdFE67b0e1dcEda52CA5D483B6dd54A102e1E",
+  "at": "2026-09-12T20:05:45.433Z"
+}

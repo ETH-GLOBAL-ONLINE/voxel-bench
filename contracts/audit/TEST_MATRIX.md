@@ -4,12 +4,12 @@
 
 | File | Type | What it proves |
 |---|---|---|
-| `test/RecipeBook.t.sol` | Unit + fuzz | Signature binding, immutable recipe records, fee math, withdrawals, and owner-only controls. |
+| `test/RecipeBook.t.sol` | Unit + fuzz | Attester-only publishing, signature binding, immutable recipe records, migration and its seal, fee math, withdrawals, and owner-only controls. |
 | `test/Allowance.t.sol` | Unit + fuzz | Agent cap, fixed-window reset, liquidity bound, owner controls, and agent-only draws. |
-| `test/FrontRunPublishFor.t.sol` | Discovery PoC | A first observer can self-sign an unclaimed recipe ID and claim authorship. This is active SR-01 evidence, not a green security result. |
-| `test/SR01RecipeAuthorshipRegression.t.sol` | Regression | Direct `publish` is disabled; a relayer cannot substitute its address for a real signer's signature. These tests do not prove content provenance. |
-| `test/ProtocolHandler.sol` | Stateful helper | Generates bounded actions and keeps an independent ghost-accounting model. |
-| `test/ProtocolFuzzTest.t.sol` | Stateless fuzz + stateful invariants | Cross-contract accounting, roles, payment split, withdrawals, agent limits, and reentrancy. |
+| `test/FrontRunPublishFor.t.sol` | Security test | A first observer's self-signed claim and direct `publish` both revert with `NotAttester`; the real author's claim, relayed by the attester, is recorded. This file was the discovery PoC and is kept, turned around. |
+| `test/SR01RecipeAuthorshipRegression.t.sol` | Regression | Neither route records an author from anyone but the attester; a valid claim in an attacker's hands cannot be relayed; the attester cannot misname a signer. |
+| `test/ProtocolHandler.sol` | Stateful helper | Generates bounded actions and keeps an independent ghost-accounting model. The handler is the book's attester. |
+| `test/ProtocolFuzzTest.t.sol` | Stateless fuzz + stateful invariants | Cross-contract accounting, roles, payment split, withdrawals, agent limits, reentrancy, and that only the attester ever publishes. |
 
 ## LAW properties: expected green
 
@@ -25,7 +25,7 @@
 
 | Root | Meaning | Current classification |
 |---|---|---|
-| SR-E01 / SR-01 | First observer can capture authorship for an unclaimed public recipe ID. | Security finding; still needs provenance fix. |
+| SR-E01 / SR-01 | First observer can capture authorship for an unclaimed public recipe ID. | Closed: an author is recorded only through the attester, which relays a claim only for the person it crafted for. See `SR-01-authorship-capture.md`. |
 | SR-E02 | Two fixed allowance windows can overlap a rolling 24-hour interval. | Product-model decision, not a bug unless product promises a rolling cap. |
 
 ## Historical audit campaign results
