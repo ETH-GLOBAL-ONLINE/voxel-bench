@@ -1038,3 +1038,33 @@ not decode the reason; the crafter's claim was recorded on the new book, filed
 in the catalog and listed in their backpack; a second claim was refused; and a
 marketplace craft of a migrated recipe paid its author on the shared vault with
 the carried-over count continuing, 0.0027 → 0.0036 USDC.
+
+### A fall off the course is a fall
+
+The course used to sit eight studs over the ground. Stepping off it, a player
+landed on the ground and was killed there, which read as a stumble. It is now
+laid out twenty-two studs up, and the runtime makes sure that survives the
+import: Studio drops a model where it is let go, resting on whatever is under
+it, so on load the script measures the ground under the lowest piece and lifts
+the whole course until there are twenty studs of air. Under it goes a black
+floor, six hundred studs across, that kills on touch like a hazard. The fall is
+seen, ends in the void, and the run resumes at the checkpoint.
+
+Killing on touch rather than by height is deliberate. The server sees a
+falling character a few frames late, and at falling speed that is the whole
+drop: a height check, even every frame, fired at the ground. A touched part
+is reliable. The height check stays as the backstop for a course placed over
+nothing.
+
+Measured in Studio on a ten-piece course: dropped into the place it sat at
+0–9 studs; on Play it stood at 20–29 with the void floor at 0; a character
+pushed off the start and one pushed off mid-course both died on the floor
+within 0.6 s and respawned on the start pad.
+
+The course is played at night, in that void. On Play the runtime turns the
+place's lighting to midnight with no sun, moon or stars, black fog past the
+course, the exposure pulled down until the horizon's last blue is gone, and a
+warm light over every piece you can stand on, so the course is the only thing
+lit. A black atmosphere at full density was tried first and dropped: it
+darkened the course too, from forty studs away. The model's Night attribute
+set to false keeps the place's own lighting.
