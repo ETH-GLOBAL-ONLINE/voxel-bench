@@ -1,11 +1,14 @@
 "use client";
 
-// The backpack: what the signed-in address made, and what it got.
+// The backpack: what the signed-in address made, what it got, and what it
+// crafted but has not claimed yet.
 //
 // It asks /api/backpack. What you made — your recipes — is read from the
 // chains. What you got from the marketplace is noted by the agent that crafted
-// it for you, because today the agent pays and the chain sees the agent. Nothing
-// here decides what is whose; the page only shows it.
+// it for you, because today the agent pays and the chain sees the agent. What
+// you crafted and never claimed is the agent's note too, and only you can
+// claim it, from here. Nothing here decides what is whose; the page only shows
+// it.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -34,6 +37,17 @@ type Got = {
   preview: string | null;
 };
 
+type Unclaimed = {
+  id: string;
+  name: string | null;
+  chain: string | null;
+  at: string;
+  ingredients: number | null;
+  preview: string | null;
+};
+
+type View = "created" | "collected" | "unclaimed";
+
 const txLink = (chain: string | null, tx: string) =>
   chain?.startsWith("Hedera")
     ? `https://hashscan.io/testnet/transaction/${tx}`
@@ -55,13 +69,17 @@ function Picture({ src, alt, fallback }: { src: string | null; alt: string; fall
 }
 
 export default function Backpack() {
-  const { address } = useWallet();
+  const { address, signTypedData } = useWallet();
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"created" | "collected">("created");
+  const [view, setView] = useState<View>("created");
   const [items, setItems] = useState<Item[] | null>(null);
   const [collected, setCollected] = useState<Got[]>([]);
+  const [unclaimed, setUnclaimed] = useState<Unclaimed[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [unreadable, setUnreadable] = useState<string[]>([]);
+  // The recipe being claimed from here, and what went wrong with the last one.
+  const [claiming, setClaiming] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<{ id: string; text: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!address) return;
@@ -74,11 +92,48 @@ export default function Backpack() {
       if (!res.ok) throw new Error(data.error ?? "could not read the backpack");
       setItems(data.items);
       setCollected(data.collected ?? []);
+      setUnclaimed(data.unclaimed ?? []);
       setUnreadable(data.unreadable ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "could not read the backpack");
     }
   }, [address]);
+
+  /**
+   * Claim a recipe crafted earlier and left unclaimed. The same three steps
+   * as on the bench: the agent says what to sign, the wallet signs it, the
+   * agent relays it and pays the gas. The recipe travels by id, since the
+   * agent has its content and this page never did.
+   */
+  async function claim(item: Unclaimed) {
+    if (!address || claiming) return;
+    setClaimError(null);
+    setClaiming(item.id);
+    try {
+      const ask = await fetch(`/api/claim?id=${item.id}&author=${address}`, { cache: "no-store" });
+      const typed = await ask.json();
+      if (!ask.ok) throw new Error(typed.error ?? "could not prepare the claim");
+
+      const signature = await signTypedData(typed);
+      if (!signature) return; // declined, which is an answer
+
+      const res = await fetch("/api/claim", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ recipeId: item.id, author: address, signature }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "the claim was refused");
+
+      // Owned now: it moves from here to Created.
+      await load();
+      setView("created");
+    } catch (err) {
+      setClaimError({ id: item.id, text: err instanceof Error ? err.message : "the claim failed" });
+    } finally {
+      setClaiming(null);
+    }
+  }
 
   useEffect(() => {
     if (open) load();
@@ -138,7 +193,7 @@ export default function Backpack() {
 
   if (!address) return null;
 
-  const tab = (which: "created" | "collected", label: string, count: number | null) => (
+  const tab = (which: View, label: string, count: number | null) => (
     <button
       type="button"
       onClick={() => setView(which)}
@@ -219,6 +274,7 @@ export default function Backpack() {
               <div className="mb-5 flex gap-5 border-b border-bench-700">
                 {tab("created", "Created", items ? items.length : null)}
                 {tab("collected", "Collected", items ? collected.length : null)}
+                {tab("unclaimed", "Unclaimed", items ? unclaimed.length : null)}
               </div>
 
               {error && <p className="text-sm text-ember">{error}</p>}
@@ -281,6 +337,42 @@ export default function Backpack() {
                   Nothing collected yet. Get something from the Marketplace, and it
                   lands here.
                 </p>
+              )}
+
+              {view === "unclaimed" && items && unclaimed.length === 0 && (
+                <p className="text-sm text-dim">
+                  Nothing waiting. A recipe you craft and do not claim on the
+                  bench stays here until you do, and only you can.
+                </p>
+              )}
+
+              {view === "unclaimed" && unclaimed.length > 0 && (
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {unclaimed.map((item) => (
+                    <li key={item.id} className="border border-bench-700 bg-bench-900">
+                      <Picture src={item.preview} alt={item.name ?? item.id} fallback={short(item.id)} />
+                      <div className="p-3">
+                        <p className="text-sm text-ink">
+                          {item.name ? item.name.replace(/_/g, " ") : "unnamed recipe"}
+                        </p>
+                        <p className="label mt-1 !text-faint">
+                          {item.chain ?? "—"} · {new Date(item.at).toLocaleDateString()}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={Boolean(claiming)}
+                          onClick={() => claim(item)}
+                          className="mt-3 w-full border border-amber/50 px-2.5 py-1.5 text-xs text-amber transition-opacity hover:opacity-80 disabled:opacity-40"
+                        >
+                          {claiming === item.id ? "claiming…" : "Claim this recipe"}
+                        </button>
+                        {claimError?.id === item.id && (
+                          <p className="mt-2 text-xs text-ember">{claimError.text}</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
 
               {view === "collected" && collected.length > 0 && (
