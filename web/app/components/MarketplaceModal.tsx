@@ -18,6 +18,7 @@ type Item = {
   crafts: number;
   earned: string;
   platform: boolean;
+  collected?: boolean;
   name: string | null;
   preview: string | null;
 };
@@ -35,11 +36,17 @@ export default function MarketplaceModal() {
   const [unreadable, setUnreadable] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [getting, setGetting] = useState<Getting | null>(null);
+  // Got in this session, so the button goes at once rather than after the
+  // shelf is read again.
+  const [justGot, setJustGot] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/marketplace", { cache: "no-store" });
+      const res = await fetch(
+        address ? `/api/marketplace?address=${address}` : "/api/marketplace",
+        { cache: "no-store" },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "could not read the marketplace");
       setItems(data.items);
@@ -47,7 +54,7 @@ export default function MarketplaceModal() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "could not read the marketplace");
     }
-  }, []);
+  }, [address]);
 
   useEffect(() => {
     if (open) {
@@ -84,12 +91,15 @@ export default function MarketplaceModal() {
           r.json(),
         );
         if (job.status === "done") {
+          setJustGot((got) => new Set(got).add(item.id));
           setGetting({
             id: item.id,
             status: "done",
+            // The label above already says it is in the backpack; this line is
+            // what the get did for someone else.
             message: job.book?.paidToAuthor
-              ? `In your backpack. Its author has now earned ${job.book.paidToAuthor}.`
-              : "In your backpack.",
+              ? `Its author has now earned ${job.book.paidToAuthor}.`
+              : undefined,
           });
           load();
           return;
@@ -177,6 +187,9 @@ export default function MarketplaceModal() {
                     // your own author share and count a craft nobody else made.
                     const yours =
                       Boolean(address) && item.author.toLowerCase() === address!.toLowerCase();
+                    // Got once is enough: a second get would pay the author again
+                    // for a copy already in the backpack.
+                    const collected = !yours && (item.collected || justGot.has(item.id));
                     return (
                       <li
                         key={`${item.chain}-${item.id}`}
@@ -225,6 +238,10 @@ export default function MarketplaceModal() {
                             {yours ? (
                               <p className="border border-bench-700 px-2.5 py-1.5 text-center text-xs text-faint">
                                 Yours · in your backpack
+                              </p>
+                            ) : collected ? (
+                              <p className="border border-bench-700 px-2.5 py-1.5 text-center text-xs text-faint">
+                                Collected · in your backpack
                               </p>
                             ) : address ? (
                               <button

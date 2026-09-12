@@ -778,3 +778,14 @@ from seconds ago is still true. A chain never read yet is still reported as
 unreadable. The block number, the one read that failed without a retry, now
 retries like the rest.
 
+
+### Got once is enough
+
+After a get, the marketplace still offered Get it on the same recipe. A second
+get would have paid its author again for a copy already in the backpack,
+counted a craft that added nothing, and listed the recipe twice under
+Collected. The marketplace now marks what the visitor has collected, and the
+button goes the moment a get finishes; the line under it says what the get did
+for the author. The agent refuses a second get before crafting or paying,
+whoever calls it: asked again for a recipe already collected, it answered 409
+and started nothing.
