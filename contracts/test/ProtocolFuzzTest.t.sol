@@ -91,6 +91,10 @@ contract ProtocolFuzzTest is StdInvariant, Test {
     function invariant_BookOwnerMatchesHandlerModel() public view {
         assertEq(book.owner(), handler.expectedBookOwner());
     }
+
+    function invariant_AllowanceLiquidityBoundHolds() public view {
+        assertLe(allowance.remaining(), address(allowance).balance);
+    }
 }
 
 contract ProtocolLawStatelessTest is Test {
@@ -180,6 +184,62 @@ contract ProtocolLawStatelessTest is Test {
         Allowance a = new Allowance{value: funding}(author, cap, 1 days);
         assertEq(a.remaining(), cap < funding ? cap : funding);
         assertLe(a.remaining(), address(a).balance);
+    }
+
+    function test_republishAndOwnerTransitionAreBounded() public {
+        vm.expectRevert(RecipeBook.AlreadyPublished.selector);
+        book.publishFor(RECIPE, crafter, _signature(book, CRAFTER_KEY, RECIPE, crafter));
+
+        vm.prank(address(0xBAD));
+        vm.expectRevert(RecipeBook.NotOwner.selector);
+        book.setPlatformBps(1);
+
+        vm.expectRevert(RecipeBook.ZeroAddress.selector);
+        book.setOwner(address(0));
+        uint16 maxBps = book.MAX_PLATFORM_BPS();
+        vm.expectRevert(RecipeBook.ShareTooHigh.selector);
+        book.setPlatformBps(maxBps + 1);
+
+        address nextOwner = crafter;
+        book.setOwner(nextOwner);
+        vm.expectRevert(RecipeBook.NotOwner.selector);
+        book.setPlatformBps(1);
+        vm.prank(nextOwner);
+        book.setPlatformBps(maxBps);
+        assertEq(book.platformBps(), maxBps);
+    }
+
+    function test_allowanceOwnerBoundariesAndAgentRotation() public {
+        Allowance a = new Allowance{value: 2 ether}(author, 1 ether, 1 days);
+        vm.prank(address(0xBAD));
+        vm.expectRevert(Allowance.NotOwner.selector);
+        a.setCap(2 ether, 1 days);
+        vm.prank(address(0xBAD));
+        vm.expectRevert(Allowance.NotOwner.selector);
+        a.setAgent(crafter);
+
+        vm.expectRevert(Allowance.ZeroAddress.selector);
+        a.setAgent(address(0));
+        a.setAgent(crafter);
+        vm.prank(author);
+        vm.expectRevert(Allowance.NotAgent.selector);
+        a.draw(1);
+        vm.prank(crafter);
+        a.draw(1 ether);
+        assertEq(a.drawnThisWindow(), 1 ether);
+    }
+
+    function testFuzz_failedAllowanceDrawDoesNotChangeState(uint96 fundingSeed, uint96 capSeed) public {
+        uint256 funding = bound(uint256(fundingSeed), 1, 100 ether);
+        uint256 cap = bound(uint256(capSeed), 1, 100 ether);
+        Allowance a = new Allowance{value: funding}(address(this), cap, 1 days);
+        uint256 available = a.remaining();
+        uint256 beforeDrawn = a.drawnThisWindow();
+        uint256 beforeBalance = address(a).balance;
+        vm.expectRevert(abi.encodeWithSelector(Allowance.OverCap.selector, available + 1, available));
+        a.draw(available + 1);
+        assertEq(a.drawnThisWindow(), beforeDrawn);
+        assertEq(address(a).balance, beforeBalance);
     }
 
     function test_reentrantWithdrawalCannotSpendLiabilityTwice() public {
