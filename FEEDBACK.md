@@ -247,6 +247,21 @@ something a payment library should normalise, or at least warn about.
 Arc's documentation does say it, which Hedera's did not. That is the difference
 between an hour and a day.
 
+### A rate limit on the public RPC looks like an empty result
+
+Reading `RecipeBook`'s events for one address through Arc testnet's public RPC,
+ten block windows asked for at once came back `Request exceeds defined limit`
+with `rate limit exceeded`, three rounds in a row.
+
+A public node limiting requests is fair. What cost us was the shape of the
+failure: an app that reads a refused query as a query with no events shows a
+user an empty list, and a backpack with two recipes in it said "Nothing here
+yet". We now read the windows one after another, retry a refusal, and report a
+chain we could not read rather than an empty one.
+
+Stating the limit next to the RPC URL — requests per second, and what counts as
+one — would let an integration size its reads before it meets it.
+
 ---
 
 ## Roblox Open Cloud
@@ -274,6 +289,27 @@ time overall. Recorded here so it is in one place.
   the file asked for is not a shape Roblox has. The only way to find out is to
   open the result in Studio and look. An upload response that listed what it
   could not honour would have saved us the round trip.
+
+---
+
+## Privy
+
+Not a sponsor either, recorded for the same reason.
+
+- **The SDK can exhaust a build's memory.** With the provider wrapping the
+  page, Privy — WalletConnect, Solana, Coinbase and more — was compiled for the
+  server as well as the browser, and every Vercel build ran out of memory while
+  the same commit built locally. The log blamed `globals.css`, the module in
+  hand when memory filled. Loading the provider with `next/dynamic` and
+  `ssr: false` took Privy out of the server output entirely. A line in the
+  Next.js guide recommending that would have saved the bisecting.
+- **`login()` is ignored while a session exists.** Signing in through MetaMask
+  and then locking MetaMask left a Privy session with no wallet in it, and a
+  Sign in button that did nothing, with nothing in the console.
+- **A login method is on only when its switch is.** Google configured in the
+  dashboard still answered `Login with Google not allowed`. The app's config
+  endpoint said `google_oauth: false`; the switch sits apart from the settings
+  and only the switch counts.
 
 ---
 

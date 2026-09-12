@@ -77,6 +77,10 @@ against and the split pays them. The marketplace reads that back from the chain
 and shows the contract address, so the claim above can be checked rather than
 believed.
 
+An obby is built from recipes, and pays the same way. Each piece in the course
+that the builder does not have yet is crafted against `RecipeBook` once, so
+every author whose work is in it is paid — not only whoever put it together.
+
 A recipe's id is the hash of its content rather than its name. The same recipe
 is the same id whoever writes it, so a second publisher cannot take the first
 one's authorship, and renaming a recipe does not make it new.

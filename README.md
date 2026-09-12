@@ -24,8 +24,8 @@ Three stages:
 | Stage | What | State |
 |---|---|---|
 | 1 | **Objects.** A prompt becomes a crate, a lamp post, a market stall | crafting and publishing work |
-| 2 | **Objects that do something, and a marketplace.** Luau ships with the object; recipes get published so others can craft with yours | planned |
-| 3 | **A whole game, one genre at a time.** An obby is a sequence of platforms, hazards and checkpoints — spatial arrangement of objects. An obby is a recipe of recipes | planned |
+| 2 | **Objects that do something, and a marketplace.** Luau ships with the object; recipes get published so others can craft with yours | the marketplace works; scripts ship with obbies, not yet with single objects |
+| 3 | **A whole game, one genre at a time.** An obby is a sequence of platforms, hazards and checkpoints — spatial arrangement of objects. An obby is a recipe of recipes | the obby works: pieces from the shelf become a course you play in Studio |
 
 > **On scope:** Roblox prohibits blockchain integrations and off-platform
 > monetisation, so no Roblox in-game revenue is ever touched — what your game
@@ -153,8 +153,8 @@ the checked-in sample rather than showing a broken page.
 
 ```
 bench/       the crafter: headless Blender, and the recipes it builds from
-services/    the Roblox Open Cloud publisher
-contracts/   RecipeBook and SplitVault, deployed; Allowance still to come
+services/    the crafter, the paywall, the paying agent, the Arc facilitator, the Roblox publisher
+contracts/   RecipeBook, SplitVault and Allowance, deployed on Hedera and Arc testnets
 web/         the site: Next.js 16, TypeScript, Tailwind 4
              public/samples/ holds one crafted object so the site always shows something
 docs/        onchain design, build log
@@ -184,12 +184,14 @@ One word per concept, in the contract, the API and the UI alike.
 - [x] **A sentence becomes a recipe** — validated; 3-48s on the free tier, median 17s
 - [x] **The bench** — prompt, progress, preview, orbit, publish, in the browser
 - [x] **Publish to Roblox** — `.rbxmx` accepted; the account key stays in the browser
-- [ ] **Luau scripts** on objects
-- [x] **`RecipeBook` + `SplitVault`** — live on Hedera testnet, verified against the chain
+- [x] **Sign in without a wallet** — email, Google or X through Privy; claiming a recipe costs no gas
+- [x] **Backpack** — what you own and what you collected, with previews
+- [ ] **Luau scripts** on objects — the obby carries one; single objects do not yet
+- [x] **`RecipeBook` + `SplitVault`** — live on Hedera and Arc testnets, verified against the chain
 - [x] **x402** — three stages, three prices, paid on Hedera testnet and verified on the ledger
-- [ ] **`Allowance`** — the cap as a contract, beside the one the client already enforces
-- [ ] **Recipe marketplace**
-- [ ] **An obby**
+- [x] **`Allowance`** — the cap as a contract, drawn from before every craft, one per chain
+- [x] **Recipe marketplace** — the platform's stock and everyone's recipes; getting one pays its author
+- [x] **An obby** — 2 to 12 recipes become a playable course: spawn, hazards, moving platforms, a timed finish
 
 ## Crafting locally
 
@@ -203,6 +205,21 @@ Requires Blender 5.x. Outputs land in `out/`, which is gitignored, with a
 `web/public/samples/` holds one crafted object checked into the repo. The site
 falls back to it, so a fresh clone — and any deployment, where `out/` does not
 exist at all — shows a populated bench without installing Blender.
+
+## Building an obby
+
+On the bench, **Build an obby** lists the pieces you own, the ones you
+collected and the obby set on the marketplace. Pick them in the order a player
+runs them and drag to reorder. The agent (`services/agent/obby.mjs`) lays them
+out as a course that floats, climbs and drops between jumps a character can
+make, with hazards below the jumps, and crafts it as one recipe. Pieces you do
+not have are got along the way, and each author is paid once.
+
+What a piece does comes from its name — start, platform, checkpoint, hazard,
+moving platform, finish, or scenery for anything else; `docs/RECIPE_LIBRARY.md`
+lists the words. The Roblox writer makes each piece a model named for its role
+and adds one script, `bench/obby_runtime.lua`, that gives the roles their
+behaviour. Drag the `.rbxmx` into Studio and press Play.
 
 ## Running it
 

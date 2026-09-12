@@ -23,9 +23,10 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 
 import { createAgent, loadEnv, money, PAYWALL } from "./pay.mjs";
-import { claimTypedData, published, recipeId, settle } from "./recipes.mjs";
+import { claimTypedData, lookup, published, recipeId, settle } from "./recipes.mjs";
 import { allCaps, draw } from "./allowance.mjs";
 import { fetchRecipe, hasCollected, saveCollection, saveRecipe } from "./catalog.mjs";
+import { composeObby } from "./obby.mjs";
 
 loadEnv();
 
@@ -152,7 +153,11 @@ function message(err) {
   return text.slice(0, 400);
 }
 
-async function runCraft(id, prompt, { recipe: existing = null, collector = null } = {}) {
+async function runCraft(
+  id,
+  prompt,
+  { recipe: existing = null, collector = null, pieces = null } = {},
+) {
   try {
     // Draw what this craft will cost before spending any of it. When the
     // window's cap is used up the contract refuses, and the craft stops here —
@@ -167,7 +172,15 @@ async function runCraft(id, prompt, { recipe: existing = null, collector = null 
     // A recipe from the marketplace already exists: no model is asked for it,
     // which is why getting one is quick and costs only the craft.
     const { recipe, notes, usage } = existing
-      ? { recipe: existing, notes: ["Crafted from the marketplace: no model was asked."], usage: null }
+      ? {
+          recipe: existing,
+          notes: [
+            pieces
+              ? `Built from ${pieces.length} pieces: ${pieces.map((p) => p.name).join(", ")}. No model was asked.`
+              : "Crafted from the marketplace: no model was asked.",
+          ],
+          usage: null,
+        }
       : await payFor(id, "recipe", { prompt });
 
     set(id, { stage: "crafting it in Blender" });
@@ -183,7 +196,10 @@ async function runCraft(id, prompt, { recipe: existing = null, collector = null 
     // A new recipe is not filed in the catalog yet. Unowned, its id is up for
     // grabs to whoever sees it first (SR-01), and the catalog is public. It is
     // filed when someone claims it — see /claim.
-    const catalog = { saved: false, skipped: existing ? "already in the catalog" : "filed when claimed" };
+    const catalog = {
+      saved: false,
+      skipped: existing && !pieces ? "already in the catalog" : "filed when claimed",
+    };
 
     // A copy got from the marketplace is noted against whoever asked for it.
     // Its author has just been paid on the chain; this says who it was for.
@@ -191,6 +207,7 @@ async function runCraft(id, prompt, { recipe: existing = null, collector = null 
     // collected, whoever calls this.
     const collected =
       existing &&
+      !pieces &&
       collector &&
       book.action === "crafted" &&
       collector.toLowerCase() !== String(book.author ?? "").toLowerCase()
@@ -202,16 +219,80 @@ async function runCraft(id, prompt, { recipe: existing = null, collector = null 
           })
         : null;
 
+    // Building an obby gets you the pieces you do not have yet. Each distinct
+    // one is crafted against RecipeBook, which pays its author the usual
+    // share, and goes into your backpack as collected — the same as Get it.
+    // A piece you wrote, or already got, is used without paying for it again.
+    let paidPieces = null;
+    if (pieces) {
+      set(id, { stage: "getting the pieces you do not have" });
+      paidPieces = [];
+      const done = new Set();
+      const me = collector?.toLowerCase() ?? null;
+      for (const piece of pieces) {
+        if (done.has(piece.id)) continue;
+        done.add(piece.id);
+
+        if (me) {
+          const author = await lookup(piece.id).then((r) => r.author).catch(() => null);
+          if (author && author.toLowerCase() === me) {
+            paidPieces.push({ id: piece.id, name: piece.name, action: "yours", author });
+            continue;
+          }
+          if (await hasCollected(me, piece.id)) {
+            paidPieces.push({ id: piece.id, name: piece.name, action: "had", author });
+            continue;
+          }
+        }
+
+        const paid = await settle(piece.recipe);
+        const kept =
+          me && paid.action === "crafted"
+            ? await saveCollection({
+                collector: me,
+                recipeId: piece.id,
+                chain: paid.chain,
+                transaction: paid.transaction,
+              })
+            : null;
+        paidPieces.push({
+          id: piece.id,
+          name: piece.name,
+          action: paid.action,
+          author: paid.author ?? null,
+          transaction: paid.transaction ?? null,
+          paidToAuthor: paid.paidToAuthor ?? null,
+          collected: Boolean(kept?.saved),
+        });
+      }
+    }
+
     set(id, {
       status: "done",
       stage: null,
       book,
       catalog,
       collected,
+      pieces: paidPieces,
       result: {
         name: built.name,
         recipe,
-        notes: [...(notes ?? []), ...(built.notes ?? [])],
+        notes: [
+          ...(notes ?? []),
+          ...(built.notes ?? []),
+          // What building from pieces did for their authors, where it shows.
+          ...(paidPieces ?? []).map((p) =>
+            p.action === "crafted"
+              ? `Got ${p.name}${p.collected ? " into your backpack" : ""}; its author has now earned ${p.paidToAuthor}.`
+              : p.action === "yours"
+              ? `${p.name} is yours: nothing to pay.`
+              : p.action === "had"
+              ? `${p.name} was already in your backpack: not paid for again.`
+              : p.action === "unclaimed"
+              ? `${p.name} has no author to pay yet.`
+              : `Could not pay the author of ${p.name} this time.`,
+          ),
+        ],
         ingredients: recipe.ingredients.length,
         // Not the same number: a cone becomes four Roblox parts.
         parts: built.parts ?? null,
@@ -294,8 +375,23 @@ app.post("/craft", async (req, res) => {
 
   // Either a sentence, which the model turns into a new recipe, or the id of one
   // that exists, which is crafted from the catalog as it is.
+  // Or a list of pieces, which becomes an obby: a recipe of recipes.
+  const obby = Array.isArray(req.body?.obby)
+    ? req.body.obby.map((v) => String(v).toLowerCase())
+    : null;
+
   let recipe = null;
-  if (wanted) {
+  let pieces = null;
+  if (obby) {
+    if (!obby.every((v) => /^0x[0-9a-f]{64}$/.test(v))) {
+      return res.status(400).json({ error: "bad piece id" });
+    }
+    try {
+      ({ recipe, pieces } = await composeObby(obby));
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  } else if (wanted) {
     if (!/^0x[0-9a-f]{64}$/.test(wanted)) {
       return res.status(400).json({ error: "bad recipe id" });
     }
@@ -320,7 +416,11 @@ app.post("/craft", async (req, res) => {
   );
   const id = start("craft", offer, stages);
 
-  runCraft(id, recipe ? null : prompt.slice(0, 280), { recipe, collector });
+  runCraft(id, recipe ? null : prompt.slice(0, 280), {
+    recipe,
+    collector,
+    pieces,
+  });
   res.json({ job: id, agent: agent.accountId, payTo: offer.payTo });
 });
 

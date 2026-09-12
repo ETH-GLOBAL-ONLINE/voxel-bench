@@ -789,3 +789,77 @@ button goes the moment a get finishes; the line under it says what the get did
 for the author. The agent refuses a second get before crafting or paying,
 whoever calls it: asked again for a recipe already collected, it answered 409
 and started nothing.
+
+## An obby, as a recipe of recipes
+
+### Pieces in, one course out — verified
+
+`services/agent/obby.mjs` reads each piece from the catalog (checked against
+its id), lays them along +X with 5 studs of air between them, stands each on
+the ground, centres the line on the origin, and returns one recipe that keeps
+its `parts`. The validator's 40-ingredient cap is for a single object; a
+recipe with `parts` is allowed up to 400, and the 120-stud extent still holds,
+so a course that runs long is refused before anything is spent.
+
+Measured on six marketplace pieces (start pad, stepping stone, thin platform,
+checkpoint, small platform, finish podium):
+
+| | |
+|---|---|
+| length | 51.7 studs |
+| size | 51.7 x 6 x 6.5 studs |
+| ingredients | 39 |
+| Roblox parts | 39 |
+| model tokens | none — no model is asked |
+| pieces paid | 6 of 6, one RecipeBook craft each on Arc |
+
+Each piece's author got the usual 90% of the fee (0.0009 USDC). The start pad
+had been got once before, so its author now shows 0.0018 USDC. A piece used
+twice in a course is paid once. A piece nobody has claimed is not published
+for anyone; it is reported as having no author to pay.
+
+The course itself comes back unclaimed, like any new recipe, and is filed in
+the catalog when someone claims it.
+
+### Building an obby gets you its pieces
+
+A piece does not have to be in your backpack before it goes into a course.
+Crafting the obby gets the ones you do not have: each is crafted against
+RecipeBook once, its author is paid, and it goes into your backpack as
+Collected, the same as Get it. A piece you wrote, or already got, is used
+without paying for it again. The builder says how many pieces a craft will get
+before you press it.
+
+The pieces are read from the catalog in one request, tried twice. A catalog
+that cannot be read now says so, instead of reporting a piece as missing.
+
+### A course you can play — verified in Studio
+
+The first courses were a row of pieces on the ground: correct, and nothing to
+play. The layout now floats the course 8 studs up and climbs or drops a little
+between jumps of 3.5 to 6 studs. A hazard lies in the gap before the next piece
+to stand on, 2.5 studs below the jump, so falling short lands in it. Scenery
+stands on the ground beside the course.
+
+Each piece carries a role, read from its name: start, path, checkpoint, kill,
+move, finish, scenery. The Roblox writer makes each piece a model named for its
+role and adds one script, `ObbyRuntime` (`bench/obby_runtime.lua`), that gives
+the roles their behaviour. A recipe without roles is written exactly as before,
+with no script.
+
+Measured in Studio on a 10-piece course (start pad, thin platform, spikes,
+moving platform, ramp, lava pool, small platform, spikes, finish podium, torii
+gate as scenery), playing on a fresh Baseplate:
+
+| | |
+|---|---|
+| spawn | on the start pad, at its surface plus 3 studs, every respawn |
+| lava | killed 0.2 s after landing |
+| falling below the course | killed |
+| respawn | 1.5 s, back on the start |
+| moving platform | swings 4 studs either side, moving at up to 5 studs/s, and carries its velocity |
+| finish | shows "Finished in … s" |
+| script errors | none in the output |
+
+Then played by hand in the same session, start to finish, with the jumps as
+laid out.

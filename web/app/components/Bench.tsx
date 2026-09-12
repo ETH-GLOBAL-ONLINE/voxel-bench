@@ -5,6 +5,7 @@ import Viewer from "./Viewer";
 import Payments, { type Payment } from "./Payments";
 import RobloxConnect, { loadAccount, type RobloxAccount } from "./RobloxConnect";
 import Wallet, { short, useWallet } from "./Wallet";
+import ObbyBuilder from "./ObbyBuilder";
 import SpendingCap from "./SpendingCap";
 
 type Files = { preview: string; glb: string; rbxmx: string; recipe: string };
@@ -80,6 +81,7 @@ export default function Bench({ sample }: { sample: Sample }) {
   const [book, setBook] = useState<Book | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"describe" | "obby">("describe");
   const wallet = useWallet();
   const [publishLedger, setPublishLedger] = useState<Ledger | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,7 +100,12 @@ export default function Bench({ sample }: { sample: Sample }) {
   async function craft(e: React.FormEvent) {
     e.preventDefault();
     if (busy || prompt.trim().length < 3) return;
+    await startCraft({ prompt });
+  }
 
+  /** Start a craft and follow it: a sentence, or the pieces of an obby. */
+  async function startCraft(body: Record<string, unknown>) {
+    if (busy) return;
     setError(null);
     setResult(null);
     setPublished(null);
@@ -115,7 +122,7 @@ export default function Bench({ sample }: { sample: Sample }) {
       const res = await fetch("/api/craft", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "the bench refused");
@@ -306,6 +313,27 @@ export default function Bench({ sample }: { sample: Sample }) {
         <RobloxConnect account={account} onChange={setAccount} />
       </div>
 
+      <div className="mb-3 flex gap-5 border-b border-bench-700">
+        {(["describe", "obby"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            disabled={busy}
+            onClick={() => setMode(m)}
+            className={`border-b-2 px-1 pb-1 text-xs transition-colors disabled:opacity-40 ${
+              mode === m
+                ? "border-amber text-ink"
+                : "border-transparent text-faint hover:text-dim"
+            }`}
+          >
+            {m === "describe" ? "Describe an object" : "Build an obby"}
+          </button>
+        ))}
+      </div>
+
+      {mode === "obby" ? (
+        <ObbyBuilder busy={busy} onCraft={(ids) => startCraft({ obby: ids, collector: wallet.address })} />
+      ) : (
       <form onSubmit={craft} className="slot flex flex-wrap gap-3 p-4">
         <input
           value={prompt}
@@ -323,9 +351,11 @@ export default function Bench({ sample }: { sample: Sample }) {
           {busy ? "Crafting…" : "Craft"}
         </button>
       </form>
+      )}
 
       <SpendingCap />
 
+      {mode === "describe" && (
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="label">try</span>
         {IDEAS.map((idea) => (
@@ -340,13 +370,16 @@ export default function Bench({ sample }: { sample: Sample }) {
           </button>
         ))}
       </div>
+      )}
 
       {busy && (
         <p className="mt-4 flex items-center gap-2.5 font-mono text-sm text-amber">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber" />
           {stage}… {elapsed > 0 && `${elapsed}s`}
           <span className="text-faint">
-            — the model writes a recipe, then Blender crafts it
+            {mode === "obby"
+              ? "— the pieces are laid out, Blender crafts the course, and each author is paid"
+              : "— the model writes a recipe, then Blender crafts it"}
           </span>
         </p>
       )}

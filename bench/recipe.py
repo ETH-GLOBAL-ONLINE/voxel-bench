@@ -25,7 +25,12 @@ MAX_DIMENSION = 60.0
 ABSURD_DIMENSION = MAX_DIMENSION * 2
 MAX_EXTENT = 120.0
 MAX_INGREDIENTS = 40
+# A composite — an obby is a recipe of recipes — carries the pieces it is built
+# from, and a handful of pieces is already past forty ingredients.
+MAX_COMPOSITE_INGREDIENTS = 400
 MAX_ABS_POSITION = 200.0
+# The roles an obby gives its pieces; see bench/obby_runtime.lua.
+ROLES = ("start", "path", "checkpoint", "kill", "move", "finish", "scenery")
 
 DEFAULT_COLOR = [0.6, 0.6, 0.6]
 
@@ -88,7 +93,7 @@ def _clamp_scale(scale, name, notes):
     return out
 
 
-def validate(recipe):
+def validate(recipe, max_ingredients=MAX_INGREDIENTS):
     """Return (recipe, notes). Raises RecipeError on anything unsalvageable.
 
     The returned recipe is a repaired copy: defaults filled, sizes clamped,
@@ -110,10 +115,10 @@ def validate(recipe):
     ingredients = recipe.get("ingredients")
     if not isinstance(ingredients, list) or not ingredients:
         raise RecipeError("a recipe needs a non-empty ingredients list")
-    if len(ingredients) > MAX_INGREDIENTS:
+    if len(ingredients) > max_ingredients:
         notes.append("kept the first %d of %d ingredients"
-                     % (MAX_INGREDIENTS, len(ingredients)))
-        ingredients = ingredients[:MAX_INGREDIENTS]
+                     % (max_ingredients, len(ingredients)))
+        ingredients = ingredients[:max_ingredients]
 
     clean = []
     seen = set()
@@ -153,9 +158,25 @@ def validate(recipe):
         for extra in ("bevel", "smooth"):
             if extra in ing:
                 entry[extra] = ing[extra]
+        # What an obby's piece does, and which piece it belongs to. The Roblox
+        # writer groups a piece's parts by these; nothing else reads them.
+        role = ing.get("role")
+        if role is not None:
+            if role in ROLES:
+                entry["role"] = role
+                group = ing.get("group")
+                if isinstance(group, str) and group.strip():
+                    entry["group"] = "".join(
+                        c if (c.isalnum() or c in "_-") else "_"
+                        for c in group.strip())[:48]
+            else:
+                notes.append("%s: unknown role %r dropped" % (label, role))
         clean.append(entry)
 
     out = {"name": name, "units": "studs", "ingredients": clean}
+    # Which recipes a composite was made from, kept with it as provenance.
+    if isinstance(recipe.get("parts"), list):
+        out["parts"] = recipe["parts"]
 
     size, base = extents(clean)
     for axis, v in zip("xyz", size):

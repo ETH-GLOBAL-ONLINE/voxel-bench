@@ -264,6 +264,24 @@ The same recipe on two chains earning in two currencies, and two owned by
 addresses that are not ours — the ones claimed by accounts holding nothing, by
 signing.
 
+### An obby, built from recipes
+
+"Build an obby" on the bench takes 2 to 12 recipes from your backpack or the
+marketplace, in the order a player runs them, and the agent crafts them into one
+course — no model is asked. Pieces you do not have yet are got along the way:
+each author is paid once on `RecipeBook` and the piece goes into your backpack.
+Pieces you wrote or already got are not paid for again.
+
+The course floats, climbing and dropping between jumps a character can make,
+with the hazards below the jumps. Each piece is a model named for its role, and
+one script in the course gives the roles their behaviour: you spawn on the
+start, hazards and falling send you back, moving platforms swing and carry you,
+and the finish shows your time. Played through in Studio, start to finish.
+Measured in `LOG.md`.
+
+Not checked yet: publishing a course through Open Cloud. It carries a script,
+and Roblox moderates models with scripts — item 4 below.
+
 ### Where it runs
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
@@ -304,22 +322,15 @@ A crate that sits there is decoration; a crate that gives you coins when touched
 is a mechanic. Generating Luau is the easy part of this project — well
 documented, and unlike geometry it either runs or throws.
 
-**Worth checking first:** Roblox moderates models containing scripts. If that
-takes hours rather than seconds, scripts stay out of a live demo.
+The obby already ships one: `bench/obby_runtime.lua`, written into the course
+model by `bench/to_rbxmx.py`. It runs when the model is dropped into Studio.
 
-### 5. The obby — the wow, and the first thing to cut
+**Worth checking first:** Roblox moderates models containing scripts, and no
+model with a script has been published through Open Cloud yet. If that takes
+hours rather than seconds, publishing a course stays out of a live demo and the
+course is dropped into Studio from the file instead.
 
-A sequence of platforms, hazards, checkpoints and a finish is spatial
-arrangement of objects. An obby is a recipe of recipes: nothing new to invent,
-just scale. The model chooses the parameters and the palette; code does the
-placing.
-
-Needs `universe-places` on the API key, which is editable on the existing one.
-
-**Cut this first if anything slips.** `PLAN.md` section 10 has the demo built so
-losing it shortens the video rather than breaking it.
-
-### 6. The video
+### 5. The video
 
 Two to four minutes, narrated by one of us — the rules reject AI voiceover,
 text-to-speech and phone recordings. Structure and fallbacks in `PLAN.md`
