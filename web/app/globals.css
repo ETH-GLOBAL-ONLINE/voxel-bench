@@ -41,6 +41,16 @@
   }
 }
 
+/* The page reads best a size down on a wide screen. Everything is measured in
+   rem, so a smaller root scales text, spacing and the container together — as
+   a browser zoom of 80% would, without its side effects on the pinned hero and
+   the scroll. Phones keep the full size. */
+@media (min-width: 1024px) {
+  html {
+    font-size: 80%;
+  }
+}
+
 @layer components {
   /* The recurring motif: an inset slot, like a socket on a workbench. */
   .slot {
@@ -153,6 +163,42 @@ html.tour-dock .dock {
   }
   .ledger-narrow {
     display: none;
+  }
+}
+
+/* The numbers under the render: on a phone, one compact box of label-value
+   pairs that wrap; from 640px up, a row of five cells. */
+.specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1.25rem;
+  margin-top: 1px;
+  border: 1px solid var(--color-bench-700);
+  background-color: var(--color-bench-900);
+  padding: 0.75rem 1rem;
+}
+
+.spec {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    background-color: var(--color-bench-700);
+    padding: 0;
+  }
+  .spec {
+    display: block;
+    background-color: var(--color-bench-900);
+    padding: 0.75rem 1rem;
+  }
+  .spec dd {
+    margin-top: 0.25rem;
   }
 }
 
