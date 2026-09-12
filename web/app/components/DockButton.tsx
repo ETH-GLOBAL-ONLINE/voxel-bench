@@ -34,34 +34,24 @@ export function DockButton({
   );
 }
 
-const svg = {
-  width: 30,
-  height: 30,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.6,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-  "aria-hidden": true,
-};
-
-/** A market stall: an awning over a counter. */
-export const MarketIcon = () => (
-  <svg {...svg}>
-    <path d="M4 10v10h16V10" />
-    <path d="M2.5 10 4.5 4h15l2 6z" />
-    <path d="M7 10v1.5M12 10v1.5M17 10v1.5" />
-    <path d="M9.5 20v-5h5v5" />
-  </svg>
+// Both icons are rendered in Blender from blocks, like everything else on the
+// bench — see bench/dock_icons.py — and drawn here at twice their size for
+// sharp screens.
+const Rendered = ({ src }: { src: string }) => (
+  // eslint-disable-next-line @next/next/no-img-element
+  <img
+    src={src}
+    alt=""
+    width={46}
+    height={46}
+    draggable={false}
+    className="block select-none"
+    style={{ filter: "drop-shadow(0 4px 6px rgb(0 0 0 / 0.6))" }}
+  />
 );
 
-/** A backpack with its front pocket. */
-export const BackpackIcon = () => (
-  <svg {...svg}>
-    <path d="M9 6V5a3 3 0 0 1 6 0v1" />
-    <rect x="5" y="6" width="14" height="15" rx="4" />
-    <path d="M8 11h8" />
-    <rect x="8" y="14" width="8" height="4" rx="1" />
-  </svg>
-);
+/** A market stall: a striped awning over a stone counter. */
+export const MarketIcon = () => <Rendered src="/icons/market.webp" />;
+
+/** A backpack with a glowing seam on its flap and its pocket. */
+export const BackpackIcon = () => <Rendered src="/icons/backpack.webp" />;
