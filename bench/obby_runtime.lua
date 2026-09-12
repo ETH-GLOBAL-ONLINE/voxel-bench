@@ -206,7 +206,10 @@ end
 
 -- Falling below the lowest piece you can stand on, anywhere over the course,
 -- counts as falling off it. Only for characters already placed on it, so
--- someone walking past on the ground elsewhere is left alone.
+-- someone walking past on the ground elsewhere is left alone. The course is
+-- laid out high enough that this happens in mid-air: a character's height
+-- below the lowest piece, so the fall is seen, and long before the ground.
+local FALL = 5 -- studs below the lowest piece before the fall counts
 local lowest = math.huge
 for _, role in { "Start", "Path", "Checkpoint", "Mover", "Finish" } do
 	for _, model in byRole[role] or {} do
@@ -224,7 +227,7 @@ if lowest < math.huge then
 				local character = player.Character
 				local root = character and character:FindFirstChild("HumanoidRootPart")
 				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-				if root and humanoid and arrived[character] and humanoid.Health > 0 and root.Position.Y < lowest - 1 then
+				if root and humanoid and arrived[character] and humanoid.Health > 0 and root.Position.Y < lowest - FALL then
 					local rel = boxCF:PointToObjectSpace(root.Position)
 					if math.abs(rel.X) < boxSize.X / 2 + 12 and math.abs(rel.Z) < boxSize.Z / 2 + 12 then
 						humanoid.Health = 0

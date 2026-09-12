@@ -16,7 +16,11 @@ import { recipeId } from "./recipes.mjs";
 // A default Roblox character walks at 16 studs a second and jumps about seven
 // studs high, which carries it about eight across on the flat. Every jump here
 // stays under that, and is shorter when it climbs.
-const BASE = 8; // the start's surface, above the ground
+// High enough that falling off is a fall: about four characters up, so the
+// runtime can end the fall in mid-air (see obby_runtime.lua) with the ground,
+// and the scenery standing on it, well below. At eight studs a player landed
+// on the ground and was killed there, which read as a stumble, not a drop.
+const BASE = 22; // the start's surface, above the ground
 const MAX_CLIMB = 10; // how far above the start the course may rise
 const HAZARD_GAP = 6; // the jump over a hazard
 const HAZARD_DROP = 2.5; // how far below the path a hazard lies

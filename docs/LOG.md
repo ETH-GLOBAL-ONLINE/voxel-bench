@@ -1038,3 +1038,13 @@ not decode the reason; the crafter's claim was recorded on the new book, filed
 in the catalog and listed in their backpack; a second claim was refused; and a
 marketplace craft of a migrated recipe paid its author on the shared vault with
 the carried-over count continuing, 0.0027 → 0.0036 USDC.
+
+### A fall off the course is a fall
+
+The course used to sit eight studs over the ground. Stepping off it, a player
+landed on the ground and was killed there, which read as a stumble. It now
+starts twenty-two studs up — about four characters — and the runtime counts a
+fall from five studs below the lowest piece rather than one, so the drop is
+seen and ends in mid-air, with the ground and the scenery standing on it well
+below. Laid out in a dry run with eight shelf pieces: the course between 21
+and 30 studs, hazards at 18.5, the fall counting below 16.
