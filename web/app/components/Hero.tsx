@@ -241,11 +241,11 @@ export default function Hero() {
         </h1>
         <p data-hero-copy data-hero-hide className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
           Describe what you need. An agent builds a 3D model and uploads it to
-          your Roblox account, paying each step from a budget you sign once.
+          your Roblox account, paying its own way within a budget you set.
         </p>
         <p data-hero-copy data-hero-hide className="mt-4 max-w-xl leading-relaxed text-faint">
-          Objects and obbies work today. Every recipe earns its owner when
-          someone else crafts it.
+          Objects and obbies work today. When someone crafts your recipe, you
+          earn 90%.
         </p>
 
         <div data-hero-ctas data-hero-hide className="mt-9 flex flex-wrap gap-3">
