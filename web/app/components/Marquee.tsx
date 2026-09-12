@@ -13,7 +13,7 @@ const ITEMS = [
   "Prices read from ENS names",
   "Authors earn 90% of every craft",
   "Playable obbies, built from recipes",
-  "No gas for you, ever",
+  "No gas, ever",
 ];
 
 export default function Marquee() {
