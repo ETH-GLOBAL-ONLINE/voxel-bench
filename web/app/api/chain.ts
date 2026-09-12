@@ -80,14 +80,14 @@ const clientFor = (name: LedgerName) =>
   });
 
 /** Every recipe published on one chain, newest first. */
-export async function publishedOn(name: LedgerName, limit = 12) {
+async function readPublishedOn(name: LedgerName, limit: number) {
   const ledger = LEDGERS[name];
   const client = clientFor(name);
 
   const event = bookAbi.find(
     (e) => e.type === "event" && e.name === "RecipePublished",
   );
-  const head = await client.getBlockNumber();
+  const head = await patiently(() => client.getBlockNumber());
 
   // Logs cannot be asked for since block zero — a query is capped at ten
   // thousand blocks and Arc is sixty-one million deep. Walk back from the head
@@ -169,10 +169,10 @@ const recipePublished = parseAbiItem(
  * window is cheap. The walk goes all the way back rather than stopping early:
  * an author's first recipe is as much theirs as their latest.
  */
-export async function ownedBy(name: LedgerName, author: `0x${string}`) {
+async function readOwnedBy(name: LedgerName, author: `0x${string}`) {
   const ledger = LEDGERS[name];
   const client = clientFor(name);
-  const head = await client.getBlockNumber();
+  const head = await patiently(() => client.getBlockNumber());
 
   const windows: [bigint, bigint][] = [];
   for (let to = head; to >= ledger.from; to -= ledger.window) {
@@ -265,3 +265,33 @@ export async function acrossChains<T>(
   }
   return answered;
 }
+
+// Reading every recipe on a chain is a walk through its history, and the public
+// nodes limit how often they can be asked. So each answer is kept for a little
+// while, and when a node refuses, the last good answer is served instead: the
+// chain only grows, so a reading from seconds ago is still true, only perhaps
+// incomplete. A chain that has never been read still reports itself as
+// unreadable rather than empty.
+const FRESH_MS = 20_000;
+const remembered = new Map<string, { value: unknown; at: number }>();
+
+async function recall<T>(key: string, read: () => Promise<T>): Promise<T> {
+  const kept = remembered.get(key);
+  if (kept && Date.now() - kept.at < FRESH_MS) return kept.value as T;
+  try {
+    const value = await read();
+    remembered.set(key, { value, at: Date.now() });
+    return value;
+  } catch (err) {
+    if (kept) return kept.value as T;
+    throw err;
+  }
+}
+
+/** Every recipe published on one chain, newest first. Kept for a few seconds. */
+export const publishedOn = (name: LedgerName, limit = 12) =>
+  recall(`published:${name}:${limit}`, () => readPublishedOn(name, limit));
+
+/** Every recipe one address owns on one chain. Kept for a few seconds. */
+export const ownedBy = (name: LedgerName, author: `0x${string}`) =>
+  recall(`owned:${name}:${author.toLowerCase()}`, () => readOwnedBy(name, author));

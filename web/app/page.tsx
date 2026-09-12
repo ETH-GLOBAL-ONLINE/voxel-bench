@@ -4,6 +4,7 @@ import Bench from "./components/Bench";
 import BenchStatus from "./components/BenchStatus";
 import Marketplace from "./components/Marketplace";
 import { HeaderWallet } from "./components/Wallet";
+import MarketplaceModal from "./components/MarketplaceModal";
 // Statically imported so it is bundled: out/ is outside the app and never
 // reaches a deployment, so this is the report a deployed site actually shows.
 import sampleReport from "../public/samples/sakura_garden.report.json";
@@ -110,6 +111,7 @@ export default async function Home() {
               </a>
             ))}
           </div>
+          <MarketplaceModal />
           <HeaderWallet />
         </nav>
       </header>
