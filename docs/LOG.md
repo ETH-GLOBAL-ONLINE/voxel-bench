@@ -1060,3 +1060,11 @@ Measured in Studio on a ten-piece course: dropped into the place it sat at
 0–9 studs; on Play it stood at 20–29 with the void floor at 0; a character
 pushed off the start and one pushed off mid-course both died on the floor
 within 0.6 s and respawned on the start pad.
+
+The course is played at night, in that void. On Play the runtime turns the
+place's lighting to midnight with no sun, moon or stars, black fog past the
+course, the exposure pulled down until the horizon's last blue is gone, and a
+warm light over every piece you can stand on, so the course is the only thing
+lit. A black atmosphere at full density was tried first and dropped: it
+darkened the course too, from forty studs away. The model's Night attribute
+set to false keeps the place's own lighting.

@@ -12,6 +12,11 @@
 --
 -- Falling below the course sends you back to your checkpoint too. Path_* and
 -- Scenery_* have no behaviour: they are there to be stood on and looked at.
+--
+-- On Play the course lifts itself twenty studs over whatever it was dropped
+-- on, lays a black void under it, and turns the place to night with a light
+-- over each piece. Set the model's Night attribute to false to keep the
+-- place's own lighting.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -96,10 +101,60 @@ do
 			void.CastShadow = false
 			void.Material = Enum.Material.SmoothPlastic
 			void.Color = Color3.new(0, 0, 0)
-			void.Size = Vector3.new(600, 1, 600)
-			void.CFrame = CFrame.new(under.X, hit.Position.Y - 0.45, under.Z)
+			-- Its top sits a stud over the ground, covering whatever small
+			-- things stand there, such as the place's own spawn pad.
+			void.Size = Vector3.new(600, 2, 600)
+			void.CFrame = CFrame.new(under.X, hit.Position.Y + 0.2, under.Z)
 			void.Parent = course
 			voidFloor = void
+		end
+	end
+end
+
+-- The course is played at night, in a void: no sun, moon or stars, black
+-- fog closing in past the course, and a warm light over every piece you can
+-- stand on, so the course is the only thing lit. Set the model's Night
+-- attribute to false to keep the place's own lighting.
+if course:GetAttribute("Night") ~= false then
+	local Lighting = game:GetService("Lighting")
+	Lighting.ClockTime = 0
+	Lighting.Brightness = 0
+	-- Pulls the last of the night sky's blue at the horizon down to black.
+	Lighting.ExposureCompensation = -1.5
+	Lighting.Ambient = Color3.fromRGB(18, 18, 22)
+	Lighting.OutdoorAmbient = Color3.fromRGB(18, 18, 22)
+	Lighting.FogColor = Color3.new(0, 0, 0)
+	Lighting.FogStart = 70
+	Lighting.FogEnd = 240
+	for _, effect in Lighting:GetChildren() do
+		-- An atmosphere overrides fog, and a sky brings its own stars.
+		if effect:IsA("Atmosphere") or effect:IsA("Sky") then
+			effect:Destroy()
+		end
+	end
+	local sky = Instance.new("Sky")
+	sky.StarCount = 0
+	sky.CelestialBodiesShown = false
+	sky.Parent = Lighting
+
+	for _, role in { "Start", "Path", "Checkpoint", "Mover", "Finish" } do
+		for _, model in byRole[role] or {} do
+			local cf, size = model:GetBoundingBox()
+			local lamp = Instance.new("Part")
+			lamp.Name = "Lamp"
+			lamp.Anchored = true
+			lamp.CanCollide = false
+			lamp.CanQuery = false
+			lamp.Transparency = 1
+			lamp.Size = Vector3.new(1, 1, 1)
+			lamp.CFrame = CFrame.new(cf.Position + Vector3.new(0, size.Y / 2 + 9, 0))
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(255, 214, 160)
+			light.Brightness = 3
+			light.Range = math.max(24, math.max(size.X, size.Z) + 18)
+			light.Shadows = true
+			light.Parent = lamp
+			lamp.Parent = model
 		end
 	end
 end
