@@ -59,6 +59,7 @@ would not have come out of reading.
 | Payment logs — `web/app/components/Payments.tsx`, `services/agent/pay.mjs` | Logged every step behind a payment — the 402, the check against the name, the signature, the settlement — and made each stage open into its log | Brought the idea from a mentor: a payment should show the process behind it, not only its receipt |
 | Publishing sets the icon — `services/roblox_upload.py`, `services/crafter.py` | Uploads the render as an image and sets it as the published model's icon, worked out from the Assets API reference | Insisted that a paid publish deliver a finished model rather than one without a picture, and showed the render worked as an icon by setting one by hand first |
 | `docs/PAYMENT_FLOW.md` | Drafted it from the explanation given in conversation | Asked for it once the plain-language version of the flow made sense |
+| Circle Nanopayments — `services/paywall/server.mjs`, `services/agent/pay.mjs` | Read the SDK's own types, deposited into Gateway, and moved the craft stage onto Gateway's facilitator with ours kept as a switchable fallback | Asked for our claims to be checked before they went out, and made the call to build on Circle's stack the same day, with a rollback |
 | Studs conversion | Converted the recipe from metres and added `dims_studs` reporting | Flagged that scale had to be settled before the first upload rather than discovered in Studio |
 
 ## Written without AI

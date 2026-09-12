@@ -111,10 +111,12 @@ Arc Testnet
   author earned    0.9 USDC     author's share  9000 bps
 ```
 
-The public x402 facilitator serves nine networks and Arc is not one, so
-`services/facilitator` is ours: the same three endpoints over `@x402/evm`, whose
-exact scheme covers any EVM chain. It runs on its own account rather than the
-agent's, so a receipt shows what the arrangement claims:
+On Arc the craft stage is paid through **Circle Gateway (Nanopayments)**: the
+agent signs against a balance it holds in Gateway, and Circle settles the
+payments in batches. Behind it, `services/facilitator` — the same three
+endpoints over `@x402/evm` — settles a direct EIP-3009 transfer from the payer's
+wallet, as the fallback (`VOXEL_ARC_SETTLEMENT=own`). It runs on its own account
+rather than the agent's, so a receipt shows what the arrangement claims:
 
 ```
 transaction from   0x1a307ae7…   the facilitator, which paid the gas

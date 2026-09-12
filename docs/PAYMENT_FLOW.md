@@ -18,7 +18,9 @@ agent pays two of its suppliers, in HBAR.** The platform pays the gas, always.
 3. **Describe something and press Craft** — "a stone well with a bucket".
    - You pay the agent **0.006 USDC on Arc**, from your budget.
    - The agent pays the service that writes the recipe **0.001 HBAR on Hedera**.
-   - The agent pays the service that builds it in Blender **0.005 USDC on Arc**.
+   - The agent pays the service that builds it in Blender **0.005 USDC on Arc**,
+     through Circle Gateway (Nanopayments): it signs against a balance it keeps
+     in Gateway, and Circle settles the payments in batches.
    - The recipe is new, so it has no author to pay yet.
 
 4. **Claim it** — you sign a message, free. The agent records you as its author

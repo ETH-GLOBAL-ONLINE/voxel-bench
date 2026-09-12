@@ -156,12 +156,13 @@ Deploying to Arc Mainnet by 30 September would take:
 |---|---|
 | The same Ignition module against Arc Mainnet | an afternoon — testnet took no changes |
 | Real USDC for gas and the first crafts | small |
-| Our facilitator against Arc Mainnet | a config change — it already runs for testnet |
+| Circle Gateway's mainnet facilitator (`gateway-api.circle.com`) for the Arc stage, ours as fallback | a config change — both already run for testnet |
 | An audit before charging anything | the real gate |
 
-Nothing here is unknown any more. The facilitator was the open item and Arc
-answered it for us: the public one does not serve Arc at all, so we built ours
-for testnet, and pointing it at mainnet is an RPC and a funded account.
+Nothing here is unknown any more. The Arc stage settles through Circle Gateway
+with our facilitator behind it as the fallback. On mainnet that is Gateway's
+mainnet facilitator and a funded Gateway balance, and ours pointed at a mainnet
+RPC with a funded account.
 
 Prices would stay at testnet levels with the platform share at zero until the
 contracts have been audited. A working deployment that charges nothing it has

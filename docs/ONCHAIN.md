@@ -222,8 +222,14 @@ Arc Testnet
 
 Same bytecode, same addresses, same split as on Hedera.
 
-**What we had to build.** The public x402 facilitator serves nine networks and
-Arc is not one, so `services/facilitator` is ours: the same three endpoints over
+**Circle Nanopayments.** The craft stage on Arc is paid through Circle Gateway:
+the agent keeps a USDC balance in Gateway, signs each payment against it, and
+Circle settles them in batches — what sub-cent, per-stage payments need. The
+agent's scheme answers a Gateway offer with a batched authorization and any
+other with a plain EIP-3009 transfer, so the fallback below is one setting away.
+
+**The fallback.** `services/facilitator` settles the same payments without
+Gateway, as a direct transfer from the payer's wallet: the same three endpoints over
 `@x402/evm`, whose exact scheme declares `eip155:*`. It runs on its own account,
 deliberately not the agent's — sharing one still works and hides the
 arrangement, since the receipt would show the agent submitting its own payment.

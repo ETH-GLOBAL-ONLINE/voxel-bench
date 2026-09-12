@@ -10,7 +10,8 @@ import { wrapFetchWithPayment, x402Client, x402HTTPClient } from "@x402/fetch";
 import { createClientHederaSigner } from "@x402/hedera";
 import { ExactHederaScheme } from "@x402/hedera/exact/client";
 import { toClientEvmSigner } from "@x402/evm";
-import { registerExactEvmScheme } from "@x402/evm/exact/client";
+import { ExactEvmScheme } from "@x402/evm/exact/client";
+import { registerBatchScheme } from "@circle-fin/x402-batching/client";
 import { createWalletClient, defineChain, http as httpTransport, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -41,9 +42,11 @@ export function money(amount, network) {
 export function explorerFor(network, tx) {
   if (!tx) return null;
 
-  // Arc is an ordinary EVM chain and its transaction is a hash.
+  // Arc is an ordinary EVM chain and its transaction is a hash. A payment
+  // through Circle Gateway comes back as Gateway's own id instead, settled
+  // onchain later in a batch — there is no transaction of its own to link.
   if (network?.startsWith("eip155:")) {
-    return `https://testnet.arcscan.app/tx/${tx}`;
+    return /^0x[0-9a-fA-F]{64}$/.test(tx) ? `https://testnet.arcscan.app/tx/${tx}` : null;
   }
 
   // Hedera's is `payer@seconds.nanos`, while HashScan and the mirror node both
@@ -123,8 +126,15 @@ export function createAgent() {
       account: evmAccount, chain: arc, transport: httpTransport(),
     }).extend(publicActions);
 
-    registerExactEvmScheme(client, {
-      signer: toClientEvmSigner(Object.assign(evmClient, { address: evmAccount.address })),
+    // Two ways to pay on Arc, one registration. A 402 offering Circle Gateway
+    // (Nanopayments) is answered with a batched authorization against the
+    // agent's Gateway balance; any other is answered with a plain EIP-3009
+    // transfer from its wallet, which is how it paid before Gateway.
+    registerBatchScheme(client, {
+      signer: evmAccount,
+      fallbackScheme: new ExactEvmScheme(
+        toClientEvmSigner(Object.assign(evmClient, { address: evmAccount.address })),
+      ),
     });
   }
 
@@ -180,9 +190,11 @@ export function createAgent() {
       say(`checked against ${terms.stage}.${found.parent}: the price matches the name, which the service cannot edit`);
     }
     say(
-      asked?.network?.startsWith("eip155:")
-        ? "signing an EIP-3009 transferWithAuthorization for USDC — the facilitator submits it and pays the gas"
-        : "signing a partial HBAR transfer — the facilitator co-signs, submits it and pays the gas",
+      asked?.extra?.name === "GatewayWalletBatched"
+        ? "signing a Circle Gateway authorization against the agent's Gateway balance — Circle Nanopayments settles it in a batch, no gas"
+        : asked?.network?.startsWith("eip155:")
+          ? "signing an EIP-3009 transferWithAuthorization for USDC — the facilitator submits it and pays the gas"
+          : "signing a partial HBAR transfer — the facilitator co-signs, submits it and pays the gas",
     );
   });
 
@@ -224,10 +236,16 @@ export function createAgent() {
     // lives. A 200 with no such header means the stage was not paid for.
     const parsed = await http.processResponse(res.clone());
     const settled = parsed.paymentStatus === "settled" ? parsed.header : null;
+    const batched =
+      settled?.network?.startsWith("eip155:") &&
+      settled?.transaction &&
+      !/^0x[0-9a-fA-F]{64}$/.test(settled.transaction);
     onLog(
-      settled?.success
-        ? `settled on ${settled.network ?? "hedera:testnet"} — the service did the work (${res.status})`
-        : `answered ${res.status} without a settlement`,
+      !settled?.success
+        ? `answered ${res.status} without a settlement`
+        : batched
+          ? `accepted by Circle Gateway as transfer ${settled.transaction} — settled onchain in its next batch; the service did the work (${res.status})`
+          : `settled on ${settled.network ?? "hedera:testnet"} — the service did the work (${res.status})`,
       explorerFor(settled?.network ?? "hedera:testnet", settled?.transaction),
     );
 
