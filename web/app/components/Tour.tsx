@@ -75,10 +75,35 @@ export function Spotlight({ onClose }: { onClose: () => void }) {
     <div
       aria-hidden
       onClick={onClose}
-      className="tour-fade fixed inset-0 z-30 bg-bench-950/70 backdrop-blur-[1.5px]"
+      className="tour-dim tour-fade fixed inset-0 z-30 bg-bench-950/70 backdrop-blur-[1.5px]"
     />,
     host,
   );
+}
+
+/**
+ * Whether the step's element has scrolled off the screen. While it is away the
+ * note and the dim step aside, so the page can be read and scrolled freely,
+ * and they come back when the element does. Clicking the dim still ends the
+ * guide; scrolling away only pauses it.
+ */
+function useStepAside(note: HTMLElement | null) {
+  useEffect(() => {
+    const anchor = note?.parentElement;
+    if (!anchor) return;
+    const root = document.documentElement;
+    // Clear of the header at the top, and a margin at the bottom, so the step
+    // leaves a little before its element is entirely gone.
+    const watch = new IntersectionObserver(
+      ([entry]) => root.classList.toggle("tour-away", !entry.isIntersecting),
+      { rootMargin: "-80px 0px -60px 0px" },
+    );
+    watch.observe(anchor);
+    return () => {
+      watch.disconnect();
+      root.classList.remove("tour-away");
+    };
+  }, [note]);
 }
 
 export function TourBubble({
@@ -105,13 +130,18 @@ export function TourBubble({
 }) {
   const right = align === "right";
   const beside = placement === "left";
+  // The note sits inside the element it points at, so its parent is what
+  // decides whether the step is on screen.
+  const [note, setNote] = useState<HTMLDivElement | null>(null);
+  useStepAside(note);
   return (
     // Below what it points at by default: above, it would sit under the fixed
     // header whenever the element is near the top of the screen.
     <div
+      ref={setNote}
       role="dialog"
       aria-label={`Step ${step} of ${total}: ${title}`}
-      className={`tour-in absolute z-50 border border-amber/40 bg-bench-900 p-4 text-left shadow-[0_18px_50px_-12px_rgba(0,0,0,0.85)] ${
+      className={`tour-note tour-in absolute z-50 border border-amber/40 bg-bench-900 p-4 text-left shadow-[0_18px_50px_-12px_rgba(0,0,0,0.85)] ${
         beside
           ? "top-1/2 right-full mr-4 w-[min(22rem,calc(100vw-7rem))] -translate-y-1/2"
           : right
