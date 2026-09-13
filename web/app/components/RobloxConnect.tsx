@@ -175,7 +175,10 @@ export default function RobloxConnect({
             create.roblox.com/dashboard/credentials
           </a>{" "}
           with the <code className="font-mono">assets</code> system, read and
-          write, and your account as the creator.
+          write, and your account as the creator. Add the{" "}
+          <code className="font-mono">asset-permissions</code> system, write, too:
+          it lets Voxel Bench Arena load what you publish, which is how an obby is
+          played in Roblox.
         </p>
         <p>
           <span className="text-ember">Do not leave the IP allowlist empty.</span>{" "}

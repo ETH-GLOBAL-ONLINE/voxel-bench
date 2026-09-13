@@ -40,6 +40,7 @@ from recipe import (  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, "services"))
 from roblox_upload import (  # noqa: E402
     UploadError,
+    grant_use,
     set_icon,
     upload_image,
     upload_model,
@@ -346,7 +347,33 @@ def stage_publish(req: PublishStage):
         "assetId": asset_id,
         "moderation": (asset.get("moderationResult") or {}).get("moderationState"),
         "icon": _set_render_as_icon(req.name, title, asset_id, key, user),
+        "arena": _share_with_arena(asset_id, key),
     }
+
+
+def _share_with_arena(asset_id, key):
+    """Let Voxel Bench Arena use the model, so it can be played in Roblox.
+
+    Roblox lets a place load a model only if its experience may use it, and a
+    new asset is shared with nobody. With the key's asset-permissions:write
+    scope the arena is granted Use; without it the model is still published,
+    and the page says what the key is missing.
+    """
+    arena = {"granted": False, "error": None}
+    if not asset_id:
+        arena["error"] = "no asset to share"
+        return arena
+    try:
+        grant_use(asset_id, key)
+        arena["granted"] = True
+    except UploadError as exc:
+        text = str(exc)
+        arena["error"] = (
+            "the Roblox key needs the asset-permissions:write scope"
+            if "HTTP 401" in text or "HTTP 403" in text
+            else text[:300]
+        )
+    return arena
 
 
 def _set_render_as_icon(name, title, asset_id, key, user):

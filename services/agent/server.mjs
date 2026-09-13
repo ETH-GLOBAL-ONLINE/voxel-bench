@@ -482,6 +482,16 @@ async function runPublish(id, name, apiKey, userId, payer = null) {
           : `the icon could not be set: ${asset.icon.error ?? "unknown error"}`,
       );
     }
+    // Shared with Voxel Bench Arena, so the model can be played in Roblox.
+    if (asset.arena) {
+      log(
+        id,
+        "publish",
+        asset.arena.granted
+          ? "shared with Voxel Bench Arena, so it can be played in Roblox"
+          : `not shared with Voxel Bench Arena: ${asset.arena.error ?? "unknown error"}`,
+      );
+    }
     set(id, {
       status: "done",
       stage: null,
@@ -489,6 +499,7 @@ async function runPublish(id, name, apiKey, userId, payer = null) {
         assetId: asset.assetId,
         moderation: asset.moderation,
         icon: asset.icon ?? null,
+        arena: asset.arena ?? null,
         insert: `game:GetService('InsertService'):LoadAsset(${asset.assetId})`,
       },
     });

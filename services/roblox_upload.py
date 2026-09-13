@@ -170,6 +170,31 @@ def set_icon(asset_id, image_id, api_key):
                     body, ctype, method="PATCH")
 
 
+PERMISSIONS_URL = "https://apis.roblox.com/asset-permissions-api/v1/assets/permissions"
+
+# Voxel Bench Arena, the public place a published obby is played in: its
+# universe, which is what a permission is granted to, not its place id.
+ARENA_UNIVERSE_ID = os.environ.get("ROBLOX_ARENA_UNIVERSE_ID", "10766225479")
+
+
+def grant_use(asset_id, api_key, universe_id=None):
+    """Let an experience use this asset: the arena, by default.
+
+    A place can load a model only if its experience may use it, and Roblox
+    does not grant that to a new asset on its own — without it, Try in Roblox
+    refuses the place ("does not have permission for this asset") and a live
+    server cannot load the obby. Needs the key's `asset-permissions:write`
+    scope, on top of `assets`.
+    """
+    body = json.dumps({
+        "subjectType": "Universe",
+        "subjectId": str(universe_id or ARENA_UNIVERSE_ID),
+        "action": "Use",
+        "requests": [{"assetId": int(asset_id), "grantToDependencies": True}],
+    }).encode("utf-8")
+    return _request(PERMISSIONS_URL, api_key, body, "application/json", method="PATCH")
+
+
 def wait_for_asset(operation_id, api_key=None, timeout=180, interval=2.0):
     api_key = api_key or os.environ["ROBLOX_API_KEY"]
     deadline = time.time() + timeout

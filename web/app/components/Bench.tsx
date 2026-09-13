@@ -47,6 +47,8 @@ type Published = {
   insert: string;
   // The render, uploaded as the model's icon.
   icon?: { set: boolean; imageAssetId?: string | null; error?: string | null } | null;
+  // Whether Voxel Bench Arena may load it, which playing it in Roblox needs.
+  arena?: { granted: boolean; error?: string | null } | null;
 };
 
 // What the craft did to RecipeBook: registered a recipe nobody had, or settled
@@ -912,7 +914,7 @@ export default function Bench({ sample }: { sample: Sample }) {
           <div className="mt-3 flex flex-wrap gap-3">
             {/* An obby can be played at once: the arena loads it by its
                 asset id. Anything else is a prop, with nothing to play. */}
-            {result?.name.startsWith("obby_") && (
+            {result?.name.startsWith("obby_") && published.arena?.granted && (
               <a
                 href={playLink(published.assetId)}
                 target="_blank"
@@ -935,6 +937,15 @@ export default function Bench({ sample }: { sample: Sample }) {
               Open the Creator Dashboard ↗
             </a>
           </div>
+          {/* Not shared with the arena: say what is missing rather than
+              offer a button that would open an empty place. */}
+          {result?.name.startsWith("obby_") && published.arena && !published.arena.granted && (
+            <p className="mt-3 text-xs text-ember">
+              To play it in Roblox, the arena needs permission to use it:{" "}
+              {published.arena.error ?? "sharing it failed"}. Add the scope to
+              your key and publish again.
+            </p>
+          )}
           {published.icon && (
             <p
               className={`mt-3 text-xs ${published.icon.set ? "text-sap" : "text-ember"}`}
