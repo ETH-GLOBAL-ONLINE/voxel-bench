@@ -249,7 +249,8 @@ cd web && npx vercel deploy --prod
 Set `CRAFTER_URL` and `AGENT_URL` in the Vercel project once a bench is
 reachable, `NEXT_PUBLIC_PRIVY_APP_ID` for sign-in, and the two Supabase
 variables for the catalog. `NEXT_PUBLIC_*` is read at build time, so it takes
-effect on the next deployment.
+effect on the next deployment. How the bench is reached for the demo, through
+two tunnels, is in [docs/DEMO.md](docs/DEMO.md).
 
 ## Publishing to Roblox
 
@@ -281,6 +282,7 @@ python services/roblox_upload.py out/market_stall.fbx "Market Stall"
 | [docs/ONCHAIN.md](docs/ONCHAIN.md) | every use of the chain, the non-blockchain alternative we rejected, and the sponsor tracks |
 | [docs/CONTRACT_AUDIT.md](docs/CONTRACT_AUDIT.md) | the contracts, the audit, and SR-01 from finding to fix |
 | [docs/PITCH.md](docs/PITCH.md) | the pitch, and what the demo shows |
+| [docs/DEMO.md](docs/DEMO.md) | how the bench runs for the demo, and the final QA on the deployed site |
 | [docs/MAINNET.md](docs/MAINNET.md) | what it takes to run this for real |
 | [docs/RECIPE_LIBRARY.md](docs/RECIPE_LIBRARY.md) | building the recipe library: the loop, the format, the themed kits |
 | [docs/LOG.md](docs/LOG.md) | what has actually been built and measured, and what has not |
