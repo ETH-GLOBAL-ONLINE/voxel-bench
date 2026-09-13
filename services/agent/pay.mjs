@@ -205,12 +205,22 @@ export function createAgent() {
 
   async function callStage(stage, body, onLog = () => {}) {
     const started = Date.now();
-    const { services } = await discover();
-    const terms = services[stage];
+    const found = await discover();
+    const terms = found.services[stage];
     if (!terms) throw new Error(`no service called ${stage}`);
 
     refusals.delete(terms.url);
     listeners.set(terms.url, onLog);
+    // Where the address comes from, so a local one reads as what it is: the
+    // name's own record, pointing at a service on the machine the agent runs
+    // on. The site, wherever it is hosted, only watches.
+    if (found.source === "ens") {
+      const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(terms.url);
+      onLog(
+        `resolved ${stage}.${found.parent}: its url record is ${terms.url}` +
+          (local ? " — the service runs on the bench machine, beside the agent" : ""),
+      );
+    }
     onLog(`POST ${terms.url}`);
 
     let res;
