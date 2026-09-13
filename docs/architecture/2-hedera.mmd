@@ -1,0 +1,26 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"arial","fontSize":"15px","background":"#1b1816","primaryColor":"#211e1b","primaryTextColor":"#f6efe4","primaryBorderColor":"#4e4840","lineColor":"#a89e92","textColor":"#f6efe4","actorBkg":"#211e1b","actorBorder":"#4e4840","actorTextColor":"#f6efe4","actorLineColor":"#38332d","signalColor":"#a89e92","signalTextColor":"#f6efe4","noteBkgColor":"#2a1f3d","noteTextColor":"#f6efe4","noteBorderColor":"#a37bff","sequenceNumberColor":"#131110","labelBoxBkgColor":"#211e1b","labelBoxBorderColor":"#4e4840","labelTextColor":"#f6efe4","loopTextColor":"#a89e92"}}}%%
+sequenceDiagram
+  autonumber
+  box rgba(78,72,64,0.22) Bench machine
+    participant A as Agent (0.0.10432214)
+    participant P as Paywall
+    participant C as Crafter
+  end
+  box rgba(163,123,255,0.14) Hedera
+    participant AL as Allowance
+    participant F as x402 facilitator
+    participant H as Hedera ledger
+  end
+  A->>AL: draw this job's spend
+  AL-->>A: ok (reverts past 1 HBAR/day)
+  A->>P: POST /hbar/recipe
+  P-->>A: 402 · 0.001 HBAR to 0.0.10432254
+  Note over A: price checked against recipe.voxelbench.eth
+  A->>P: partial HBAR transfer, signed by the agent
+  P->>F: verify + settle
+  F->>H: co-sign as fee payer, submit, pay gas
+  H-->>F: consensus
+  F-->>P: settled · transaction id
+  P->>C: write the recipe (LLM)
+  P-->>A: 200 + PAYMENT-RESPONSE
+  Note over A,H: receipt linked on HashScan · publish works the same at 0.01 HBAR

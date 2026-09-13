@@ -133,15 +133,26 @@ large (it stores centimetres) and grey (Roblox imports textures, not material
 colours); parts are written in studs and carry their own colour, so neither
 problem exists.
 
-```
-             ENS
-              │  names, prices, who is paid
-              ▼
-site  ──►  agent  ──402──►  paywall  ──►  crafter  ──►  Roblox
-             │                    │
-          wallet              3 prices
-            cap             1 account paid
-```
+![The whole path: your wallet, the site on Vercel, the bench machine, the services it pays and the two chains](docs/architecture/1-whole-path.png)
+
+1. **You sign, never send.** Your wallet signs the budget permit and, later,
+   the claim. Both reach the agent through the site.
+2. **The site hands the job to the agent** on the bench machine. For the demo
+   that is a tunnel; on mainnet, a dedicated server ([docs/DEMO.md](docs/DEMO.md)).
+3. **The agent asks ENS** where each service is and what it costs.
+4. **The agent calls the paywall and pays each 402.** The recipe and publish
+   stages are paid in HBAR through the x402 facilitator on Hedera. The craft
+   stage is paid in USDC through Circle Gateway, which settles on Arc in
+   batches.
+5. **The paywall runs the stage it was paid for** on the crafter: the LLM writes
+   the recipe, and headless Blender builds and renders it.
+6. **On Arc, the agent charges your budget**, pays the author's 90% through
+   `RecipeBook` and `SplitVault`, and records your claim.
+7. **The crafter uploads the `.rbxmx`** through Roblox Open Cloud into your
+   account. It appears in your Creator Dashboard and plays in Studio.
+
+The dashed lines only read. The site reads Hedera and Arc directly for the
+marketplace, the backpack and the caps, and fetches renders from the crafter.
 
 The site asks the agent, not the crafter. The visitor signs once, to give their
 agent a budget; after that the browser watches the agent spend it, stage by
@@ -154,6 +165,112 @@ on Vercel, the crafter on a real machine behind a tunnel. That is the same
 split x402 asks for anyway — the crafter is a service that charges per call.
 When the crafter's machine is asleep the site says so and shows the checked-in
 sample rather than a broken page.
+
+## Architecture by sponsor
+
+What each sponsor does in one craft. The step numbers match the numbers in
+each diagram. The diagrams' sources are the `.mmd` files beside them in
+[docs/architecture/](docs/architecture/).
+
+### Hedera: the recipe and publish stages, paid in HBAR over x402
+
+![Hedera: the agent draws from Allowance, pays the recipe stage in HBAR, and the x402 facilitator co-signs and pays the gas](docs/architecture/2-hedera.png)
+
+1. **The agent draws the job's spend from `Allowance`.**
+2. **`Allowance` answers.** Past 1 HBAR a day it reverts, and the job does not
+   happen. The brake is the chain, not a check the agent could skip.
+3. **The agent calls `POST /hbar/recipe`.**
+4. **The paywall answers 402**, asking 0.001 HBAR to `0.0.10432254`. The agent
+   checks that price against `recipe.voxelbench.eth` before anything else.
+5. **The agent signs a partial HBAR transfer** from its own account,
+   `0.0.10432214`.
+6. **The paywall hands it to the x402 facilitator** to verify and settle.
+7. **The facilitator co-signs as fee payer and submits it**, paying the gas.
+   So the agent needs an account, never gas.
+8. **Hedera reaches consensus.**
+9. **The facilitator reports it settled**, with the transaction id.
+10. **The paid stage runs**: the crafter's LLM writes the recipe.
+11. **The agent gets the result**, with the receipt in the `PAYMENT-RESPONSE`
+    header. The site links it on HashScan.
+
+Publishing works the same way at 0.01 HBAR.
+
+| Hedera testnet | |
+|---|---|
+| `RecipeBook` | `0x36C6C3e991B8673c44B7216f1b0499eA19f8Df41` |
+| `SplitVault` | `0xBaE7C31f9080733DB1Cd18Ed99b5d70fF65406DE` |
+| `Allowance` | `0xB95A8CDa8AF890039a6455C1066C686E3Af7aB1C` |
+
+### Arc and Circle: your budget, the craft stage and the author's share, in USDC
+
+![Arc and Circle: a permit budget, a Circle Gateway nanopayment for the craft, and the author's share or the claim on RecipeBook](docs/architecture/3-arc-circle.png)
+
+1. **You sign an EIP-2612 permit** on Arc's USDC, naming the agent as spender.
+   It is a signature, not a transaction.
+2. **The agent submits `permit()`** and pays the gas.
+3. **Each job is charged once**, with `transferFrom` from you to the agent:
+   0.006 USDC for a craft, 0.01 for a publish. USDC itself refuses anything
+   past your budget.
+4. **The agent draws the job's spend from `Allowance` on Arc**, capped at
+   1 USDC a day.
+5. **The agent calls `POST /usdc/craft`.**
+6. **The paywall answers 402**, asking 0.005 USDC through Circle Gateway.
+7. **The agent signs an EIP-712 authorization** against the USDC balance it
+   keeps in Gateway. No onchain transaction per payment.
+8. **The paywall has Circle Gateway verify and settle it.**
+9. **Gateway accepts it** and returns a transfer id. Circle settles these
+   payments onchain in batches, which is what makes a half-cent payment
+   worth making.
+10. **The paid stage runs**: headless Blender builds the object.
+
+Then one of two things happens:
+
+- **The recipe already has an author.** (11) The agent pays `RecipeBook`
+  0.001 USDC, and `SplitVault` credits 90% to the author and 10% to the
+  platform. The author withdraws when they like.
+- **The recipe is new.** (12) You sign an EIP-712 claim naming the recipe's id
+  and your address. (13) The agent relays it as `publishFor()`. `RecipeBook`
+  accepts it only from its attester, the agent, and the agent relays it only
+  for the person it crafted for. That is the audit's SR-01, closed.
+
+If a job fails, the charge goes back to you. Circle Gateway is the main path;
+our own facilitator settles a plain EIP-3009 transfer as the fallback
+(`VOXEL_ARC_SETTLEMENT=own`).
+
+| Arc testnet | |
+|---|---|
+| USDC | `0x3600000000000000000000000000000000000000` |
+| `RecipeBook` | `0xC456D809Fb6B71a1901c4E5957c0F70b034783BA` |
+| `SplitVault` | `0x870771ecaaf8c059354145B7A0cC5D4Da2A4b721` |
+| `Allowance` | `0xcc8936bC21B8a521314740B21F300cdF7c0Ca627` |
+
+### ENS: where each service is, and what it may charge
+
+![ENS: the operator owns the prices, each service owns only its url, and the agent checks every 402 against the name](docs/architecture/4-ens.png)
+
+1. **The operator sets each name's terms**: `x402:price`, `x402:asset`,
+   `x402:network` and `x402:payTo`.
+2. **Each service can set only its own `url`.** It can move hosts, but it
+   cannot change its price.
+3. **The agent resolves the three names** through the Universal Resolver: 15
+   records in one multicall, about a second.
+4. **It keeps the url and the terms**, cached for every craft after that.
+5. **The agent calls the service at the url from its name.**
+6. **The service answers 402 with its own terms**: amount, asset, network and
+   payee.
+7. **The agent compares all four with the name.** If they match, it signs and
+   pays on the chain in `x402:network`. If any differs, it stops with the
+   reason, for example: `did not pay — recipe asks 900000 but its name says 100000`.
+
+Moving a service between chains is a record change, not a redeploy. That is
+how `craft` moved to Arc while `recipe` and `publish` stayed on Hedera.
+`Allowance` stops the agent overspending; ENS stops a service overcharging.
+
+| ENS on Sepolia (ENSv2) | |
+|---|---|
+| names | `recipe.voxelbench.eth` · `craft.voxelbench.eth` · `publish.voxelbench.eth` |
+| our registry | `0x49d8963F8098840b0457aFedDe23bD68AEC46EB0` |
+| our resolver | `0x6A64e52852906E9a2452c8eD4ac2cb5d11F47DA3` |
 
 ## Run it
 

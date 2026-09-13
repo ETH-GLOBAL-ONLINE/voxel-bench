@@ -1,0 +1,25 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"arial","fontSize":"15px","background":"#1b1816","primaryColor":"#211e1b","primaryTextColor":"#f6efe4","primaryBorderColor":"#4e4840","lineColor":"#a89e92","textColor":"#f6efe4","actorBkg":"#211e1b","actorBorder":"#4e4840","actorTextColor":"#f6efe4","actorLineColor":"#38332d","signalColor":"#a89e92","signalTextColor":"#f6efe4","noteBkgColor":"#12303a","noteTextColor":"#f6efe4","noteBorderColor":"#7fd3f0","sequenceNumberColor":"#131110","labelBoxBkgColor":"#211e1b","labelBoxBorderColor":"#4e4840","labelTextColor":"#f6efe4","loopTextColor":"#a89e92"}}}%%
+sequenceDiagram
+  autonumber
+  participant O as Operator
+  box rgba(78,72,64,0.22) Bench machine
+    participant A as Agent
+    participant P as Paywall
+  end
+  box rgba(127,211,240,0.12) ENS · Sepolia
+    participant UR as Universal Resolver
+    participant N as recipe · craft · publish<br/>.voxelbench.eth
+  end
+  participant CH as Hedera or Arc
+  O->>N: set x402:price, asset, network, payTo
+  P->>N: set its own url (its only role)
+  A->>UR: resolve 3 names · 15 records · one multicall
+  UR-->>A: url + terms (cached)
+  A->>P: POST at the url from the name
+  P-->>A: 402 · amount, asset, network, payTo
+  alt all four match the name
+    A->>CH: sign and pay on x402:network
+  else they differ
+    Note over A,UR: did not pay — recipe asks 900000 but its name says 100000
+  end
+  Note over A,CH: moving a service between chains is a record change, no redeploy
