@@ -148,6 +148,25 @@ settlement, more than the recipe stage's price. A stage that earns less than
 its gas either moves to Arc or stops being charged on its own. Publishing, which
 costs us almost nothing to do, is the first candidate.
 
+### 9. The bench gets a server of its own
+
+For the demo the bench runs on one of our machines, and the site reaches it
+through two tunnels (`docs/DEMO.md`). A deployment runs the same four services
+(crafter, paywall, agent, facilitator) on a dedicated server:
+
+- Blender needs a real machine with a CPU to itself. It cannot run as a
+  function beside the site.
+- Stable HTTPS hostnames replace the tunnels' addresses. `AGENT_URL` and
+  `CRAFTER_URL` in the Vercel project point at them.
+- Each service writes its public address to its own name's `url` record. The
+  role for that record is already granted to it, so this is one transaction per
+  service, with no redeployment. The agent follows the new records on its next
+  run.
+- The paywall and the facilitator can stay private beside the agent, or move to
+  hosts of their own. The records decide, not the code.
+
+The keys on that server are the ones item 1 moves out of files.
+
 ## The Arc Mainnet question, specifically
 
 Deploying to Arc Mainnet by 30 September would take:

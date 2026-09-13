@@ -310,8 +310,12 @@ icon. Opened in Studio from the Creator Hub, it plays.
 
 Blender cannot run on Vercel, so the site and the crafter are separate: the site
 on Vercel, the crafter on a real machine. That is the same split x402 asks for
-anyway. The crafter is offline most of the time and the site says so rather than
-breaking.
+anyway. When the bench is off, the site says so rather than breaking.
+
+For the demo the bench runs on one of our machines, reached through two tunnels,
+and the happy path was run end to end on the deployed site before submission:
+[DEMO.md](DEMO.md). On mainnet it moves to a dedicated server (`MAINNET.md`,
+item 9).
 
 ---
 
