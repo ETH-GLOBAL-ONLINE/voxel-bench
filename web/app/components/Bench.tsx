@@ -810,8 +810,8 @@ export default function Bench({ sample }: { sample: Sample }) {
               }}
             >
               {account
-                ? "It lands in your Roblox inventory as native parts. In Studio: Toolbox → Inventory → My Models."
-                : "Paste an Open Cloud key — it stays in this browser. Then Publish puts it straight into your Roblox inventory."}
+                ? "It goes straight to your Roblox account as native parts. Then find it in your Creator Dashboard, under Creations."
+                : "Paste an Open Cloud key — it stays in this browser. Then Publish puts it straight into your Roblox account."}
             </TourBubble>
           </>
         )}
