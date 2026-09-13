@@ -1,0 +1,53 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"arial","fontSize":"15px","background":"#1b1816","primaryColor":"#211e1b","primaryTextColor":"#f6efe4","primaryBorderColor":"#4e4840","lineColor":"#a89e92","textColor":"#f6efe4","clusterBkg":"#171412","clusterBorder":"#38332d","edgeLabelBackground":"#1b1816","titleColor":"#a89e92"}}}%%
+flowchart LR
+  subgraph USER["You"]
+    W["Wallet<br/>signs, never sends"]
+    RS["Roblox Studio<br/>Creator Dashboard"]
+  end
+  subgraph SITE["Site · Vercel"]
+    S["voxel-bench-psi<br/>.vercel.app"]
+  end
+  subgraph BENCH["Bench machine"]
+    A["Agent<br/>wallet · x402 client · attester"]
+    P["Paywall<br/>recipe · craft · publish"]
+    C["Crafter<br/>LLM + headless Blender"]
+  end
+  subgraph EXT["Services"]
+    ENS[("ENS · Sepolia<br/>voxelbench.eth")]
+    X4["x402 facilitator"]
+    GW["Circle Gateway<br/>Nanopayments"]
+    RO["Roblox Open Cloud"]
+  end
+  subgraph CHAINS["Chains"]
+    H[("Hedera testnet<br/>RecipeBook · SplitVault · Allowance")]
+    ARC[("Arc testnet<br/>USDC · RecipeBook · SplitVault · Allowance")]
+  end
+
+  W -->|"1 · budget permit, claim"| S
+  S -->|"2 · job, via tunnel"| A
+  A -->|"3 · url + price"| ENS
+  A -->|"4 · POST, 402, pay"| P
+  P -->|"recipe · publish in HBAR"| X4
+  X4 --> H
+  P -->|"craft in USDC"| GW
+  GW -->|"batched"| ARC
+  P -->|"5 · run the stage"| C
+  A -->|"6 · charge budget, split 90/10, record claim"| ARC
+  C -->|"7 · upload .rbxmx"| RO
+  RO --> RS
+  S -.->|"reads"| H
+  S -.->|"reads"| ARC
+  S -.->|"renders"| C
+
+  classDef hedera fill:#2a1f3d,stroke:#a37bff,color:#f6efe4
+  classDef arc fill:#142536,stroke:#4da3ff,color:#f6efe4
+  classDef ens fill:#12303a,stroke:#7fd3f0,color:#f6efe4
+  classDef roblox fill:#3a1a19,stroke:#ff5a4f,color:#f6efe4
+  classDef ours fill:#211e1b,stroke:#4e4840,color:#f6efe4
+  classDef site fill:#211e1b,stroke:#ffae3b,color:#f6efe4
+  class H,X4 hedera
+  class ARC,GW arc
+  class ENS ens
+  class RO,RS roblox
+  class A,P,C,W ours
+  class S site

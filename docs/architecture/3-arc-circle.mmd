@@ -1,0 +1,35 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"arial","fontSize":"15px","background":"#1b1816","primaryColor":"#211e1b","primaryTextColor":"#f6efe4","primaryBorderColor":"#4e4840","lineColor":"#a89e92","textColor":"#f6efe4","actorBkg":"#211e1b","actorBorder":"#4e4840","actorTextColor":"#f6efe4","actorLineColor":"#38332d","signalColor":"#a89e92","signalTextColor":"#f6efe4","noteBkgColor":"#142536","noteTextColor":"#f6efe4","noteBorderColor":"#4da3ff","sequenceNumberColor":"#131110","labelBoxBkgColor":"#211e1b","labelBoxBorderColor":"#4e4840","labelTextColor":"#f6efe4","loopTextColor":"#a89e92"}}}%%
+sequenceDiagram
+  autonumber
+  box rgba(255,174,59,0.08) You
+    participant U as Your wallet
+  end
+  box rgba(78,72,64,0.22) Bench machine
+    participant A as Agent (0xfe3c…0034)
+    participant P as Paywall
+  end
+  box rgba(77,163,255,0.14) Arc + Circle
+    participant G as Circle Gateway
+    participant USDC as USDC
+    participant AL as Allowance
+    participant RB as RecipeBook + SplitVault
+  end
+  U->>A: sign EIP-2612 permit (no gas)
+  A->>USDC: permit() · agent pays gas
+  A->>USDC: transferFrom you to agent · 0.006 USDC
+  A->>AL: draw this job's spend (1 USDC/day)
+  A->>P: POST /usdc/craft
+  P-->>A: 402 · 0.005 USDC via Circle Gateway
+  A->>P: EIP-712 authorization on its Gateway balance
+  P->>G: verify + settle
+  G-->>P: accepted · transfer id
+  Note over G,USDC: Circle settles onchain in batches
+  P-->>A: 200 · Blender built it
+  alt the recipe already has an author
+    A->>RB: 0.001 USDC
+    Note over RB: SplitVault · 90% author, 10% platform
+  else a new recipe
+    U->>A: sign EIP-712 claim (recipe id + address)
+    A->>RB: publishFor() · only the attester
+  end
+  Note over A,USDC: if the job fails, the charge goes back
