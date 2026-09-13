@@ -57,7 +57,7 @@ const STEPS = [
   {
     n: "04",
     t: "It lands in Roblox",
-    d: "Publish, and it uploads through Open Cloud into your own account, with its render as the icon. Or build an obby from your recipes and play it in Studio.",
+    d: "Publish, and it uploads through Open Cloud into your own account, with its render as the icon — it is in your Creator Dashboard. Or build an obby from your recipes and play it in Studio.",
   },
 ];
 

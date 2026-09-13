@@ -80,7 +80,7 @@ export default function RobloxConnect({
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-sap" />
           Roblox account{" "}
           <code className="font-mono text-amber">{account.userId}</code>
-          <span className="text-faint">— publishing goes to your inventory</span>
+          <span className="text-faint">— publishing goes to your Creator Dashboard</span>
         </p>
         <button
           type="button"

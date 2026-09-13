@@ -28,9 +28,10 @@ Built from scratch for **ETHOnline 2026** — Hedera, ENS and Circle/Arc tracks.
    the craft. The browser shows every step, with the transaction.
 4. **Claim it.** Sign a message, free, and the recipe is yours on `RecipeBook`.
    From then on anyone crafting with it pays you 90%.
-5. **It lands in Roblox.** Publish, and it uploads through Open Cloud into your
-   account with its render as the icon. Or pick pieces from your backpack and
-   the marketplace, and the agent lays them out as an obby you play in Studio:
+5. **It lands in your Roblox account.** Publish, and it uploads through Open
+   Cloud into your own account with its render as the icon: it is in your
+   Creator Dashboard, under Creations. Or pick pieces from your backpack and the
+   marketplace, and the agent lays them out as an obby you play in Studio:
    spawn, hazards that kill, platforms that move, a timed finish.
 
 Nothing to install to craft. Studio is where you play what you built.
@@ -255,6 +256,12 @@ effect on the next deployment.
 Needs an API key from create.roblox.com/dashboard/credentials with the `assets`
 scope (read and write), and the creator id. The site asks each person for
 their own and never stores it.
+
+Publishing ends in your Creator Dashboard
+(create.roblox.com/dashboard/creations), which the page links to. From there the
+model is yours like anything else in your account: putting it on the Creator
+Store, giving it a Try in Roblox experience, or pricing it are settings of your
+Roblox account.
 
 The key carries an IP allowlist. Leave it empty and every request returns 403
 with a message that never mentions the IP — the single most common way to lose

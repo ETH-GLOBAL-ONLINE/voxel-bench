@@ -32,7 +32,7 @@ For the video and the judges.
    marketplace. Pieces you don't have yet are got along the way, each author
    paid once. The course arrives in Roblox playable: a start, hazards that
    kill, platforms that move, checkpoints and a finish with your time.
-8. **Publish**: it lands in your Roblox inventory, with its render as the icon.
+8. **Publish**: it lands in your Roblox account, with its render as the icon — the page links to your Creator Dashboard, where it is.
 
 ## Sponsor tracks, technical
 

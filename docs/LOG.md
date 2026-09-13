@@ -1068,3 +1068,27 @@ warm light over every piece you can stand on, so the course is the only thing
 lit. A black atmosphere at full density was tried first and dropped: it
 darkened the course too, from forty studs away. The model's Night attribute
 set to false keeps the place's own lighting.
+
+## The whole path, as submitted
+
+Publishing ends where the creator can see it: their own Creator Dashboard, which
+the page links to once the upload is done. That is the end of the happy path, and
+every step before it runs for real:
+
+1. sign in with an email, Google, X or a wallet, and sign a USDC budget on Arc —
+   no gas, no transaction;
+2. describe an object, or pick pieces for an obby;
+3. watch the agent find each service through ENS, check its price, and pay it
+   over x402 — HBAR on Hedera for the recipe, Circle Nanopayments on Arc for the
+   craft — every step shown with its transaction;
+4. claim the recipe with a signature, relayed by the agent that crafted it, so
+   its author earns 90% of every craft on `RecipeBook`;
+5. publish it into your own Roblox account with its render as the icon, and open
+   it in the Creator Dashboard. An obby plays in Studio as it comes: spawn,
+   hazards, moving platforms, a timed finish, a drop into the void.
+
+What the model does after that is the creator's to decide, in their Roblox
+account — putting it on the Creator Store, giving it a Try in Roblox experience,
+pricing it. We took an obby that far ourselves: opened from its Creator Store page
+through Try in Roblox, in a custom experience, it loaded by its asset id and
+played end to end.
